@@ -78,23 +78,23 @@ mab_glycans = {"(Man5)/2": [("Hex", 10), ("HexNAc", 4)],
                "G2F/G2F (SA)2": [("Hex", 10), ("HexNAc", 8), ("Fuc", 2), ("Neu5Ac", 2)]}
 
 
-def glycanlist_to_modlist(glycans, max_counts=2, use_average_masses=True):
+def glycanlist_to_modlist(glycans, max_counts=2, use_monoisotopic_masses=False):
     """
     Convert a list of glycans to a list of modifications.
 
     :param glycans: Dict {name: composition} of glycans; format like fc_glycans
     :param max_counts: maximum count for the modification search
-    :param use_average_masses: if true, use average masses for calculation, otherwise monoisotopic masses
+    :param use_monoisotopic_masses: if true, use monoisotopic masses for calculation, otherwise average masses
     :return: A list of triples: (1) Name of the glycan, (2) its mass, (3) max count
     """
     result = []
     for name, composition in glycans.items():
         # mg[0] is the monosaccharide name, mg[1] the number of monosaccharides
         formula = mass_tools.combine_formulas([glycan_formula[mg[0]] * mg[1] for mg in composition])
-        if use_average_masses:
-            result.append((name, formula.average_mass, max_counts))
-        else:
+        if use_monoisotopic_masses:
             result.append((name, formula.monoisotopic_mass, max_counts))
+        else:
+            result.append((name, formula.average_mass, max_counts))
     return result
 
 
@@ -151,11 +151,9 @@ class Nglycan(object):
                 self._gdict = ginput
             elif type(ginput) == str:
                 pattern = re.compile(r"([NHFPSG]\d+)")
-                self._gdict = {single_letter_mono[g[0]]:int(g[1:]) for g in pattern.findall(ginput)}
+                self._gdict = {single_letter_mono[g[0]]: int(g[1:]) for g in pattern.findall(ginput)}
         except:
             print("Unable to recognize input")
-        # self._gtuple = tuple(sorted(self._gdict.items()))
-        # self.calculate()
         if name:
             self._tname = name
         else:
@@ -166,7 +164,6 @@ class Nglycan(object):
         self._tname = None
 
     def make_name(self):
-        # self._name = "".join(["{}({})".format(*i) for i in self._gtuple])
         if self._gdict:
             self._name = "".join(["{}{}".format(*(mono_single_letter[i[0]], i[1])) for i in self._gtuple])
         else:
@@ -180,8 +177,8 @@ class Nglycan(object):
         self._formula = mass_tools.Formula("")
         for i in self._form_dict.values():
             self._formula += i
-        self._average_mass = self._formula.average_mass
-        self._monoisotopic_mass = self._formula.monoisotopic_mass
+        self.average_mass = self._formula.average_mass
+        self.monoisotopic_mass = self._formula.monoisotopic_mass
         self._gtuple = tuple(sorted(self._gdict.items()))
         self.make_name()
 
@@ -235,9 +232,9 @@ class Nglycan(object):
         return(not(self == other))
 
     def __lt__(self, other):
-        if self._average_mass < other._average_mass:
+        if self.average_mass < other.average_mass:
             return -1
-        elif self._average_mass > other._average_mass:
+        elif self.average_mass > other.average_mass:
             return 1
         else:
             return 0
@@ -248,7 +245,7 @@ class Nglycan(object):
         # else:
             # restr = ""
         # restr += "".join(["{}({})".format(*i)for i in self._gtuple])
-        restr += "|m{:.2f}".format(self._monoisotopic_mass)
+        restr += "|m{:.2f}".format(self.monoisotopic_mass)
         if self._tname:
             restr += "|{:s}".format(self._tname)
         return(restr)
@@ -439,9 +436,7 @@ class Nglycan(object):
 
 def dataframe_to_modlist(df):
     """
-    Function turns site-specific N-glycan DataFrame into a modlist.
-    DataFrame ought to look like so and Name has to be a composition string.
-
+    Function turns N-glycan DataFrame into a list of modifications.
 
     :param df: Dataframe with the following format:
                   Name	  N149  N171  Nr.
@@ -452,8 +447,8 @@ def dataframe_to_modlist(df):
               (1) name, (2) mass, (3) maximum occurrences
     """
 
-    modlist = []
+    result = []
     for i, r in df.iterrows():
-        mass = Nglycan(r["Name"])._average_mass
-        modlist.append((r["Name"], mass, r["Nr."]))
-    return modlist
+        mass = Nglycan(r["Name"]).average_mass
+        result.append((r["Name"], mass, r["Nr."]))
+    return result

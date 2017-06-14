@@ -1,7 +1,0 @@
-modifications.cpp
-modsmodule.cpp
-setup.py
-findmods.egg-info/PKG-INFO
-findmods.egg-info/SOURCES.txt
-findmods.egg-info/dependency_links.txt
-findmods.egg-info/top_level.txt

@@ -10,7 +10,8 @@
 
 import numpy as np
 import pandas as pd
-import findmods, time
+from findmods_source import findmods
+import time
 
 
 
@@ -21,7 +22,8 @@ def fast_find_modifications(mods, unexplained_masses, mass_tolerance=5.0, explai
 
     :param mods: list of triples (name, mass, maxcount)
     :param unexplained_masses: iterable of unexplained masses (floats)
-    :param mass_tolerance: tolerance for the unexplained mass in Da
+    :param mass_tolerance: tolerance for the unexplained mass in Da; either a single value, which applies to all
+                           unexplained_masses, or a list of tolerances (one value per unexplained mass)
     :param explained_mass: mass explained by the protein sequence and known modifications
     :param return_frame: indicates whether to return an dataframe or a dictionary
     :param n_glycans: a pandas dataframe containing the N-glycan library
@@ -40,35 +42,22 @@ def fast_find_modifications(mods, unexplained_masses, mass_tolerance=5.0, explai
     """
     # TODO: return None if the search fails
 
-    def next_mod(used_mass=0, index=0):  # implements the combinatorial search in pure python
-        next_index = index + 1
-        for x in range(old_mods[index][2] + 1):
-            counts[index] = x
-            remaining = unexplained_mass - used_mass
-            if abs(remaining) <= mass_tolerance:
-                result.append(counts[:])
-            elif next_index < len(counts) and remaining >= mass_tolerance:
-                next_mod(used_mass, next_index)
-            used_mass += old_mods[index][1]
-        counts[index] = 0
-
     # max-first sorting decreases the time of the algorithm by a factor of approx 1.5
     mods.sort(key=lambda t: t[1], reverse=True)
     mod_names = [m[0] for m in mods]
     mod_masses = np.array([m[1] for m in mods])
-    old_mods = mods
     mods = [(m[1], m[2]) for m in mods]
     combinations = {}
     last_time = time.time()
 
     # run the search on each peak
+
     for mass_index, unexplained_mass in enumerate(unexplained_masses):
-        current_time = time.time()
-        print(mass_index, "{:.4f}".format(current_time - last_time), sep="\t", end="\t")
-        last_time = current_time
-        result = []; counts = [0 for i in range(len(mods))]; next_mod()  # alternative 1 - python
-        # result = findmods.examine_modifications(mods, unexplained_mass, mass_tolerance)  # alternative 2 - C++
-        print(len(result), result)
+        try:
+            current_tolerance = mass_tolerance[mass_index]
+        except TypeError:
+            current_tolerance = mass_tolerance
+        result = findmods.examine_modifications(mods, unexplained_mass, current_tolerance)
 
         # (a) transform result to combs_per_mass.
         # combs_per_mass will be a list of dicts with the following keys:
@@ -84,19 +73,19 @@ def fast_find_modifications(mods, unexplained_masses, mass_tolerance=5.0, explai
                 theoretical_mass = explained_mass + sum(np.array(r) * mod_masses)  # mass of protein + found mods
                 experimental_mass = explained_mass + unexplained_mass  # mass measured by the mass spectrometer
                 r = dict(zip(mod_names, r))
-                r["Exp. Mass"] = experimental_mass
                 r["Theo. Mass"] = theoretical_mass
+                r["Exp. Mass"] = experimental_mass
                 r["Da."] = experimental_mass - theoretical_mass
                 r["abs(Delta)"] = abs(r["Da."])
-                r["ppm"] = (experimental_mass - theoretical_mass) / theoretical_mass * 100000
+                r["ppm"] = (experimental_mass - theoretical_mass) / theoretical_mass * 1000000
                 combs_per_mass.append(r)
         else:  # what to do if examine_modifications didn"t find any modifications
             r = np.zeros(len(mods), dtype="int")
             theoretical_mass = 0
             experimental_mass = explained_mass + unexplained_mass
             r = dict(zip(mod_names, r))
-            r["Exp. Mass"] = experimental_mass
             r["Theo. Mass"] = theoretical_mass
+            r["Exp. Mass"] = experimental_mass
             r["Da."] = 0.0
             r["abs(Delta)"] = 0.0
             r["ppm"] = 0.0
@@ -187,12 +176,9 @@ def fast_find_modifications(mods, unexplained_masses, mass_tolerance=5.0, explai
         return combinations.to_dict()
 
 
-
-
-
-
-
-
+#
+# The following functions are merely for performance testing
+#
 def fast_find_modifications_python(mods, unexplained_masses, mass_tolerance=5.0):
     """
     test function to implement the search in pure python
@@ -211,21 +197,13 @@ def fast_find_modifications_python(mods, unexplained_masses, mass_tolerance=5.0)
             used_mass += mods[index][1]
         counts[index] = 0
 
-
     mods.sort(key=lambda t: t[1], reverse=True)
-    combinations = {}
-    # last_time = time.time()
 
     # run the search on each peak
     for mass_index, unexplained_mass in enumerate(unexplained_masses):
-        # current_time = time.time()
-        # print(mass_index, "{:.4f}".format(current_time - last_time), sep="\t", end="\t")
-        # last_time = current_time
         result = []
-        counts = [0 for i in range(len(mods))]
+        counts = [0 for _ in range(len(mods))]
         next_mod()
-        # print(len(result), result)
-        # combinations[mass_index] = result
 
 
 def fast_find_modifications_cpp(mods, unexplained_masses, mass_tolerance=5.0):
@@ -236,19 +214,11 @@ def fast_find_modifications_cpp(mods, unexplained_masses, mass_tolerance=5.0):
 
     # max-first sorting decreases the time of the algorithm by a factor of approx 1.5
     mods.sort(key=lambda t: t[1], reverse=True)
-    mod_names = [m[0] for m in mods]
-    mod_masses = np.array([m[1] for m in mods])
     mods = [(m[1], m[2]) for m in mods]
-    combinations = {}
-    # last_time = time.time()
 
     # run the search on each peak
     for mass_index, unexplained_mass in enumerate(unexplained_masses):
-        # current_time = time.time()
-        # print(mass_index, "{:.4f}".format(current_time - last_time), sep="\t", end="\t")
-        # last_time = current_time
         result = findmods.examine_modifications(mods, unexplained_mass, mass_tolerance)
-        print(mass_index, len(result), result, sep="\t")
 
 
 def fast_find_modifications_db(mods, unexplained_masses, mass_tolerance=5.0):
@@ -257,39 +227,34 @@ def fast_find_modifications_db(mods, unexplained_masses, mass_tolerance=5.0):
     for each peak, find the possible database entries
     """
 
-    def all_mods(used_mass=0, index=0):
+    def explore(used_mass=0, index=0):
         next_index = index + 1
         for x in range(mods[index][2] + 1):
             counts[index] = x
-            database[used_mass] = counts[:]
-            f.write(str(used_mass) + str(counts) + "\n")
             if next_index < len(counts) and largest_mass - used_mass >= mass_tolerance:
-                all_mods(used_mass, next_index)
+                explore(used_mass, next_index)
+            else:
+                database.append((used_mass, counts[:]))
             used_mass += mods[index][1]
         counts[index] = 0
 
-
     mods.sort(key=lambda t: t[1], reverse=True)
     counts = [0 for i in range(len(mods))]
-    combinations = {}
-    last_time = time.time()
 
     # find all combinations that may produce any mass leq than the largest peak
-    database = {}
+    database = []
     largest_mass = unexplained_masses[-1]
-    f = open("test.txt", "w")
-    all_mods()
-    f.close()
-    db_series = pd.Series(database)
-    # print(db_series[3200 : 3300])
-
+    explore()
+    database.sort()
+    database = list(zip(*database))
+    database = pd.Series(database[1], index=database[0])
 
     # extract solutions for each peak from the database
-    # for mass_index, unexplained_mass in enumerate(unexplained_masses):
+    for mass_index, unexplained_mass in enumerate(unexplained_masses):
         # current_time = time.time()
         # print(mass_index, "{:.4f}".format(current_time - last_time), sep="\t", end="\t")
         # last_time = current_time
-        # result = db_series[unexplained_mass - mass_tolerance : unexplained_mass + mass_tolerance]
+        result = database[unexplained_mass - mass_tolerance:unexplained_mass + mass_tolerance]
         # print(mass_index, len(result), list(result), sep="\t")
 
 
@@ -299,10 +264,10 @@ def fast_find_modifications_db(mods, unexplained_masses, mass_tolerance=5.0):
 
 
 def speed_test():
-    import time, cProfile
+    import time
 
     # test data from Kadcyla.mofi
-    modlist = [
+    modlist_small = [
         ("DM1", 957.00, 10),
         ("G0F", 1445.34, 2),
         ("G1F", 1607.48, 2),
@@ -313,6 +278,16 @@ def speed_test():
         ("G2", 1623.48, 2),
         ("G2FSA1", 2060.87, 2),
         ("G1", 1461.33, 2)]
+
+    modlist_large = [
+        ("Hex", 162.14, 10),
+        ("Fuc", 146.14, 10),
+        ("Neu5Ac", 291.26, 10),
+        ("Neu5Gc", 307.25, 10),
+        ("Pent", 132.11, 10),
+        ("N-core", 892.81, 10),
+        ("O-core", 365.33, 10),
+        ("HexNAc", 203.19, 10)]
 
     unexpl_masses = [2891.59, 2956.68, 3054.58, 3203.98, 3215.83, 3232.54, 3303.90, 3343.96, 3376.25, 3403.45, 3521.36,
                      3650.07, 3714.38, 3719.19, 3798.27, 3850.46, 3878.96, 4013.87, 4067.96, 4089.39, 4173.50, 4233.29,
@@ -330,16 +305,16 @@ def speed_test():
                      10666.29, 10712.98, 10879.41, 10910.56, 10973.47, 11036.43, 11079.21, 11093.55, 11224.69, 11314.54,
                      11375.35, 11562.29, 11720.59, 11739.16, 11793.62, 11802.98]
 
-    test_functions = [fast_find_modifications_cpp, fast_find_modifications_python]
-    fast_find_modifications_db(modlist, unexpl_masses)
+    test_functions = [fast_find_modifications_cpp, fast_find_modifications_python, fast_find_modifications_db]
+    test_modlists = [modlist_small]
 
-    # cProfile.runctx("fast_find_modifications_cpp(modlist, unexpl_masses); fast_find_modifications_python(modlist, unexpl_masses)", globals(), locals(), "modificaction_search.profile")
-    # for f in test_functions:
-    #     print("Testing function", f)
-    #     for i in range(10):
-    #         start_time = time.time()
-    #         f(modlist, unexpl_masses)
-    #         print("\t", "{:.4f}".format(time.time() - start_time))
+    for f in test_functions:
+        for m in test_modlists:
+            print("Testing function", f, "on modlist", m)
+            for i in range(5):
+                start_time = time.time()
+                f(m, unexpl_masses)
+                print("\t", "{:.4f}".format(time.time() - start_time))
 
 
 if __name__ == "__main__":

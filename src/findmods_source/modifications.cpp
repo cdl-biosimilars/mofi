@@ -6,39 +6,12 @@
 
 #include "modifications.hpp"
 
+
 /**
  * Tolerance to prevent rounding errors from affecting the result
  */
 const double TOLERANCE = 0.0000001;
 
-
-/**
- * Compares function for sorting modifications by mass descending.
- */
-bool mods_mass_compare(const Modification& a, const Modification& b)
-{
-    return a.mass > b.mass;
-}
-
-/**
- * Calculates the mass of a mod state. (Deprecated)
- *
- * @param used mod state with the used modifications
- * @param mods vector of mod definitions
- * @return mass of the used mods
- */
-double calc_mass(
-    const mod_state_t& used,
-    const std::vector<Modification>& mods)
-{
-    double total_mass = 0;
-    for (size_t index = 0; index < mods.size(); index++) {
-        long count = used[index];
-        const double mass = mods[index].mass;
-        total_mass += mass * count;
-    }
-    return total_mass;
-}
 
 /**
  * Recursive function to check all possible combinations of
@@ -88,8 +61,6 @@ std::vector<mod_state_t> find_modifications(
     std::vector<mod_state_t> solutions;
     mod_state_t used(mods.size(), 0);
     massrange += TOLERANCE;
-    // Sorting decreases run time
-    //std::sort(mods.begin(), mods.end(), mods_mass_compare);
     next_mod(target_mass, mods, solutions, used, massrange);
     return solutions;
 }

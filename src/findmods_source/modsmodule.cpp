@@ -1,6 +1,5 @@
 #include "Python.h"
 #include <vector>
-
 #include "modifications.hpp"
 
 const char* DOCSTRING = 
@@ -75,12 +74,16 @@ extern "C" {
     }
 
     static PyMethodDef module_methods[] = {
-        {"examine_modifications", examine_modifications, METH_VARARGS, DOCSTRING},
+        {"examine_modifications", (PyCFunction)examine_modifications, METH_VARARGS, DOCSTRING},
         {NULL, NULL, 0, NULL}
     };
 
     static struct PyModuleDef findmodsmodule = {
-        PyModuleDef_HEAD_INIT, "findmods", NULL, -1, module_methods
+        PyModuleDef_HEAD_INIT,
+        "findmods",
+        "A C++ module that implements a fast combinatorial search",
+        -1,
+        module_methods
     };
 
     PyMODINIT_FUNC PyInit_findmods(void)
