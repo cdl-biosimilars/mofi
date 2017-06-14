@@ -1,4 +1,4 @@
-ModFinder - A tool to find molecular modifications (mostly sugars)
+ModFinder - A tool to find molecular modifications (mostly sugars)!
 
 Requirements:
     *Python 3.4 (not higher, because of PySide)
