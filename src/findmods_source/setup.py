@@ -1,5 +1,5 @@
 # The command
-#     run python setup.py build_ext --inplace
+#     python setup.py build_ext --inplace
 # creates findmods.pyd which may be imported as a module
 
 from setuptools import setup, Extension

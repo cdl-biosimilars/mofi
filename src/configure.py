@@ -11,8 +11,8 @@
 import configparser
 
 config = configparser.ConfigParser()
-config.read("E:/Projects/ModFinder/config/config.ini")
-# Config.read('../config/config.ini')
+# config.read("E:/Projects/ModFinder/config/config.ini")
+config.read('../config/config.ini')
 
 
 # extract information from config.ini
