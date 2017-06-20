@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1223</width>
+    <width>1287</width>
     <height>988</height>
    </rect>
   </property>
@@ -14,7 +14,7 @@
    <string>ModFinder</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QVBoxLayout" name="verticalLayout_8">
+   <layout class="QVBoxLayout" name="verticalLayout">
     <item>
      <layout class="QHBoxLayout" name="horizontalLayout">
       <property name="spacing">
@@ -27,6 +27,18 @@
         </property>
         <item>
          <widget class="QTextEdit" name="teSequence">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>500</width>
+            <height>0</height>
+           </size>
+          </property>
           <property name="font">
            <font>
             <family>Courier</family>
@@ -61,9 +73,12 @@
             <property name="orientation">
              <enum>Qt::Horizontal</enum>
             </property>
+            <property name="sizeType">
+             <enum>QSizePolicy::Minimum</enum>
+            </property>
             <property name="sizeHint" stdset="0">
              <size>
-              <width>0</width>
+              <width>70</width>
               <height>0</height>
              </size>
             </property>
@@ -72,7 +87,7 @@
           <item>
            <widget class="QPushButton" name="btOpenPeaks">
             <property name="sizePolicy">
-             <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
               <horstretch>0</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
@@ -93,9 +108,12 @@
             <property name="orientation">
              <enum>Qt::Horizontal</enum>
             </property>
+            <property name="sizeType">
+             <enum>QSizePolicy::Minimum</enum>
+            </property>
             <property name="sizeHint" stdset="0">
              <size>
-              <width>0</width>
+              <width>70</width>
               <height>0</height>
              </size>
             </property>
@@ -103,6 +121,12 @@
           </item>
           <item>
            <widget class="QPushButton" name="btUpdateMass">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
             <property name="minimumSize">
              <size>
               <width>120</width>
@@ -120,6 +144,18 @@
          <layout class="QHBoxLayout" name="horizontalLayout_6">
           <item>
            <widget class="QGroupBox" name="groupBox_3">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>260</width>
+              <height>0</height>
+             </size>
+            </property>
             <property name="title">
              <string>Masses</string>
             </property>
@@ -190,20 +226,35 @@
            </widget>
           </item>
           <item>
-           <spacer name="horizontalSpacer_5">
+           <spacer name="horizontalSpacer">
             <property name="orientation">
              <enum>Qt::Horizontal</enum>
             </property>
+            <property name="sizeType">
+             <enum>QSizePolicy::Minimum</enum>
+            </property>
             <property name="sizeHint" stdset="0">
              <size>
-              <width>0</width>
-              <height>0</height>
+              <width>40</width>
+              <height>20</height>
              </size>
             </property>
            </spacer>
           </item>
           <item>
            <widget class="QGroupBox" name="groupBox">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>210</width>
+              <height>0</height>
+             </size>
+            </property>
             <property name="title">
              <string>Mass differences</string>
             </property>
@@ -350,13 +401,25 @@
               </item>
               <item>
                <widget class="QSpinBox" name="sbDisulfides">
+                <property name="enabled">
+                 <bool>false</bool>
+                </property>
+                <property name="minimumSize">
+                 <size>
+                  <width>45</width>
+                  <height>0</height>
+                 </size>
+                </property>
                 <property name="maximum">
-                 <number>500</number>
+                 <number>0</number>
                 </property>
                </widget>
               </item>
               <item>
                <widget class="QCheckBox" name="chPngase">
+                <property name="enabled">
+                 <bool>false</bool>
+                </property>
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                   <horstretch>0</horstretch>
@@ -391,7 +454,29 @@
               <property name="spacing">
                <number>6</number>
               </property>
-              <item row="4" column="0">
+              <item row="7" column="1">
+               <widget class="QSpinBox" name="sbNcoreMin">
+                <property name="enabled">
+                 <bool>false</bool>
+                </property>
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="minimumSize">
+                 <size>
+                  <width>50</width>
+                  <height>20</height>
+                 </size>
+                </property>
+                <property name="maximum">
+                 <number>250</number>
+                </property>
+               </widget>
+              </item>
+              <item row="5" column="0">
                <widget class="QCheckBox" name="chFuc">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
@@ -412,6 +497,9 @@
               </item>
               <item row="2" column="1">
                <widget class="QSpinBox" name="sbHexnacMin">
+                <property name="enabled">
+                 <bool>false</bool>
+                </property>
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                   <horstretch>0</horstretch>
@@ -429,7 +517,7 @@
                 </property>
                </widget>
               </item>
-              <item row="7" column="0">
+              <item row="8" column="0">
                <widget class="QCheckBox" name="chOcore">
                 <property name="enabled">
                  <bool>true</bool>
@@ -444,14 +532,14 @@
                  <string>Gal + GalNAc</string>
                 </property>
                 <property name="text">
-                 <string>O-Core</string>
+                 <string>O-core</string>
                 </property>
                 <property name="checked">
                  <bool>false</bool>
                 </property>
                </widget>
               </item>
-              <item row="5" column="0">
+              <item row="6" column="0">
                <widget class="QCheckBox" name="chPent">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
@@ -470,27 +558,11 @@
                 </property>
                </widget>
               </item>
-              <item row="8" column="1">
-               <widget class="QSpinBox" name="sbNcoreMin">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
-                </property>
-                <property name="minimumSize">
-                 <size>
-                  <width>50</width>
-                  <height>20</height>
-                 </size>
-                </property>
-                <property name="maximum">
-                 <number>250</number>
-                </property>
-               </widget>
-              </item>
               <item row="2" column="2">
                <widget class="QSpinBox" name="sbHexnacMax">
+                <property name="enabled">
+                 <bool>false</bool>
+                </property>
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                   <horstretch>0</horstretch>
@@ -514,8 +586,33 @@
                 </property>
                </widget>
               </item>
-              <item row="7" column="1">
+              <item row="8" column="1">
                <widget class="QSpinBox" name="sbOcoreMin">
+                <property name="enabled">
+                 <bool>false</bool>
+                </property>
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="minimumSize">
+                 <size>
+                  <width>50</width>
+                  <height>20</height>
+                 </size>
+                </property>
+                <property name="maximum">
+                 <number>250</number>
+                </property>
+               </widget>
+              </item>
+              <item row="5" column="1">
+               <widget class="QSpinBox" name="sbFucMin">
+                <property name="enabled">
+                 <bool>false</bool>
+                </property>
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                   <horstretch>0</horstretch>
@@ -534,26 +631,10 @@
                </widget>
               </item>
               <item row="6" column="1">
-               <widget class="QSpinBox" name="sbNeu5gcMin">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
+               <widget class="QSpinBox" name="sbPentMin">
+                <property name="enabled">
+                 <bool>false</bool>
                 </property>
-                <property name="minimumSize">
-                 <size>
-                  <width>50</width>
-                  <height>20</height>
-                 </size>
-                </property>
-                <property name="maximum">
-                 <number>250</number>
-                </property>
-               </widget>
-              </item>
-              <item row="4" column="1">
-               <widget class="QSpinBox" name="sbFucMin">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                   <horstretch>0</horstretch>
@@ -590,25 +671,6 @@
                 </property>
                </widget>
               </item>
-              <item row="5" column="1">
-               <widget class="QSpinBox" name="sbPentMin">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
-                </property>
-                <property name="minimumSize">
-                 <size>
-                  <width>50</width>
-                  <height>20</height>
-                 </size>
-                </property>
-                <property name="maximum">
-                 <number>250</number>
-                </property>
-               </widget>
-              </item>
               <item row="0" column="2">
                <widget class="QLabel" name="label_8">
                 <property name="sizePolicy">
@@ -635,33 +697,11 @@
                 </property>
                </widget>
               </item>
-              <item row="5" column="2">
-               <widget class="QSpinBox" name="sbPentMax">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
-                </property>
-                <property name="minimumSize">
-                 <size>
-                  <width>53</width>
-                  <height>20</height>
-                 </size>
-                </property>
-                <property name="specialValueText">
-                 <string>inf</string>
-                </property>
-                <property name="minimum">
-                 <number>-1</number>
-                </property>
-                <property name="value">
-                 <number>-1</number>
-                </property>
-               </widget>
-              </item>
               <item row="3" column="1">
                <widget class="QSpinBox" name="sbNeu5acMin">
+                <property name="enabled">
+                 <bool>false</bool>
+                </property>
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                   <horstretch>0</horstretch>
@@ -679,27 +719,11 @@
                 </property>
                </widget>
               </item>
-              <item row="6" column="0">
-               <widget class="QCheckBox" name="chNeu5gc">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
-                </property>
-                <property name="toolTip">
-                 <string>N-glycolylneuraminic acids</string>
-                </property>
-                <property name="text">
-                 <string>Neu5Gc</string>
-                </property>
-                <property name="checked">
+              <item row="6" column="2">
+               <widget class="QSpinBox" name="sbPentMax">
+                <property name="enabled">
                  <bool>false</bool>
                 </property>
-               </widget>
-              </item>
-              <item row="6" column="2">
-               <widget class="QSpinBox" name="sbNeu5gcMax">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                   <horstretch>0</horstretch>
@@ -725,6 +749,9 @@
               </item>
               <item row="1" column="1">
                <widget class="QSpinBox" name="sbHexMin">
+                <property name="enabled">
+                 <bool>false</bool>
+                </property>
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                   <horstretch>0</horstretch>
@@ -763,6 +790,9 @@
               </item>
               <item row="1" column="2">
                <widget class="QSpinBox" name="sbHexMax">
+                <property name="enabled">
+                 <bool>false</bool>
+                </property>
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                   <horstretch>0</horstretch>
@@ -789,58 +819,11 @@
                 </property>
                </widget>
               </item>
-              <item row="7" column="2">
+              <item row="8" column="2">
                <widget class="QSpinBox" name="sbOcoreMax">
                 <property name="enabled">
-                 <bool>true</bool>
-                </property>
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
-                </property>
-                <property name="minimumSize">
-                 <size>
-                  <width>53</width>
-                  <height>20</height>
-                 </size>
-                </property>
-                <property name="specialValueText">
-                 <string>inf</string>
-                </property>
-                <property name="minimum">
-                 <number>-1</number>
-                </property>
-                <property name="value">
-                 <number>-1</number>
-                </property>
-               </widget>
-              </item>
-              <item row="8" column="0">
-               <widget class="QCheckBox" name="chNcore">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
-                </property>
-                <property name="toolTip">
-                 <string>2 GlcNAc + 3 Man</string>
-                </property>
-                <property name="text">
-                 <string>N-Core</string>
-                </property>
-                <property name="checked">
                  <bool>false</bool>
                 </property>
-               </widget>
-              </item>
-              <item row="8" column="2">
-               <widget class="QSpinBox" name="sbNcoreMax">
-                <property name="enabled">
-                 <bool>true</bool>
-                </property>
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                   <horstretch>0</horstretch>
@@ -864,8 +847,11 @@
                 </property>
                </widget>
               </item>
-              <item row="4" column="2">
+              <item row="5" column="2">
                <widget class="QSpinBox" name="sbFucMax">
+                <property name="enabled">
+                 <bool>false</bool>
+                </property>
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                   <horstretch>0</horstretch>
@@ -910,6 +896,125 @@
               </item>
               <item row="3" column="2">
                <widget class="QSpinBox" name="sbNeu5acMax">
+                <property name="enabled">
+                 <bool>false</bool>
+                </property>
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="minimumSize">
+                 <size>
+                  <width>53</width>
+                  <height>20</height>
+                 </size>
+                </property>
+                <property name="specialValueText">
+                 <string>inf</string>
+                </property>
+                <property name="minimum">
+                 <number>-1</number>
+                </property>
+                <property name="value">
+                 <number>-1</number>
+                </property>
+               </widget>
+              </item>
+              <item row="7" column="0">
+               <widget class="QCheckBox" name="chNcore">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="toolTip">
+                 <string>2 GlcNAc + 3 Man</string>
+                </property>
+                <property name="text">
+                 <string>N-core</string>
+                </property>
+                <property name="checked">
+                 <bool>false</bool>
+                </property>
+               </widget>
+              </item>
+              <item row="4" column="0">
+               <widget class="QCheckBox" name="chNeu5gc">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="toolTip">
+                 <string>N-glycolylneuraminic acids</string>
+                </property>
+                <property name="text">
+                 <string>Neu5Gc</string>
+                </property>
+                <property name="checked">
+                 <bool>false</bool>
+                </property>
+               </widget>
+              </item>
+              <item row="4" column="1">
+               <widget class="QSpinBox" name="sbNeu5gcMin">
+                <property name="enabled">
+                 <bool>false</bool>
+                </property>
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="minimumSize">
+                 <size>
+                  <width>50</width>
+                  <height>20</height>
+                 </size>
+                </property>
+                <property name="maximum">
+                 <number>250</number>
+                </property>
+               </widget>
+              </item>
+              <item row="7" column="2">
+               <widget class="QSpinBox" name="sbNcoreMax">
+                <property name="enabled">
+                 <bool>false</bool>
+                </property>
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="minimumSize">
+                 <size>
+                  <width>53</width>
+                  <height>20</height>
+                 </size>
+                </property>
+                <property name="specialValueText">
+                 <string>inf</string>
+                </property>
+                <property name="minimum">
+                 <number>-1</number>
+                </property>
+                <property name="value">
+                 <number>-1</number>
+                </property>
+               </widget>
+              </item>
+              <item row="4" column="2">
+               <widget class="QSpinBox" name="sbNeu5gcMax">
+                <property name="enabled">
+                 <bool>false</bool>
+                </property>
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                   <horstretch>0</horstretch>
@@ -939,8 +1044,14 @@
           </item>
           <item>
            <widget class="QTableWidget" name="tbModifications">
+            <property name="alternatingRowColors">
+             <bool>true</bool>
+            </property>
+            <property name="selectionMode">
+             <enum>QAbstractItemView::ContiguousSelection</enum>
+            </property>
             <property name="columnCount">
-             <number>4</number>
+             <number>5</number>
             </property>
             <attribute name="horizontalHeaderDefaultSectionSize">
              <number>70</number>
@@ -948,6 +1059,11 @@
             <column>
              <property name="text">
               <string>Name</string>
+             </property>
+            </column>
+            <column>
+             <property name="text">
+              <string>Mass</string>
              </property>
             </column>
             <column>
@@ -970,7 +1086,7 @@
           <item>
            <layout class="QVBoxLayout" name="verticalLayout_7">
             <item>
-             <widget class="QPushButton" name="btAddRow">
+             <widget class="QPushButton" name="btInsertRowAbove">
               <property name="minimumSize">
                <size>
                 <width>80</width>
@@ -978,7 +1094,14 @@
                </size>
               </property>
               <property name="text">
-               <string>Add row</string>
+               <string>Insert row above</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="btInsertRowBelow">
+              <property name="text">
+               <string>Insert row below</string>
               </property>
              </widget>
             </item>
@@ -1114,25 +1237,19 @@
             <item row="1" column="1">
              <widget class="QDoubleSpinBox" name="sbSingleMass">
               <property name="sizePolicy">
-               <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                 <horstretch>0</horstretch>
                 <verstretch>0</verstretch>
                </sizepolicy>
               </property>
-              <property name="minimumSize">
-               <size>
-                <width>100</width>
-                <height>0</height>
-               </size>
-              </property>
               <property name="decimals">
-               <number>6</number>
+               <number>2</number>
               </property>
               <property name="maximum">
                <double>500000.000000000000000</double>
               </property>
               <property name="singleStep">
-               <double>0.000100000000000</double>
+               <double>0.100000000000000</double>
               </property>
              </widget>
             </item>
@@ -1216,20 +1333,49 @@
      </layout>
     </item>
     <item>
-     <widget class="QWidget" name="spectrumView" native="true">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
+     <layout class="QHBoxLayout" name="horizontalLayout_2">
+      <property name="sizeConstraint">
+       <enum>QLayout::SetDefaultConstraint</enum>
       </property>
-      <property name="minimumSize">
-       <size>
-        <width>200</width>
-        <height>250</height>
-       </size>
-      </property>
-     </widget>
+      <item>
+       <widget class="QWidget" name="spectrumView" native="true">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>500</width>
+          <height>250</height>
+         </size>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QListWidget" name="lwPeaks">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>100</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="sizeAdjustPolicy">
+         <enum>QAbstractScrollArea::AdjustToContents</enum>
+        </property>
+        <property name="alternatingRowColors">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+     </layout>
     </item>
     <item>
      <widget class="QTabWidget" name="bottomTabWidget">
@@ -1246,7 +1392,7 @@
        </size>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="treeTab">
        <attribute name="title">
@@ -1343,16 +1489,16 @@
      </widget>
     </item>
    </layout>
-   <zorder>spectrumView</zorder>
    <zorder>bottomTabWidget</zorder>
    <zorder></zorder>
+   <zorder>horizontalLayoutWidget</zorder>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1223</width>
+     <width>1287</width>
      <height>19</height>
     </rect>
    </property>

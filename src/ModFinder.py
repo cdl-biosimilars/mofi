@@ -24,8 +24,8 @@ import os
 import re
 import pickle
 import qtpy
-from qtpy.QtWidgets import (QApplication, QMainWindow, QMenu, QActionGroup, QVBoxLayout,
-                            QMessageBox, QFileDialog, QTreeWidgetItem, QHeaderView)
+from qtpy.QtWidgets import (QApplication, QMainWindow, QMenu, QActionGroup, QVBoxLayout, QTableWidgetItem,
+                            QMessageBox, QFileDialog, QTreeWidgetItem, QHeaderView, QSpinBox, QDoubleSpinBox)
 from qtpy.QtGui import QColor, QBrush
 
 from qtpy.QtCore import Qt
@@ -37,14 +37,8 @@ pd.set_option('display.max_rows', 5000)
 
 import matplotlib
 matplotlib.use("Qt5Agg")
-from matplotlib.backends.backend_qt5agg import (
-    FigureCanvasQTAgg as FigureCanvas,
-    NavigationToolbar2QT as NavigationToolbar)
-# matplotlib.use("Qt4Agg")
-# matplotlib.rcParams["backend.qt4"] = "PySide"
-# from matplotlib.backends.backend_qt4agg import (
-#     FigureCanvasQTAgg as FigureCanvas,
-#     NavigationToolbar2QT as NavigationToolbar)
+from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as FigureCanvas,
+                                                NavigationToolbar2QT as NavigationToolbar)
 
 
 from matplotlib.figure import Figure
@@ -81,54 +75,53 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         # initialize the GUI
         super(MainWindow, self).__init__(parent)
         self.setupUi(self)
-        self.teSequence.textChanged.connect(
-            lambda: self.teSequence.setStyleSheet("QTextEdit { background-color: rgb(255, 225, 225) }"))
-        self.btCalcCombinations.clicked.connect(self.run_modification_search)
-        self.chPngase.clicked.connect(self.calculate_protein_mass)
-        self.btUpdateMass.clicked.connect(self.calculate_protein_mass)
-        self.chHex.clicked.connect(self.calculate_mod_mass)
-        self.chHexnac.clicked.connect(self.calculate_mod_mass)
-        self.chPent.clicked.connect(self.calculate_mod_mass)
-        self.chNeu5ac.clicked.connect(self.calculate_mod_mass)
-        self.chNeu5gc.clicked.connect(self.calculate_mod_mass)
-        self.chFuc.clicked.connect(self.calculate_mod_mass)
-        self.chOcore.clicked.connect(self.calculate_mod_mass)
-        self.chNcore.clicked.connect(self.calculate_mod_mass)
-        self.btOpenFasta.clicked.connect(self.read_fasta_file)
-        self.btOpenPeaks.clicked.connect(self.read_mass_file)
-        self.acSaveAnnotation.triggered.connect(self.save_csv)
-        self.acSaveSettings.triggered.connect(self.save_settings)
-        self.acLoadSettings.triggered.connect(self.load_settings)
-        self.btLoadMods.clicked.connect(self.read_nglycan_file)
+
         self.acAbout.triggered.connect(self.show_about)
         self.acHelp.triggered.connect(self.show_help)
+        self.acLoadSettings.triggered.connect(self.load_settings)
+        self.acQuit.triggered.connect(QApplication.instance().quit)
+        self.acSaveAnnotation.triggered.connect(self.save_csv)
+        self.acSaveSettings.triggered.connect(self.save_settings)
+
+        self.btCalcCombinations.clicked.connect(self.run_modification_search)
+        self.btClear.clicked.connect(self.modtable_clear)
+        self.btDeleteRow.clicked.connect(self.modtable_delete_row)
+        self.btInsertRowAbove.clicked.connect(lambda: self.modtable_insert_row(above=True))
+        self.btInsertRowBelow.clicked.connect(lambda: self.modtable_insert_row(above=False))
+        self.btLoadMods.clicked.connect(self.read_nglycan_file)
+        self.btOpenFasta.clicked.connect(self.read_fasta_file)
+        self.btOpenPeaks.clicked.connect(self.read_mass_file)
+        self.btUpdateMass.clicked.connect(self.calculate_disulfides_and_protein_mass)
+
         self.cbTolerance.activated.connect(self.choose_tolerance_units)
-        self.sbHexMin.valueChanged.connect(self.calculate_mod_mass)
-        self.sbHexnacMin.valueChanged.connect(self.calculate_mod_mass)
-        self.sbPentMin.valueChanged.connect(self.calculate_mod_mass)
-        self.sbNeu5acMin.valueChanged.connect(self.calculate_mod_mass)
-        self.sbNeu5gcMin.valueChanged.connect(self.calculate_mod_mass)
-        self.sbFucMin.valueChanged.connect(self.calculate_mod_mass)
-        self.sbOcoreMin.valueChanged.connect(self.calculate_mod_mass)
-        self.sbNcoreMin.valueChanged.connect(self.calculate_mod_mass)
-        self.sbHexMax.valueChanged.connect(self.calculate_mod_mass)
-        self.sbHexnacMax.valueChanged.connect(self.calculate_mod_mass)
-        self.sbPentMax.valueChanged.connect(self.calculate_mod_mass)
-        self.sbNeu5acMax.valueChanged.connect(self.calculate_mod_mass)
-        self.sbNeu5gcMax.valueChanged.connect(self.calculate_mod_mass)
-        self.sbFucMax.valueChanged.connect(self.calculate_mod_mass)
-        self.sbOcoreMax.valueChanged.connect(self.calculate_mod_mass)
-        self.sbNcoreMax.valueChanged.connect(self.calculate_mod_mass)
+
+        self.chDelta1.clicked.connect(self.show_deltas1)
+        self.chDelta2.clicked.connect(self.show_deltas2)
+        self.chPngase.clicked.connect(self.calculate_protein_mass)
+        self.chRemoveUnannotated.clicked.connect(self.set_result_tree)
+
+        self.lwPeaks.currentItemChanged.connect(
+            lambda: self.sbSingleMass.setValue(float(self.lwPeaks.currentItem().text())))
+
+        self.sbDelta1.valueChanged.connect(self.show_deltas1)
+        self.sbDelta2.valueChanged.connect(self.show_deltas2)
         self.sbDeltaTolerance.valueChanged.connect(self.check_tolerance)
         self.sbDisulfides.valueChanged.connect(self.calculate_protein_mass)
-        self.chDelta1.clicked.connect(self.show_deltas1)
-        self.sbDelta1.valueChanged.connect(self.show_deltas1)
-        self.chDelta2.clicked.connect(self.show_deltas2)
-        self.sbDelta2.valueChanged.connect(self.show_deltas2)
-        self.chRemoveUnannotated.clicked.connect(self.set_result_tree)
-        # self.nglycanCheck.clicked.connect(self.calculate_mod_mass) TODO: make this work
-        # self.nglycanCheck.hide()
-        self.acQuit.triggered.connect(QApplication.instance().quit)
+
+        self.teSequence.textChanged.connect(
+            lambda: self.teSequence.setStyleSheet("QTextEdit { background-color: rgb(255, 225, 225) }"))
+
+        # iterators for the glycan checkboxes and associated spin boxes
+        self._glycan_checkboxes = [self.chHex, self.chHexnac, self.chNeu5ac, self.chNeu5gc,
+                                   self.chFuc, self.chPent, self.chNcore, self.chOcore]
+        self._glycan_min_spinboxes = [self.sbHexMin, self.sbHexnacMin, self.sbNeu5acMin, self.sbNeu5gcMin,
+                                      self.sbFucMin, self.sbPentMin, self.sbNcoreMin, self.sbOcoreMin]
+        self._glycan_max_spinboxes = [self.sbHexMax, self.sbHexnacMax, self.sbNeu5acMax, self.sbNeu5gcMax,
+                                      self.sbFucMax, self.sbPentMax, self.sbNcoreMax, self.sbOcoreMax]
+        for ch in self._glycan_checkboxes:
+            ch.clicked.connect(self.calculate_mod_mass)
+        for sp_min in self._glycan_min_spinboxes:
+            sp_min.valueChanged.connect(self.calculate_mod_mass)
 
         # group the mass set selectors
         self.agAverage = QActionGroup(self.menuAtomicMasses)
@@ -142,22 +135,20 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.fig = Figure((5.0, 3.0), dpi=100, frameon=False, tight_layout=True, edgecolor="white")
         self.canvas = FigureCanvas(self.fig)
         self.canvas.setParent(self.spectrumView)
-        # self.canvas.setFocus()
         layout.addWidget(self.canvas)
         layout.addWidget(NavigationToolbar(self.canvas, self.spectrumView))  # TODO: vertical?
-        # graph_frame = QWidget()
-        # self.fig = Figure((5.0, 3.0), dpi=100, frameon=False, tight_layout=True, edgecolor="white")
-        # self.canvas = FigureCanvas(self.fig)
-        # self.canvas.setParent(graph_frame)
-        # self.canvas.setFocus()
-        # self.spectrumView.addWidget(self.canvas)
-        # self.spectrumView.addWidget(NavigationToolbar(self.canvas, graph_frame))
 
-        # create a menu for choosing default modification lists
+        # init the table of modifications and associated buttons
         menu = QMenu()
-        menu.addAction("C-terminal lysines", self.calculate_protein_mass)
-        menu.addAction("Typical mAB glycans", self.calculate_protein_mass)
+        menu.addAction("C-terminal lysines", self.load_default_mods_lysines)
+        menu.addAction("Typical mAB glycans", self.load_default_mods_mabs)
         self.btDefaultMods.setMenu(menu)
+
+        self.tbModifications.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
+        for col, width in [(1, 77), (2, 47), (3, 47), (4, 53)]:
+            self.tbModifications.setColumnWidth(col, width)
+        self.tbModifications.verticalHeader().setSectionResizeMode(QHeaderView.Fixed)
+        self.tbModifications.verticalHeader().setDefaultSectionSize(22)
 
         self.choose_tolerance_units()
 
@@ -167,17 +158,130 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self._delta_lines_1 = None  # delta 1 lines in the mass spectrum
         self._delta_lines_2 = None  # delta 2 lines in the mass spectrum
         self._exp_mass_data = None  # pandas dataframe containing the contents of the mass file
-        self._glycan_max_counts = None  # maximum number of glycans to search
-        self._glycan_min_counts = None  # minimum number of glycans to search
-        self._glycan_states = None  # indicates which of the glycan checkboxes are active
         self._known_mods_mass = 0  # mass of known modification
         self._mass_filename = None  # name of the mass file
         self._mass_set = configure.default_masses  # currently used atomic masses
         self._nglycans = None  # list of N-glycan modifications
         self._nglycans_data = None  # pandas dataframe containing the N-glycan library
-        self._path = configure.path
+        self._path = configure.path  # last path selected in a file chooser dialog
         self._protein = None  # a Protein object representing the input sequence with disulfides and PNGase F digest
         self._protein_mass = 0  # mass of the current Protein object
+
+
+    def _modtable_create_row(self, row_id, name="", mass=0.0, min_count=0, max_count=-1, site=""):
+        """
+        Create a new row in the table of modifications.
+        This row describes a modification with the given parameters.
+
+        Private function, to be called by general row insertion functions and
+        loaders for modification libraries.
+
+        :param row_id: Row index passed to QTableWidget.insertRow()
+        :param name: name of the modification (string)
+        :param mass: mass of the modification in Da (float)
+        :param min_count: minimum number of modifications (int)
+        :param max_count: maximum number of modifications (int)
+        :param site: identifier for the modification site; empty means any site
+        :return: nothing
+        """
+        self.tbModifications.insertRow(row_id)
+
+        self.tbModifications.setItem(row_id, 0, QTableWidgetItem(name))
+
+        mass_spinbox = QDoubleSpinBox()
+        mass_spinbox.setMinimum(0)
+        mass_spinbox.setMaximum(100000)
+        mass_spinbox.setSingleStep(.1)
+        mass_spinbox.setFrame(False)
+        mass_spinbox.setValue(mass)
+        self.tbModifications.setCellWidget(row_id, 1, mass_spinbox)
+
+        min_spinbox = QSpinBox()
+        min_spinbox.setMinimum(0)
+        min_spinbox.setFrame(False)
+        min_spinbox.setValue(min_count)
+        self.tbModifications.setCellWidget(row_id, 2, min_spinbox)
+
+        max_spinbox = QSpinBox()
+        max_spinbox.setMinimum(-1)
+        max_spinbox.setSpecialValueText("inf")
+        max_spinbox.setFrame(False)
+        max_spinbox.setValue(max_count)
+        self.tbModifications.setCellWidget(row_id, 3, max_spinbox)
+
+        self.tbModifications.setItem(row_id, 4, QTableWidgetItem(site))
+
+
+    def modtable_insert_row(self, above=True):
+        """
+        Insert a row into the table of modifications.
+        The row will be inserted relative to the current selection (if one exists) or to all rows otherwise.
+
+        :param above: True if the row should be inserted above the current selection
+        :return: nothing
+        """
+        if self.tbModifications.selectionModel().selectedRows():
+            if above:
+                last_row = self.tbModifications.selectionModel().selectedRows()[0].row()
+            else:
+                last_row = self.tbModifications.selectionModel().selectedRows()[-1].row() + 1
+        else:
+            if above:
+                last_row = 0
+            else:
+                last_row = self.tbModifications.rowCount()
+        self._modtable_create_row(last_row)
+
+
+    def modtable_clear(self):
+        """
+        Delete all rows in the table of modifications.
+
+        :return: nothing
+        """
+        while self.tbModifications.rowCount() > 0:
+            self.tbModifications.removeRow(0)
+
+
+    def modtable_delete_row(self):
+        """
+        Delete selected rows in the table of modifications.
+
+        :return: nothing
+        """
+        if self.tbModifications.selectionModel().selectedRows():
+            for i in self.tbModifications.selectionModel().selectedRows()[::-1]:
+                self.tbModifications.removeRow(i.row())
+
+
+    def load_default_mods_lysines(self):
+        """
+        Create a default modification: 0 to 2 C-terminal lysines
+
+        :return: nothing
+        """
+        lysine = mass_tools.Formula(sequence_tools.amino_acid_compositions["K"])
+        if self._mass_set == "AtomsMonoisotopic":
+            mass = lysine.monoisotopic_mass
+        else:
+            mass = lysine.average_mass
+
+        self.modtable_clear()
+        self._modtable_create_row(0, name="C-terminal Lys", mass=mass, min_count=0, max_count=2)
+
+
+    def load_default_mods_mabs(self):
+        """
+        Create a default modification: Typical mAB glycans
+
+        :return: nothing
+        """
+        self.modtable_clear()
+        last_row = 0
+        for name, mass, max_count in glyco_tools.glycanlist_generator(glyco_tools.fc_glycans,
+                                                                      mono_masses=self.acMonoisotopic.isChecked()):
+            self._modtable_create_row(last_row, name=name, mass=mass, min_count=0, max_count=max_count)
+            last_row += 1
 
 
     def show_about(self):
@@ -255,10 +359,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 with open(filename) as f:
                     fasta_input = f.read()
                 self.teSequence.setText(fasta_input)
-                self.calculate_protein_mass()
-                self.sbDisulfides.setValue(self._protein.amino_acid_composition['C'] / 2)
-                self.sbDisulfides.setMaximum(self._protein.amino_acid_composition['C'] / 2)
-                self.calculate_protein_mass()
+                self.calculate_disulfides_and_protein_mass()
             else:
                 QMessageBox.warning(self, "Error loading sequence", "Not a valid file format: %s" % ext)
 
@@ -270,9 +371,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         :return: nothing
         """
 
-        # self.massList.clear() TODO: make mass list
-        self.twResults.clear()
-        self.fig.clear()
         filename = QFileDialog.getOpenFileName(self,
                                                "Open mass list",
                                                self._path,
@@ -284,11 +382,15 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             mass_data = mass_tools.read_massfile(filename, sort_by="Average Mass")
             if mass_data is None:
                 QMessageBox.warning(self, "Error loading mass file", "Not a valid file format: %s" % ext)
+                return
+
             self._exp_mass_data = mass_data
-            # self.massList.clear()
-            # self.massList.insertItems(0, [str(i) for i in self._exp_mass_data["Average Mass"].round(4)])
-            # self.massList.show()
-            # self.massBox.setValue(float(self.massList.currentText()))
+            self.lwPeaks.clear()
+            self.twResults.clear()
+            self.fig.clear()
+            self.lwPeaks.addItems(["{:.2f}".format(i) for i in self._exp_mass_data["Average Mass"]])
+            self.lwPeaks.setCurrentRow(0)
+            self.sbSingleMass.setValue(float(self.lwPeaks.currentItem().text()))
             self.draw_naked_plot()
             self._all_hits = None
 
@@ -327,17 +429,14 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         if outfilename:
             parameters = [("Disulfides", self.sbDisulfides.value()),
                           ("PNGaseF", self.chPngase.isChecked()),
-                          ("Lysines", self.lysineCheck.isChecked()),
                           ("Tolerance", self.sbTolerance.value()),
                           ("Tol. Type", self.toleranceBox.currentText())]
-            for g in self._glycan_states:
-                if self._glycan_states[g]:
-                    parameters.append((g + "_min", self._glycan_min_counts[g]))
-                    parameters.append((g + "_max", self._glycan_max_counts[g]))
-            if self.customCheck.isChecked():
-                parameters.append(("custom Name", self.customName.text()))
-                parameters.append(("custom Mass", self.customMass.value()))
-                parameters.append(("custom Count", self.customCount.value()))
+            for ch, sp_min, sp_max in zip(self._glycan_checkboxes,
+                                          self._glycan_min_spinboxes,
+                                          self._glycan_max_spinboxes):
+                if ch.isChecked():
+                    parameters.append((ch.text() + "_min", sp_min.value()))
+                    parameters.append((ch.text() + "_max", sp_max.value()))
 
             mindex = self._all_hits.reset_index(level=0)["Massindex"]
             ra = mindex.map(self._exp_mass_data["Relative Abundance"]).reset_index()
@@ -369,6 +468,21 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self.calculate_mod_mass()
 
 
+    def calculate_disulfides_and_protein_mass(self):
+        """
+        Calculates the protein mass and composition, updates the disulfide spinbox and
+        recalculates the protein mass (since the disulfides change it).
+
+        :return: nothing
+        """
+        self.calculate_protein_mass()
+        self.sbDisulfides.setEnabled(True)
+        self.chPngase.setEnabled(True)
+        self.sbDisulfides.setMaximum(self._protein.amino_acid_composition["C"] / 2)
+        self.sbDisulfides.setValue(self._protein.amino_acid_composition["C"] / 2)
+        self.calculate_protein_mass()
+
+
     def calculate_protein_mass(self):
         """
         Calculates the mass of the protein and the known modifications from the current data.
@@ -377,6 +491,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self._protein to a protein with given sequence, disulfides and PNGase F modifications
             self._protein_mass to the mass of self._protein
             updates the value of self.lbMassProtein and self.lbMassMods
+
+        :return: nothing
         """
 
         protein_sequence = self.teSequence.toPlainText()
@@ -402,42 +518,23 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         :return: nothing
         """
 
-        self._glycan_states = {"Hex": self.chHex.isChecked(),
-                               "HexNAc": self.chHexnac.isChecked(),
-                               "Fuc": self.chFuc.isChecked(),
-                               "Neu5Ac": self.chNeu5ac.isChecked(),
-                               "Neu5Gc": self.chNeu5gc.isChecked(),
-                               "Pent": self.chPent.isChecked(),
-                               "O-core": self.chOcore.isChecked(),
-                               "N-core": self.chNcore.isChecked()}
-
-        self._glycan_min_counts = {"Hex": self.sbHexMin.value(),
-                                   "HexNAc": self.sbHexnacMin.value(),
-                                   "Fuc": self.sbFucMin.value(),
-                                   "Neu5Ac": self.sbNeu5acMin.value(),
-                                   "Neu5Gc": self.sbNeu5gcMin.value(),
-                                   "Pent": self.sbPentMin.value(),
-                                   "O-core": self.sbOcoreMin.value(),
-                                   "N-core": self.sbNcoreMin.value()}
-
-        self._glycan_max_counts = {"Hex": self.sbHexMax.value(),
-                                   "HexNAc": self.sbHexnacMax.value(),
-                                   "Fuc": self.sbFucMax.value(),
-                                   "Neu5Ac": self.sbNeu5acMax.value(),
-                                   "Neu5Gc": self.sbNeu5gcMax.value(),
-                                   "Pent": self.sbPentMax.value(),
-                                   "O-core": self.sbOcoreMax.value(),
-                                   "N-core": self.sbNcoreMax.value()}
-
         # add min counts for glycans to the theoretical mass
         self._known_mods_mass = 0
-        for g, is_active in self._glycan_states.items():
-            if is_active:
+        for ch, sp_min, sp_max in zip(self._glycan_checkboxes,
+                                      self._glycan_min_spinboxes,
+                                      self._glycan_max_spinboxes):
+            if ch.isChecked():
+                sp_min.setEnabled(True)
+                sp_max.setEnabled(True)
+                g = ch.text()
                 if self._mass_set == "AtomsMonoisotopic":
                     glycan_mass = glyco_tools.glycan_formula[g].monoisotopic_mass
                 else:
                     glycan_mass = glyco_tools.glycan_formula[g].average_mass
-                self._known_mods_mass += glycan_mass * self._glycan_min_counts[g]
+                self._known_mods_mass += glycan_mass * sp_min.value()
+            else:
+                sp_min.setEnabled(False)
+                sp_max.setEnabled(False)
         self.lbMassProtein.setText("{:,.2f}".format(self._protein_mass))
         self.lbMassMods.setText("{:,.2f}".format(self._known_mods_mass))
 
@@ -450,71 +547,55 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         """
 
         # calculate required input if a single mass was entered (i.e., no peak list was loaded)
-        if not self._mass_filename and self.massBox.value() > 0:
-            self._exp_mass_data = pd.DataFrame(
-                {"Average Mass": pd.Series([self.massBox.value()]), "Relative Abundance": 100.0})
+        if self.rbSingleMass.isChecked():
+            self._exp_mass_data = pd.DataFrame({"Average Mass": self.sbSingleMass.value(),
+                                                "Relative Abundance": 100.0})
             self._mass_filename = "Input Mass: {}".format(self._mass)
 
         self.calculate_mod_mass()
         modifications = []  # list of modifications to be used in the combinatorial search
+        if self.cbTolerance.currentIndex() == 0:  # == "Da."; max_tol_mass is the largest mass plus tolerance
+            max_tol_mass = max(self._exp_mass_data["Average Mass"]) + self.sbTolerance.value()
+        else:
+            max_tol_mass = max(self._exp_mass_data["Average Mass"]) * (1 + self.sbTolerance.value() / 1000000)
 
         # calculate the explained mass, i.e., the mass of the protein sequence plus known modifications
         # add all enabled single glycans to the list of modifications
-        for g, is_active in self._glycan_states.items():
-            if is_active:
+        for ch, sp_min, sp_max in zip(self._glycan_checkboxes,
+                                      self._glycan_min_spinboxes,
+                                      self._glycan_max_spinboxes):
+            if ch.isChecked():
+                g = ch.text()
                 if self._mass_set == "AtomsMonoisotopic":
                     glycan_mass = glyco_tools.glycan_formula[g].monoisotopic_mass
                 else:
                     glycan_mass = glyco_tools.glycan_formula[g].average_mass
 
-                if self._glycan_max_counts[g] == -1:
+                if sp_max.value() == -1:
                     # determine the upper limit of glycans that may appear
-                    if self.toleranceBox.currentIndex() == 0:  # that is, Da.
-                        max_tol_mass = max(self._exp_mass_data["Average Mass"]) + self.sbTolerance.value()
-                    else:
-                        max_tol_mass = (max(self._exp_mass_data["Average Mass"])
-                                        * (1 + self.sbTolerance.value() / 1000000))
-
-                    glycan_maxcount = int((max_tol_mass - self._protein_mass) / glycan_mass)
-                    glycan_maxcount = min(glycan_maxcount, configure.maxmods)
+                    glycan_maxcount = min(int((max_tol_mass - self._protein_mass) / glycan_mass),
+                                          configure.maxmods)
                 else:
-                    glycan_maxcount = self._glycan_max_counts[g]
-                modifications.append((g, glycan_mass, glycan_maxcount - self._glycan_min_counts[g]))
-
-        # add up to two C-terminal lysines to the list of modifications
-        if self.lysineCheck.isChecked():
-            lysine = mass_tools.Formula(sequence_tools.amino_acid_compositions["K"])
-            if self._mass_set == "AtomsMonoisotopic":
-                modifications.append(("Lys", lysine.monoisotopic_mass, 2))
-            else:
-                modifications.append(("Lys", lysine.average_mass, 2))
-
-        # add the single custom modification to the list of modifications
-        custom_mod_name = self.customName.text()
-        custom_mod_mass = self.customMass.value()
-        custom_mod_count = self.customCount.value()
-        if self.customCheck.isChecked() and custom_mod_mass != 0 and custom_mod_count > 0:
-            modifications.append((custom_mod_name, custom_mod_mass, custom_mod_count))
+                    glycan_maxcount = sp_max.value()
+                modifications.append((g, glycan_mass, glycan_maxcount - sp_min.value()))
 
         # print("PERFORMING COMBINATORIAL SEARCH...")
         # print("Experimental Masses:", self._exp_mass_data["Average Mass"].head(), sep="\n")
         # print("Explained mass (protein + known modifications):", self._protein_mass + self._known_mods_mass)
         # print("Unknown masses searched:", unknown_masses.head(), sep="\n")
-        # print("Mass tolerance: %f %s" % (self.sbTolerance.value(), self.toleranceBox.currentText()))
+        # print("Mass tolerance: %f %s" % (self.sbTolerance.value(), self.cbTolerance.currentText()))
 
-        # extend the list of modifications by mABs or a loaded N-glycan library
-        if self.mabCheck.isChecked():
-            mabs = glyco_tools.glycanlist_to_modlist(glyco_tools.fc_glycans,
-                                                     use_monoisotopic_masses=self.actionMonoisotopic.isChecked())
-            modifications.extend(mabs)
-            self._nglycans_data = pd.DataFrame(mabs)
-            self._nglycans_data.columns = ["Name", "Mass", "Site"]
-            self._nglycans_data["Nr."] = self._nglycans_data["Site"]
-            del self._nglycans_data["Mass"]
-        elif self.nglycanCheck.isChecked():
-            modifications.extend(self._nglycans)
-        else:
-            self._nglycans_data = pd.DataFrame()
+        # extend the list of modifications by the table entries
+        for row_id in range(self.tbModifications.rowCount()):
+            name = self.tbModifications.item(row_id, 0).text()
+            mass = self.tbModifications.cellWidget(row_id, 1).value()
+            min_count = self.tbModifications.cellWidget(row_id, 2).value()
+            max_count = self.tbModifications.cellWidget(row_id, 3).value()
+            # site = self.tbModifications.item(row_id, 4).text()  # TODO: currently unused
+            if max_count == -1:
+                max_count = min(int((max_tol_mass - self._protein_mass) / mass),
+                                configure.maxmods)
+            modifications.append((name, mass, max_count - min_count))
 
         print("Modifications List:")
         for m in modifications:
@@ -522,7 +603,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         # the actual combinatorial search
         unknown_masses = self._exp_mass_data["Average Mass"] - self._protein_mass - self._known_mods_mass
-        if self.toleranceBox.currentIndex() == 0:  # that is, Da.
+        if self.cbTolerance.currentIndex() == 0:  # that is, Da.
             mass_tolerance = self.sbTolerance.value()
         else:
             # calculate a mass tolerance for each peak if we're working with ppm tolerance
@@ -543,9 +624,9 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             QMessageBox.warning(self, "Warning", "Combinatorial search was unsuccessful.")
 
         # add the minimum glycan counts to the result data frame
-        for g in self._glycan_min_counts:
-            if self._glycan_states[g]:
-                self._all_hits[g] += self._glycan_min_counts[g]
+        for ch, sp_min in zip(self._glycan_checkboxes, self._glycan_min_spinboxes):
+            if ch.isChecked():
+                self._all_hits[ch.text()] += sp_min.value()
 
 
     def draw_naked_plot(self):
@@ -717,7 +798,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
     #             seldict[self._hlabels[i]] = sel_value
     #         seldata= pd.Series(seldict)
     #         mods = self._hlabels[2:-4]
-    #         s += '(%.1f %s)\n' % (seldata[str(self.toleranceBox.currentText())], self.toleranceBox.currentText())
+    #         s += '(%.1f %s)\n' % (seldata[str(self.cbTolerance.currentText())], self.cbTolerance.currentText())
     #         s += '\n'.join(['%s:%d'%(m,seldata[m]) for m in mods if seldata[m] != 0])
     #         axes.annotate(s, xy=(x,y),fontsize=8, ha='center',
     #                      backgroundcolor='lightgreen')
@@ -791,20 +872,15 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                         "exp mass data": self._exp_mass_data,
                         "mass filename": self._mass_filename,
                         "nglycans data": self._nglycans_data,
-                        "sequence settings": {"dbonds": self.sbDisulfides.value(),
-                                              "pngasef": self.chPngase.isChecked()},
-                        "glycan states": self._glycan_states,
-                        "glycan min counts": self._glycan_min_counts,
-                        "glycan max counts": self._glycan_max_counts,
-                        "custom settings": {"custom on": self.customCheck.isChecked(),
-                                            "custom name": self.customName.text(),
-                                            "custom mass": self.customMass.value(),
-                                            "custom count": self.customCount.value()},
-                        "lysine sampling": self.lysineCheck.isChecked(),
+                        "disulfides": self.sbDisulfides.value(),
+                        "pngase f": self.chPngase.isChecked(),
+                        "glycan states": [ch.isChecked() for ch in self._glycan_checkboxes],
+                        "glycan min counts": [sp_min.value() for sp_min in self._glycan_min_spinboxes],
+                        "glycan max counts": [sp_max.value() for sp_max in self._glycan_max_spinboxes],
                         "mabs checked": self.mabCheck.isChecked(),
                         "nglycans checked": self.nglycanCheck.isChecked(),
-                        "tolerance settings": {"tolerance value": self.sbTolerance.value(),
-                                               "tolerance flavor": self.toleranceBox.currentIndex()}}
+                        "tolerance value": self.sbTolerance.value(),
+                        "tolerance flavor": self.cbTolerance.currentIndex()}
             with open(settings_filename, "wb") as f:
                 pickle.dump(settings, f)
 
@@ -826,10 +902,10 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self.fig.clear()
             if settings["exp mass data"] is not None:
                 self._exp_mass_data = settings["exp mass data"]
-                # self.massList.clear()
-                # self.massList.insertItems(0, [str(i) for i in self._exp_mass_data["Average Mass"]])
-                # self.massList.show()
-                # self.massBox.setValue(float(self.massList.currentText()))
+                self.lwPeaks.clear()
+                self.lwPeaks.addItems(["{:.2f}".format(i) for i in self._exp_mass_data["Average Mass"]])
+                self.lwPeaks.setCurrentRow(0)
+                self.sbSingleMass.setValue(float(self.lwPeaks.currentItem().text()))
                 self.draw_naked_plot()
 
             self._all_hits = None
@@ -840,44 +916,19 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 self.nglycanCheck.show()
                 self.nglycanCheck.setChecked(True)
 
-            self.sbDisulfides.setValue(settings["sequence settings"]["dbonds"])
-            self.chPngase.setChecked(settings["sequence settings"]["pngasef"])
-            self.lysineCheck.setChecked(settings["lysine sampling"])
+            self.sbDisulfides.setValue(settings["disulfides"])
+            self.chPngase.setChecked(settings["pngase f"])
             self.mabCheck.setChecked(settings["mabs checked"])
 
-            self.toleranceBox.setCurrentIndex(settings["tolerance settings"]["tolerance flavor"])
-            self.sbTolerance.setValue(settings["tolerance settings"]["tolerance value"])
+            self.cbTolerance.setCurrentIndex(settings["tolerance flavor"])
+            self.sbTolerance.setValue(settings["tolerance value"])
 
-            self.customCheck.setChecked(settings["custom settings"]["custom on"])
-            self.customName.setText(settings["custom settings"]["custom name"])
-            self.customMass.setValue(settings["custom settings"]["custom mass"])
-            self.customCount.setValue(settings["custom settings"]["custom count"])
-
-            if settings["glycan states"] is not None:
-                self.chHex.setChecked(settings["glycan states"]["Hex"])
-                self.chHexnac.setChecked(settings["glycan states"]["HexNAc"])
-                self.chFuc.setChecked(settings["glycan states"]["Fuc"])
-                self.chNeu5ac.setChecked(settings["glycan states"]["Neu5Ac"])
-                self.chNeu5gc.setChecked(settings["glycan states"]["Neu5Gc"])
-                self.chPent.setChecked(settings["glycan states"]["Pent"])
-                self.chOcore.setChecked(settings["glycan states"]["O-core"])
-                self.chNcore.setChecked(settings["glycan states"]["N-core"])
-                self.sbHexMin.setValue(settings["glycan min counts"]["Hex"])
-                self.sbHexnacMin.setValue(settings["glycan min counts"]["HexNAc"])
-                self.sbFucMin.setValue(settings["glycan min counts"]["Fuc"])
-                self.sbNeu5acMin.setValue(settings["glycan min counts"]["Neu5Ac"])
-                self.sbNeu5gcMin.setValue(settings["glycan min counts"]["Neu5Gc"])
-                self.sbPentMin.setValue(settings["glycan min counts"]["Pent"])
-                self.sbOcoreMin.setValue(settings["glycan min counts"]["O-core"])
-                self.sbNcoreMin.setValue(settings["glycan min counts"]["N-core"])
-                self.sbHexMax.setValue(settings["glycan max counts"]["Hex"])
-                self.sbHexnacMax.setValue(settings["glycan max counts"]["HexNAc"])
-                self.sbFucMax.setValue(settings["glycan max counts"]["Fuc"])
-                self.sbNeu5acMax.setValue(settings["glycan max counts"]["Neu5Ac"])
-                self.sbNeu5gcMax.setValue(settings["glycan max counts"]["Neu5Gc"])
-                self.sbPentMax.setValue(settings["glycan max counts"]["Pent"])
-                self.sbOcoreMax.setValue(settings["glycan max counts"]["O-core"])
-                self.sbNcoreMax.setValue(settings["glycan max counts"]["N-core"])
+            for ch, is_checked in zip(self._glycan_checkboxes, settings["glycan states"]):
+                ch.setChecked(is_checked)
+            for sp_min, value in zip(self._glycan_min_spinboxes, settings["glycan min counts"]):
+                sp_min.setValue(value)
+            for sp_max, value in zip(self._glycan_max_spinboxes, settings["glycan max counts"]):
+                sp_max.setValue(value)
 
             self.calculate_protein_mass()
             self.calculate_mod_mass()

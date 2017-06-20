@@ -4,3 +4,4 @@ ClipboardForm.ui
 ModFinder_UI.py
 ModFinder_resources_rc.py
 *.pyc
+tempform.ui

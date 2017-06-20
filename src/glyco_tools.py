@@ -65,17 +65,17 @@ fc_glycans = {"Man5": [("Hex", 5), ("HexNAc", 2)],
               "G2FSA1": [("Hex", 5), ("HexNAc", 4), ("Fuc", 1), ("Neu5Ac", 1)],
               "G2FSA2": [("Hex", 5), ("HexNAc", 4), ("Fuc", 1), ("Neu5Ac", 2)]}
 
-# typical combinations of fc_glycans found on the two N-glycosylation sites of mABs
-mab_glycans = {"(Man5)/2": [("Hex", 10), ("HexNAc", 4)],
-               "(G0F)/2": [("Hex", 6), ("HexNAc", 8), ("Fuc", 2)],
-               "G0F/G1F": [("Hex", 7), ("HexNAc", 8), ("Fuc", 2)],
-               "G0F/G2F or (G1F)2": [("Hex", 8), ("HexNAc", 8), ("Fuc", 2)],
-               "G1F/G2F": [("Hex", 9), ("HexNAc", 8), ("Fuc", 2)],
-               "(G2F)2": [("Hex", 10), ("HexNAc", 8), ("Fuc", 2)],
-               "G1F/G2F SA": [("Hex", 9), ("HexNAc", 8), ("Fuc", 2), ("Neu5Ac", 1)],
-               "G1F/G2F (SA)2": [("Hex", 9), ("HexNAc", 8), ("Fuc", 2), ("Neu5Ac", 2)],
-               "G2F/G2F SA": [("Hex", 10), ("HexNAc", 8), ("Fuc", 2), ("Neu5Ac", 1)],
-               "G2F/G2F (SA)2": [("Hex", 10), ("HexNAc", 8), ("Fuc", 2), ("Neu5Ac", 2)]}
+# # typical combinations of fc_glycans found on the two N-glycosylation sites of mABs
+# mab_glycans = {"(Man5)/2": [("Hex", 10), ("HexNAc", 4)],
+#                "(G0F)/2": [("Hex", 6), ("HexNAc", 8), ("Fuc", 2)],
+#                "G0F/G1F": [("Hex", 7), ("HexNAc", 8), ("Fuc", 2)],
+#                "G0F/G2F or (G1F)2": [("Hex", 8), ("HexNAc", 8), ("Fuc", 2)],
+#                "G1F/G2F": [("Hex", 9), ("HexNAc", 8), ("Fuc", 2)],
+#                "(G2F)2": [("Hex", 10), ("HexNAc", 8), ("Fuc", 2)],
+#                "G1F/G2F SA": [("Hex", 9), ("HexNAc", 8), ("Fuc", 2), ("Neu5Ac", 1)],
+#                "G1F/G2F (SA)2": [("Hex", 9), ("HexNAc", 8), ("Fuc", 2), ("Neu5Ac", 2)],
+#                "G2F/G2F SA": [("Hex", 10), ("HexNAc", 8), ("Fuc", 2), ("Neu5Ac", 1)],
+#                "G2F/G2F (SA)2": [("Hex", 10), ("HexNAc", 8), ("Fuc", 2), ("Neu5Ac", 2)]}
 
 
 def glycanlist_to_modlist(glycans, max_counts=2, use_monoisotopic_masses=False):
@@ -89,13 +89,29 @@ def glycanlist_to_modlist(glycans, max_counts=2, use_monoisotopic_masses=False):
     """
     result = []
     for name, composition in glycans.items():
-        # mg[0] is the monosaccharide name, mg[1] the number of monosaccharides
-        formula = mass_tools.combine_formulas([glycan_formula[mg[0]] * mg[1] for mg in composition])
+        formula = mass_tools.combine_formulas([glycan_formula[name] * count for name, count in composition])
         if use_monoisotopic_masses:
             result.append((name, formula.monoisotopic_mass, max_counts))
         else:
             result.append((name, formula.average_mass, max_counts))
     return result
+
+
+def glycanlist_generator(glycans, max_counts=2, mono_masses=False):
+    """
+    Generator that convert a list of glycans to a list of modifications
+
+    :param glycans: Dict {name: composition} of glycans; format like fc_glycans
+    :param max_counts: maximum count for the modification search
+    :param mono_masses: if true, use monoisotopic masses for calculation, otherwise average masses
+    :return: A list of triples: (1) Name of the glycan, (2) its mass, (3) max count
+    """
+    for name, composition in glycans.items():
+        formula = mass_tools.combine_formulas([glycan_formula[name] * count for name, count in composition])
+        if mono_masses:
+            yield name, formula.monoisotopic_mass, max_counts
+        else:
+            yield name, formula.average_mass, max_counts
 
 
 # def glycopattern_formula(pattern, name=None):

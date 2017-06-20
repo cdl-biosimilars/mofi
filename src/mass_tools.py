@@ -20,7 +20,7 @@ def read_massfile(massfile, sort_by=None):
     Reads a list of masses (peaks) from an external file as generated, e.g., by Thermo BioPharma Finder.
     Supported file types: Excel, CSV
     These files should contain at least two columns with labels "Average Mass" and "Relative Abundance",
-     containing the mass and relative abundance of a peak, respectively.
+    containing the mass and relative abundance of a peak, respectively.
 
     :param massfile: Name of the file containing the mass list.
     :param sort_by: Sort the generated dataframe by this column
