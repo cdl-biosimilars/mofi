@@ -11,7 +11,6 @@
 import numpy as np
 import pandas as pd
 from findmods_source import findmods
-import time
 
 
 
@@ -20,7 +19,7 @@ def fast_find_modifications(mods, unexplained_masses, mass_tolerance=5.0, explai
     """
     Wrapper function that runs the C function findmods.examine_modifications on a list of target masses.
 
-    :param mods: list of triples (name, mass, maxcount)
+    :param mods: list of tuples (name, mass, maxcount, site)
     :param unexplained_masses: iterable of unexplained masses (floats)
     :param mass_tolerance: tolerance for the unexplained mass in Da; either a single value, which applies to all
                            unexplained_masses, or a list of tolerances (one value per unexplained mass)
@@ -40,7 +39,6 @@ def fast_find_modifications(mods, unexplained_masses, mass_tolerance=5.0, explai
                       ppm
                       Modstring
     """
-    # TODO: return None if the search fails
 
     # max-first sorting decreases the time of the algorithm by a factor of approx 1.5
     mods.sort(key=lambda t: t[1], reverse=True)
@@ -48,10 +46,8 @@ def fast_find_modifications(mods, unexplained_masses, mass_tolerance=5.0, explai
     mod_masses = np.array([m[1] for m in mods])
     mods = [(m[1], m[2]) for m in mods]
     combinations = {}
-    last_time = time.time()
 
     # run the search on each peak
-
     for mass_index, unexplained_mass in enumerate(unexplained_masses):
         try:
             current_tolerance = mass_tolerance[mass_index]
@@ -65,7 +61,7 @@ def fast_find_modifications(mods, unexplained_masses, mass_tolerance=5.0, explai
         # Exp. Mass: mass measured in the experiment
         # Theo. Mass: mass of protein and found modifications
         # Da.: remaining unexplained mass difference
-        # abs(Delta): absoulte remaining mass difference
+        # abs(Delta): absolute remaining mass difference
         # ppm: mass difference in ppm
         combs_per_mass = []
         if result:
@@ -77,7 +73,7 @@ def fast_find_modifications(mods, unexplained_masses, mass_tolerance=5.0, explai
                 r["Exp. Mass"] = experimental_mass
                 r["Da."] = experimental_mass - theoretical_mass
                 r["abs(Delta)"] = abs(r["Da."])
-                r["ppm"] = (experimental_mass - theoretical_mass) / theoretical_mass * 1000000
+                r["ppm"] = (experimental_mass - theoretical_mass) / theoretical_mass * 1_000_000
                 combs_per_mass.append(r)
         else:  # what to do if examine_modifications didn"t find any modifications
             r = np.zeros(len(mods), dtype="int")
@@ -94,7 +90,7 @@ def fast_find_modifications(mods, unexplained_masses, mass_tolerance=5.0, explai
         # (b) create a dataframe from combs_per_mass
         combs_frame = pd.DataFrame(combs_per_mass)
 
-        # only accept solutions with at most 2 Neu5Ac per O-core TODO: why?
+        # only accept solutions with at most 2 Neu5Ac per O-core
         if "O-core" in mod_names and "Neu5Ac" in mod_names:
             combs_frame = combs_frame[2 * combs_frame["O-core"] >= combs_frame["Neu5Ac"]]
 
@@ -112,23 +108,26 @@ def fast_find_modifications(mods, unexplained_masses, mass_tolerance=5.0, explai
     # there will be three indices: (1) consecutive numbers
     #                              (2) theoretical mass
     #                              (3) 1-based counter for hits per experimental mass
-    combinations = pd.concat(combinations)
+    combinations: pd.DataFrame = pd.concat(combinations)
 
-    if not n_glycans.empty:
-        # filter for combinations where the number of N-glycans does not exceed the number of N-glycosylation sites
-        combinations["NGcount"] = combinations[n_glycans["Name"]].sum(axis=1)
-        if all_nsites_occupied:
-            combinations = combinations[combinations["NGcount"] == n_positions]
-        else:
-            combinations = combinations[combinations["NGcount"] <= n_positions]
+    # site-specific filtering TODO: implement
 
-        # site-specific filtering: this doesn"t work!! why not? TODO: implement
-        # nsites = list(n_glycans.columns)
-        # nsites.remove("Name")
-        # nsites.remove("Nr.")
-        # for site in nsites:
-        #     site_exclusive_ngs = n_glycans[n_glycans[site] == n_glycans["Nr."]]["Name"]
-        #     combinations = combinations[combinations[site_exclusive_ngs].sum(axis=1) <= n_positions / len(nsites)]
+
+
+    # if not n_glycans.empty:
+    #     # filter for combinations where the number of N-glycans does not exceed the number of N-glycosylation sites
+    #     combinations["NGcount"] = combinations[n_glycans["Name"]].sum(axis=1)
+    #     if all_nsites_occupied:
+    #         combinations = combinations[combinations["NGcount"] == n_positions]
+    #     else:
+    #         combinations = combinations[combinations["NGcount"] <= n_positions]
+    #
+    #     nsites = list(n_glycans.columns)
+    #     nsites.remove("Name")
+    #     nsites.remove("Nr.")
+    #     for site in nsites:
+    #         site_exclusive_ngs = n_glycans[n_glycans[site] == n_glycans["Nr."]]["Name"]
+    #         combinations = combinations[combinations[site_exclusive_ngs].sum(axis=1) <= n_positions / len(nsites)]
 
     # generate modstrings TODO: optimize this code
     modstrings = []

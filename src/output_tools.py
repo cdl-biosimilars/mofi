@@ -9,7 +9,7 @@
 """
 
 
-# import matplotlib.pyplot as plt
+import time
 
 
 def write_hits_to_csv(hitdf, outfilename, parameters=None):
@@ -22,9 +22,12 @@ def write_hits_to_csv(hitdf, outfilename, parameters=None):
     :return: nothing
     """
     if parameters:
-        parameter_string = ["%s:%s" % (k, str(v)) for k, v in parameters]
+        parameter_string = ["{}: {}".format(k, v) for k, v in parameters]
         with open(outfilename, "w") as f:
-            f.write(",".join(parameter_string))
+            f.write("# Combinatorial search results by ModFinder\n")
+            f.write("# Date: " + time.strftime("%c") + "\n")
+            f.write("# Parameters: ")
+            f.write(", ".join(parameter_string))
             f.write("\n")
             hitdf.to_csv(f)
     else:
