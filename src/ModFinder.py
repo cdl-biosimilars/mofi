@@ -80,18 +80,22 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.acAbout.triggered.connect(self.show_about)
         self.acHelp.triggered.connect(self.show_help)
         self.acLoadSettings.triggered.connect(self.load_settings)
+        self.acOpenFasta.triggered.connect(self.read_fasta_file)
+        self.acOpenPeaks.triggered.connect(self.read_mass_file)
         self.acQuit.triggered.connect(QApplication.instance().quit)
         self.acSaveAnnotation.triggered.connect(self.save_csv)
         self.acSaveSettings.triggered.connect(self.save_settings)
 
         self.btCalcCombinations.clicked.connect(self.run_modification_search)
-        self.btClear.clicked.connect(self.modtable_clear)
-        self.btDeleteRow.clicked.connect(self.modtable_delete_row)
-        self.btInsertRowAbove.clicked.connect(lambda: self.modtable_insert_row(above=True))
-        self.btInsertRowBelow.clicked.connect(lambda: self.modtable_insert_row(above=False))
-        self.btLoadMods.clicked.connect(self.read_nglycan_file)
-        self.btOpenFasta.clicked.connect(self.read_fasta_file)
-        self.btOpenPeaks.clicked.connect(self.read_mass_file)
+        self.btClearMonomers.clicked.connect(lambda: self.table_clear(self.tbMonomers))
+        self.btClearPolymers.clicked.connect(lambda: self.table_clear(self.tbPolymers))
+        self.btDeleteRowMonomers.clicked.connect(lambda: self.table_delete_row(self.tbMonomers))
+        self.btDeleteRowPolymers.clicked.connect(lambda: self.table_delete_row(self.tbPolymers))
+        self.btInsertRowAboveMonomers.clicked.connect(lambda: self.table_insert_row(self.tbMonomers, above=True))
+        self.btInsertRowAbovePolymers.clicked.connect(lambda: self.table_insert_row(self.tbPolymers, above=True))
+        self.btInsertRowBelowMonomers.clicked.connect(lambda: self.table_insert_row(self.tbMonomers, above=False))
+        self.btInsertRowBelowPolymers.clicked.connect(lambda: self.table_insert_row(self.tbPolymers, above=False))
+        # self.btLoadMods.clicked.connect(self.read_nglycan_file)
         self.btUpdateMass.clicked.connect(self.calculate_disulfides_and_protein_mass)
 
         self.cbTolerance.activated.connect(self.choose_tolerance_units)
@@ -113,16 +117,12 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             lambda: self.teSequence.setStyleSheet("QTextEdit { background-color: rgb(255, 225, 225) }"))
 
         # iterators for the glycan checkboxes and associated spin boxes
-        self._glycan_checkboxes = [self.chHex, self.chHexnac, self.chNeu5ac, self.chNeu5gc,
-                                   self.chFuc, self.chPent, self.chNcore, self.chOcore]
-        self._glycan_min_spinboxes = [self.sbHexMin, self.sbHexnacMin, self.sbNeu5acMin, self.sbNeu5gcMin,
-                                      self.sbFucMin, self.sbPentMin, self.sbNcoreMin, self.sbOcoreMin]
-        self._glycan_max_spinboxes = [self.sbHexMax, self.sbHexnacMax, self.sbNeu5acMax, self.sbNeu5gcMax,
-                                      self.sbFucMax, self.sbPentMax, self.sbNcoreMax, self.sbOcoreMax]
-        for ch in self._glycan_checkboxes:
-            ch.clicked.connect(self.calculate_mod_mass)
-        for sp_min in self._glycan_min_spinboxes:
-            sp_min.valueChanged.connect(self.calculate_mod_mass)
+        # self._glycan_checkboxes = [self.chHex, self.chHexnac, self.chNeu5ac, self.chNeu5gc,
+        #                            self.chFuc, self.chPent, self.chNcore, self.chOcore]
+        # self._glycan_min_spinboxes = [self.sbHexMin, self.sbHexnacMin, self.sbNeu5acMin, self.sbNeu5gcMin,
+        #                               self.sbFucMin, self.sbPentMin, self.sbNcoreMin, self.sbOcoreMin]
+        # self._glycan_max_spinboxes = [self.sbHexMax, self.sbHexnacMax, self.sbNeu5acMax, self.sbNeu5gcMax,
+        #                               self.sbFucMax, self.sbPentMax, self.sbNcoreMax, self.sbOcoreMax]
 
         # group the mass set selectors
         self.agAverage = QActionGroup(self.menuAtomicMasses)
@@ -140,17 +140,28 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         layout.addWidget(self.canvas)
         layout.addWidget(NavigationToolbar(self.canvas, self.spectrumView))  # TODO: vertical?
 
-        # init the table of modifications and associated buttons
+        # init the monomer table and associated buttons
         menu = QMenu()
-        menu.addAction("C-terminal lysines", self.load_default_mods_lysines)
-        menu.addAction("Typical mAB glycans", self.load_default_mods_mabs)
-        self.btDefaultMods.setMenu(menu)
+        menu.addAction("Monosaccharides", lambda: self.load_default_monomers(monomers="monosaccharides"))
+        menu.addAction("C-terminal lysines", lambda: self.load_default_monomers(monomers="lysines"))
+        self.btDefaultModsMonomers.setMenu(menu)
 
-        self.tbModifications.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
-        for col, width in [(1, 77), (2, 47), (3, 47), (4, 70)]:
-            self.tbModifications.setColumnWidth(col, width)
-        self.tbModifications.verticalHeader().setSectionResizeMode(QHeaderView.Fixed)
-        self.tbModifications.verticalHeader().setDefaultSectionSize(22)
+        self.tbMonomers.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
+        for col, width in [(0, 25), (2, 130), (3, 45), (4, 45), (5, 40)]:
+            self.tbMonomers.setColumnWidth(col, width)
+        self.tbMonomers.verticalHeader().setSectionResizeMode(QHeaderView.Fixed)
+        self.tbMonomers.verticalHeader().setDefaultSectionSize(22)
+
+        # init the polymer table and associated buttons
+        menu = QMenu()
+        menu.addAction("Typical mAB glycans", lambda: self.load_default_polymers("mAB glycans"))
+        self.btDefaultModsPolymers.setMenu(menu)
+        next step: modification search should work again with monomers from table!!!
+        self.tbPolymers.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
+        for col, width in [(0, 25), (2, 130), (3, 80), (4, 60)]:
+            self.tbPolymers.setColumnWidth(col, width)
+        self.tbPolymers.verticalHeader().setSectionResizeMode(QHeaderView.Fixed)
+        self.tbPolymers.verticalHeader().setDefaultSectionSize(22)
 
         self.choose_tolerance_units()
 
@@ -170,7 +181,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self._protein_mass = 0  # mass of the current Protein object
 
 
-    def _modtable_create_row(self, row_id, name="", mass=0.0, min_count=0, max_count=-1, site=""):
+    def _monomer_table_create_row(self, row_id, active=False, name="", composition="",
+                                  min_count=0, max_count=-1, part_of_polymer=False):
         """
         Create a new row in the table of modifications.
         This row describes a modification with the given parameters.
@@ -179,116 +191,180 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         loaders for modification libraries.
 
         :param row_id: Row index passed to QTableWidget.insertRow()
-        :param name: name of the modification (string)
-        :param mass: mass of the modification in Da (float)
+        :param active: true if the monomer should be used in the combinatorial search
+        :param name: name of the modification (str)
+        :param composition: composition or mass of the modification (str)
         :param min_count: minimum number of modifications (int)
         :param max_count: maximum number of modifications (int)
-        :param site: identifier for the modification site; empty means any site
+        :param part_of_polymer: true if the monomer should be used in the polymer search
         :return: nothing
         """
-        self.tbModifications.insertRow(row_id)
+        self.tbMonomers.insertRow(row_id)
 
-        self.tbModifications.setItem(row_id, 0, QTableWidgetItem(name))
+        active_checkbox = QCheckBox()
+        active_checkbox.setChecked(active)
+        active_ch_widget = QWidget()
+        active_ch_layout = QHBoxLayout(active_ch_widget)
+        active_ch_layout.addWidget(active_checkbox)
+        active_ch_layout.setAlignment(Qt.AlignCenter)
+        active_ch_layout.setContentsMargins(0, 0, 0, 0)
+        self.tbMonomers.setCellWidget(row_id, 0, active_ch_widget)
 
-        mass_spinbox = QDoubleSpinBox()
-        mass_spinbox.setMinimum(0)
-        mass_spinbox.setMaximum(100000)
-        mass_spinbox.setSingleStep(.1)
-        mass_spinbox.setFrame(False)
-        mass_spinbox.setValue(mass)
-        self.tbModifications.setCellWidget(row_id, 1, mass_spinbox)
+        self.tbMonomers.setItem(row_id, 1, QTableWidgetItem(name))
+
+        self.tbMonomers.setItem(row_id, 2, QTableWidgetItem(composition))
 
         min_spinbox = QSpinBox()
         min_spinbox.setMinimum(0)
         min_spinbox.setFrame(False)
         min_spinbox.setValue(min_count)
-        self.tbModifications.setCellWidget(row_id, 2, min_spinbox)
+        self.tbMonomers.setCellWidget(row_id, 3, min_spinbox)
 
         max_spinbox = QSpinBox()
         max_spinbox.setMinimum(-1)
         max_spinbox.setSpecialValueText("inf")
         max_spinbox.setFrame(False)
         max_spinbox.setValue(max_count)
-        self.tbModifications.setCellWidget(row_id, 3, max_spinbox)
+        self.tbMonomers.setCellWidget(row_id, 4, max_spinbox)
 
+        monomer_checkbox = QCheckBox()
+        monomer_checkbox.setChecked(part_of_polymer)
         monomer_ch_widget = QWidget()
         monomer_ch_layout = QHBoxLayout(monomer_ch_widget)
-        monomer_ch_layout.addWidget(QCheckBox())
+        monomer_ch_layout.addWidget(monomer_checkbox)
         monomer_ch_layout.setAlignment(Qt.AlignCenter)
         monomer_ch_layout.setContentsMargins(0, 0, 0, 0)
-        self.tbModifications.setCellWidget(row_id, 4, monomer_ch_widget)
+        self.tbMonomers.setCellWidget(row_id, 5, monomer_ch_widget)
 
 
-    def modtable_insert_row(self, above=True):
+    def _polymer_table_create_row(self, row_id, active=True, name="", composition="", site="", abundance=0.0):
+        """
+        Create a new row in the table of modifications.
+        This row describes a modification with the given parameters.
+
+        Private function, to be called by general row insertion functions and
+        loaders for modification libraries.
+
+        :param row_id: Row index passed to QTableWidget.insertRow()
+        :param active: true if the polymer should be used in the combinatorial search
+        :param name: name of the modification (str)
+        :param composition: composition or mass of the modification (str)
+        :param site: identifier for the modification site; empty means any site (str)
+        :param abundance: relative abundance (float)
+        :return: nothing
+        """
+        self.tbPolymers.insertRow(row_id)
+
+        active_checkbox = QCheckBox()
+        active_checkbox.setChecked(active)
+        active_ch_widget = QWidget()
+        active_ch_layout = QHBoxLayout(active_ch_widget)
+        active_ch_layout.addWidget(active_checkbox)
+        active_ch_layout.setAlignment(Qt.AlignCenter)
+        active_ch_layout.setContentsMargins(0, 0, 0, 0)
+        self.tbPolymers.setCellWidget(row_id, 0, active_ch_widget)
+
+        self.tbPolymers.setItem(row_id, 1, QTableWidgetItem(name))
+
+        self.tbPolymers.setItem(row_id, 2, QTableWidgetItem(composition))
+
+        self.tbPolymers.setItem(row_id, 3, QTableWidgetItem(site))
+
+        abundance_spinbox = QDoubleSpinBox()
+        abundance_spinbox.setMinimum(0)
+        abundance_spinbox.setMaximum(100)
+        abundance_spinbox.setSingleStep(.1)
+        abundance_spinbox.setFrame(False)
+        abundance_spinbox.setValue(abundance)
+        self.tbPolymers.setCellWidget(row_id, 4, abundance_spinbox)
+
+
+    def table_insert_row(self, table_widget, above=True):
         """
         Insert a row into the table of modifications.
         The row will be inserted relative to the current selection (if one exists) or to all rows otherwise.
 
+        :param table_widget: the QTableWidget to modify
         :param above: True if the row should be inserted above the current selection
         :return: nothing
         """
-        if self.tbModifications.selectionModel().selectedRows():
+        if table_widget.selectionModel().selectedRows():
             if above:
-                last_row = self.tbModifications.selectionModel().selectedRows()[0].row()
+                last_row = table_widget.selectionModel().selectedRows()[0].row()
             else:
-                last_row = self.tbModifications.selectionModel().selectedRows()[-1].row() + 1
+                last_row = table_widget.selectionModel().selectedRows()[-1].row() + 1
         else:
             if above:
                 last_row = 0
             else:
-                last_row = self.tbModifications.rowCount()
-        self._modtable_create_row(last_row)
+                last_row = table_widget.rowCount()
+        if table_widget == self.tbMonomers:
+            self._monomer_table_create_row(last_row)
+        else:
+            self._polymer_table_create_row(last_row)
 
 
-    def modtable_clear(self):
+    def table_clear(self, table_widget):
         """
         Delete all rows in the table of modifications.
 
+        :param table_widget: the QTableWidget to modify
         :return: nothing
         """
-        while self.tbModifications.rowCount() > 0:
-            self.tbModifications.removeRow(0)
+        while table_widget.rowCount() > 0:
+            table_widget.removeRow(0)
 
 
-    def modtable_delete_row(self):
+    def table_delete_row(self, table_widget):
         """
         Delete selected rows in the table of modifications.
 
+        :param table_widget: the QTableWidget to modify
         :return: nothing
         """
-        if self.tbModifications.selectionModel().selectedRows():
-            for i in self.tbModifications.selectionModel().selectedRows()[::-1]:
-                self.tbModifications.removeRow(i.row())
+        if table_widget.selectionModel().selectedRows():
+            for i in table_widget.selectionModel().selectedRows()[::-1]:
+                table_widget.removeRow(i.row())
 
 
-    def load_default_mods_lysines(self):
+    def load_default_monomers(self, monomers="monosaccharides"):
         """
         Create a default modification: 0 to 2 C-terminal lysines
 
+        :param monomers: specifies which set of monomers should be loaded
         :return: nothing
         """
-        lysine = mass_tools.Formula(sequence_tools.amino_acid_compositions["K"])
-        if self._mass_set == "AtomsMonoisotopic":
-            mass = lysine.monoisotopic_mass
+        self.table_clear(self.tbMonomers)
+
+        if monomers == "monosaccharides":
+            for row_id, m in enumerate(glyco_tools.monosaccharides):
+                self._monomer_table_create_row(row_id, name=m, composition=str(glyco_tools.glycan_formula[m]),
+                                               min_count=0, max_count=-1, part_of_polymer=True)
+        elif monomers == "lysines":
+            lysine = mass_tools.Formula(sequence_tools.amino_acid_compositions["K"])
+            self._monomer_table_create_row(0, name="C-terminal Lys", composition=str(lysine),
+                                           min_count=0, max_count=2, part_of_polymer=False)
         else:
-            mass = lysine.average_mass
-
-        self.modtable_clear()
-        self._modtable_create_row(0, name="C-terminal Lys", mass=mass, min_count=0, max_count=2)
+            pass
 
 
-    def load_default_mods_mabs(self):
+    def load_default_polymers(self, polymers="mAB glycans"):
         """
         Create a default modification: Typical mAB glycans
 
+        :param polymers: specifies which set of polymers should be loaded
         :return: nothing
         """
-        self.modtable_clear()
-        last_row = 0
-        for name, mass, max_count in glyco_tools.glycanlist_generator(glyco_tools.fc_glycans,
-                                                                      mono_masses=self.acMonoisotopic.isChecked()):
-            self._modtable_create_row(last_row, name=name, mass=mass, min_count=0, max_count=max_count)
-            last_row += 1
+        self.table_clear(self.tbPolymers)
+
+        if polymers == "mAB glycans":
+            last_row = 0
+            for name, mass, max_count in glyco_tools.glycanlist_generator(glyco_tools.fc_glycans,
+                                                                          mono_masses=self.acMonoisotopic.isChecked()):
+                self._polymer_table_create_row(last_row, name=name, composition=mass, site="ch_A, ch_B")
+                last_row += 1
+        else:
+            pass
 
 
     def show_about(self):
@@ -484,12 +560,12 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         :return: nothing
         """
-        self.calculate_protein_mass()
-        self.sbDisulfides.setEnabled(True)
-        self.chPngase.setEnabled(True)
-        self.sbDisulfides.setMaximum(self._protein.amino_acid_composition["C"] / 2)
-        self.sbDisulfides.setValue(self._protein.amino_acid_composition["C"] / 2)
-        self.calculate_protein_mass()
+        if not self.calculate_protein_mass() is None:
+            self.sbDisulfides.setEnabled(True)
+            self.chPngase.setEnabled(True)
+            self.sbDisulfides.setMaximum(self._protein.amino_acid_composition["C"] / 2)
+            self.sbDisulfides.setValue(self._protein.amino_acid_composition["C"] / 2)
+            self.calculate_protein_mass()
 
 
     def calculate_protein_mass(self):
@@ -501,17 +577,23 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self._protein_mass to the mass of self._protein
             updates the value of self.lbMassProtein, self.lbMassMods and self.lbMassTotal
 
-        :return: nothing
+        :return: True if there was no error, otherwise None
         """
 
         protein_sequence = self.teSequence.toPlainText()
-        self.teSequence.setStyleSheet("QTextEdit { background-color: rgb(240, 251, 240) }")
         chains, sequence = sequence_tools.read_fasta_string(protein_sequence)
-        self._protein = sequence_tools.Protein(sequence,
-                                               chains,
-                                               self.sbDisulfides.value(),
-                                               self.chPngase.isChecked())
+        try:
+            self._protein = sequence_tools.Protein(sequence,
+                                                   chains,
+                                                   self.sbDisulfides.value(),
+                                                   self.chPngase.isChecked())
+        except KeyError as e:
+            QMessageBox.critical(self,
+                                 "Error",
+                                 "Error when parsing sequence: {} is not a valid symbol".format(e.args[0]))
+            return None
 
+        self.teSequence.setStyleSheet("QTextEdit { background-color: rgb(240, 251, 240) }")
         if self._mass_set == "AtomsMonoisotopic":
             self._protein_mass = self._protein.monoisotopic_mass
         else:
@@ -519,6 +601,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.lbMassProtein.setText("{:,.2f}".format(self._protein_mass))
         self.lbMassMods.setText("{:,.2f}".format(self._known_mods_mass))
         self.lbMassTotal.setText("{:,.2f}".format(self._protein_mass + self._known_mods_mass))
+        return True
 
 
     def calculate_mod_mass(self):
@@ -599,12 +682,12 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         print("Mass tolerance: %f %s" % (self.sbTolerance.value(), self.cbTolerance.currentText()))
 
         # extend the list of modifications by the table entries
-        for row_id in range(self.tbModifications.rowCount()):
-            name = self.tbModifications.item(row_id, 0).text()
-            mass = self.tbModifications.cellWidget(row_id, 1).value()
-            min_count = self.tbModifications.cellWidget(row_id, 2).value()
-            max_count = self.tbModifications.cellWidget(row_id, 3).value()
-            site = self.tbModifications.item(row_id, 4).text()
+        for row_id in range(self.tbMonomers.rowCount()):
+            name = self.tbMonomers.item(row_id, 0).text()
+            mass = self.tbMonomers.cellWidget(row_id, 1).value()
+            min_count = self.tbMonomers.cellWidget(row_id, 2).value()
+            max_count = self.tbMonomers.cellWidget(row_id, 3).value()
+            site = self.tbMonomers.item(row_id, 4).text()
             if max_count == -1:
                 max_count = min(int((max_tol_mass - self._protein_mass) / mass),
                                 configure.maxmods)
@@ -885,12 +968,12 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 settings_filename = settings_filename + ".mofi"
             # get modifications from table
             modifications = []
-            for row_id in range(self.tbModifications.rowCount()):
-                name = self.tbModifications.item(row_id, 0).text()
-                mass = self.tbModifications.cellWidget(row_id, 1).value()
-                min_count = self.tbModifications.cellWidget(row_id, 2).value()
-                max_count = self.tbModifications.cellWidget(row_id, 3).value()
-                site = self.tbModifications.item(row_id, 4).text()
+            for row_id in range(self.tbMonomers.rowCount()):
+                name = self.tbMonomers.item(row_id, 0).text()
+                mass = self.tbMonomers.cellWidget(row_id, 1).value()
+                min_count = self.tbMonomers.cellWidget(row_id, 2).value()
+                max_count = self.tbMonomers.cellWidget(row_id, 3).value()
+                site = self.tbMonomers.item(row_id, 4).text()
                 modifications.append((name, mass, min_count, max_count, site))
 
             settings = {"sequence": self.teSequence.toPlainText(),

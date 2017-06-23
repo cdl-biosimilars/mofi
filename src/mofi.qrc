@@ -1,0 +1,9 @@
+<RCC>
+  <qresource prefix="mofi resource">
+    <file>images/InsertRowBelow.png</file>
+    <file>images/InsertRowAbove.png</file>
+    <file>images/DeleteRow.png</file>
+    <file>images/DefaultEntries.png</file>
+    <file>images/ClearTable.png</file>
+  </qresource>
+</RCC>
