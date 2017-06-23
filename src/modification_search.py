@@ -15,7 +15,7 @@ from findmods_source import findmods
 
 
 def fast_find_modifications(mods, unexplained_masses, mass_tolerance=5.0, explained_mass=0,
-                            return_frame=True, n_glycans=pd.DataFrame(), n_positions=0, all_nsites_occupied=True):
+                            n_glycans=pd.DataFrame(), n_positions=0, all_nsites_occupied=True):
     """
     Wrapper function that runs the C function findmods.examine_modifications on a list of target masses.
 
@@ -24,7 +24,6 @@ def fast_find_modifications(mods, unexplained_masses, mass_tolerance=5.0, explai
     :param mass_tolerance: tolerance for the unexplained mass in Da; either a single value, which applies to all
                            unexplained_masses, or a list of tolerances (one value per unexplained mass)
     :param explained_mass: mass explained by the protein sequence and known modifications
-    :param return_frame: indicates whether to return an dataframe or a dictionary
     :param n_glycans: a pandas dataframe containing the N-glycan library
                       columns: "Name" and "Nr." (=index of site)
     :param n_positions: number of N-glycosylation sites
@@ -159,7 +158,7 @@ def fast_find_modifications(mods, unexplained_masses, mass_tolerance=5.0, explai
     combinations.index.names = ["Massindex", "Isobar", "Hit"]
     isodict = {v: i for i, v in enumerate(combinations["Theo. Mass"].unique())}  # a {mass: running counter} dict
     combinations.reset_index("Isobar", drop=True, inplace=True)  # delete index "Isobar"
-    combinations["Isobar"] = combinations["Theo. Mass"].map(isodict)  # TODO: this is ugly; is there a simpler way?
+    combinations["Isobar"] = combinations["Theo. Mass"].map(isodict)
     combinations.set_index("Isobar", append=True, inplace=True)
 
     # (b) index "Hit", which is wrong at this stage, since theo. masses from different searches (peaks)
@@ -169,10 +168,17 @@ def fast_find_modifications(mods, unexplained_masses, mass_tolerance=5.0, explai
     combinations.set_index("Hit", inplace=True, append=True)  # move column "Hit" to index
     combinations.reorder_levels(["Massindex", "Isobar", "Hit"])  # organize indices
 
-    if return_frame:
-        return combinations
-    else:
-        return combinations.to_dict()
+    # final structure of combinations:
+    # - multiindex (1) Massindex: consecutive numbers for peaks (=experimental masses)
+    #              (2) Isobar: consecutive numbers for combinations (=theoretical masses)
+    #              (3) Hit: consecutive numbers for all combinations within an isobar
+    # - one column for each modification (Hex, HexNAc, N-core, ...): number of each modification
+    # - Exp. Mass: peak mass
+    # - Theo. Mass: mass of found combination
+    # - Da.: Theo. Mass - Exp. Mass
+    # - ppm: relative difference wrt Theo. Mass
+    # - Modstring: string representation of modifications
+    return combinations
 
 
 #

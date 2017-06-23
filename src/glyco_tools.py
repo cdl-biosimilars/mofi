@@ -17,7 +17,7 @@ import pandas as pd
 import mass_tools
 
 # list of monosaccharides
-# monosaccharides = ["Fuc", "Hex", "HexNAc", "Pent", "Neu5Ac", "Neu5Gc"]
+monosaccharides = ["Hex", "HexNAc", "Neu5Ac", "Neu5Gc", "Fuc", "Pent", "N-core", "O-core"]
 
 # mapping from monosaccharide abbreviations to single-letter codes
 mono_single_letter = {"Hex": "H",

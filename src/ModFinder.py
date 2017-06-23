@@ -24,8 +24,9 @@ import os
 import re
 import pickle
 import qtpy
-from qtpy.QtWidgets import (QApplication, QMainWindow, QMenu, QActionGroup, QVBoxLayout, QTableWidgetItem,
-                            QMessageBox, QFileDialog, QTreeWidgetItem, QHeaderView, QSpinBox, QDoubleSpinBox)
+from qtpy.QtWidgets import (QApplication, QMainWindow, QMenu, QActionGroup, QVBoxLayout, QTableWidgetItem, QCheckBox,
+                            QMessageBox, QFileDialog, QTreeWidgetItem, QHeaderView, QSpinBox, QDoubleSpinBox,
+                            QWidget, QHBoxLayout)
 from qtpy.QtGui import QColor, QBrush
 
 from qtpy.QtCore import Qt
@@ -146,7 +147,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.btDefaultMods.setMenu(menu)
 
         self.tbModifications.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
-        for col, width in [(1, 77), (2, 47), (3, 47), (4, 53)]:
+        for col, width in [(1, 77), (2, 47), (3, 47), (4, 70)]:
             self.tbModifications.setColumnWidth(col, width)
         self.tbModifications.verticalHeader().setSectionResizeMode(QHeaderView.Fixed)
         self.tbModifications.verticalHeader().setDefaultSectionSize(22)
@@ -210,7 +211,12 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         max_spinbox.setValue(max_count)
         self.tbModifications.setCellWidget(row_id, 3, max_spinbox)
 
-        self.tbModifications.setItem(row_id, 4, QTableWidgetItem(site))
+        monomer_ch_widget = QWidget()
+        monomer_ch_layout = QHBoxLayout(monomer_ch_widget)
+        monomer_ch_layout.addWidget(QCheckBox())
+        monomer_ch_layout.setAlignment(Qt.AlignCenter)
+        monomer_ch_layout.setContentsMargins(0, 0, 0, 0)
+        self.tbModifications.setCellWidget(row_id, 4, monomer_ch_widget)
 
 
     def modtable_insert_row(self, above=True):

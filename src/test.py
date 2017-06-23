@@ -4,74 +4,70 @@ import glyco_tools
 import re
 from itertools import product
 
-prog = re.compile(r"(\d+)\s+([\w-]*)")
 
-# dataframe with monosaccharides as columns, atoms as index, and atom counts as values
-df_monosaccharides = pd.DataFrame(glyco_tools.mono_glycan_atoms)\
-    .fillna(0)\
-    .astype(np.uint16)
-
-# dataframe that contains the original glycan library
-df_library = pd.read_csv("../data/tnfr (Fig 3a)/library_large.csv", sep="\t")
-
-
-def calc_atom_counts(value):
+def calc_monomer_counts(value):
     """
-    Calculare atom counts for glycans from their monosaccharide composition
+    Calculate monomer counts for a given complex glycan
 
-    :param value: List of (count, monosaccharide) tuples
-                  as returned from the regex search on column "Composition" in df_library
-    :return: a list with atom counts
+    :param value: list of (count, monomer) tuples
+    :return: numpy array containing the monomer counts (including absent monomers)
     """
-    result = None
-    for v in value:
-        try:
-            result = result.add(df_monosaccharides[v[1]] * int(v[0]))
-        except AttributeError:
-            result = df_monosaccharides[v[1]] * int(v[0])
-    return list(result)
+    composition = dict([(v, int(k)) for (k, v) in value])
+    result = np.zeros(len(glyco_tools.monosaccharides), dtype=np.uint16)
+    for i, m in enumerate(glyco_tools.monosaccharides):
+        result[i] = composition.setdefault(m, 0)
+    return result
 
 
-# dataframe that contains the glycans from the library as index and the elemental composition (amongst others) as column
-df_glycans = df_library[["Name", "Composition"]]\
-    .drop_duplicates(subset=["Name"])\
-    .set_index("Name")
-df_glycans["Elements"] = df_glycans["Composition"]\
-    .apply(prog.findall)\
-    .apply(calc_atom_counts)
+def sum_glycan_monomer_counts(row):
+    """
+    Sum the monomer counts of several glycans.
 
-# a Series with the glycosylation sites as index and lists of possible glycans as values
-se_mods_per_site = df_library\
-    .groupby("Site")["Name"]\
-    .apply(list)
-
-
-def calc_total(row):
-    result = None
+    :param row: row from a dataframe containing the name of a glycan per cell
+    :return: a tuple containing the numbers of each atom
+    """
+    result = np.zeros(len(glyco_tools.monosaccharides), dtype=np.uint16)
     for glycan in row:
-        try:
-            result += np.array(df_glycans["Elements"][glycan])
-        except TypeError:
-            result = np.array(df_glycans["Elements"][glycan])
+        result += df_glycans_mono["Monomers"][glycan]
     return tuple(result)
 
 
-df_glycan_combinations = pd.DataFrame(list(product(*list(se_mods_per_site))), columns=list(se_mods_per_site.index))
-df_glycan_combinations["Formula"] = df_glycan_combinations\
-    .apply(calc_total, axis=1)
+# dataframe that contains the original glycan library
+df_library = pd.read_csv("../data/tnfr (Fig 3a)/library_large_ocore.csv", sep="\t")
+
+# a Series with the glycosylation sites as index and lists of possible glycans as values
+mods_per_site = df_library\
+    .groupby("Site")["Name"]\
+    .apply(list)
+
+# dataframe with glycans as index and monomer composition as rows
+prog = re.compile(r"(\d+)\s+([\w-]*)")
+df_glycans_mono = df_library[["Name", "Composition"]]\
+    .drop_duplicates(subset=["Name"])\
+    .set_index("Name")\
+    .fillna("")
+df_glycans_mono["Monomers"] = df_glycans_mono["Composition"]\
+        .apply(prog.findall)\
+        .apply(calc_monomer_counts)
+
+# a dataframe with monomers (Hex, HexNAc, ...) as multiindex and one column per site,
+# indicating which glycan composition belongs to a given elemental composition
+df_glycan_combinations = pd.DataFrame(list(product(*list(mods_per_site))), columns=list(mods_per_site.index))
+df_glycan_combinations["Monomers"] = df_glycan_combinations\
+    .apply(sum_glycan_monomer_counts, axis=1)
 df_glycan_combinations = df_glycan_combinations\
     .set_index(
-        pd.MultiIndex.from_tuples(df_glycan_combinations["Formula"], names=["C", "H", "N", "O"])
+        pd.MultiIndex.from_tuples(df_glycan_combinations["Monomers"], names=glyco_tools.monosaccharides)
     )\
-    .sort_index()
-df_glycan_combinations.drop("Formula", 1, inplace=True)
+    .sort_index()\
+    .drop("Monomers", 1)
 
 
+# print(df_glycans_mono)
+# df_glycan_combinations.to_csv("../data/tnfr (Fig 3a)/glycancombs.csv")
+# print(df_glycan_combinations)
+print(df_glycan_combinations.loc[10, 10, 0, 0, 2, 0, 4, 0])
 
-# print(df_monosaccharides)
-# print(df_glycans)
-# print(se_mods_per_site)
-print(df_glycan_combinations.loc[226, 370, 14, 164])
 
-# TODO: creating a dataframe with an element (CHNO) multiindex in reasonably short time works;
-# TODO: next: search with results from combinatoric search in this dataframe and output results! i.e., integrate with MoFi
+# df_combinations = pd.read_csv("../data/tnfr (Fig 3a)/annotation.csv")
+# print(df_combinations)
