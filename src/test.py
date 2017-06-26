@@ -33,10 +33,14 @@ def sum_glycan_monomer_counts(row):
 
 
 # dataframe that contains the original glycan library
-df_library = pd.read_csv("../data/tnfr (Fig 3a)/library_large_ocore.csv", sep="\t")
+df_library = pd.read_csv("../data/tnfr_fig_3a/library_large_ocore.csv", sep="\t")
 
 # a Series with the glycosylation sites as index and lists of possible glycans as values
-mods_per_site = df_library\
+rows = []
+for _, row in df_library.iterrows():
+    for site in row["Site"].split(","):
+        rows.append([site.strip(), row["Name"]])
+mods_per_site = pd.DataFrame(rows, columns=["Site", "Name"])\
     .groupby("Site")["Name"]\
     .apply(list)
 
@@ -62,11 +66,12 @@ df_glycan_combinations = df_glycan_combinations\
     .sort_index()\
     .drop("Monomers", 1)
 
-
-# print(df_glycans_mono)
+# print(df_library)
+# print(mods_per_site)
+print(df_glycans_mono)
 # df_glycan_combinations.to_csv("../data/tnfr (Fig 3a)/glycancombs.csv")
 # print(df_glycan_combinations)
-print(df_glycan_combinations.loc[10, 10, 0, 0, 2, 0, 4, 0])
+# print(df_glycan_combinations.loc[10, 10, 0, 0, 2, 0, 4, 0])
 
 
 # df_combinations = pd.read_csv("../data/tnfr (Fig 3a)/annotation.csv")

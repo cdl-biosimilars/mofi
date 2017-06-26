@@ -30,7 +30,7 @@ mono_single_letter = {"Hex": "H",
 # mapping from monosaccharide single-letter codes to abbreviations
 single_letter_mono = {v: k for k, v in mono_single_letter.items()}
 
-# composition of typical mAB glycans
+# composition of typical mAB glycans  TODO remove
 mab_glycan_atoms = {"Man5": {"C": 46, "H": 76, "N": 2, "O": 35},
                     "G0": {"C": 50, "H": 82, "N": 4, "O": 35},
                     "G0F": {"C": 56, "H": 92, "N": 4, "O": 39},
@@ -55,27 +55,15 @@ mono_glycan_atoms = {"Hex": {"C": 6, "H": 10, "O": 5},
 # Example: "Hex": Formula("C6 H10 O5")
 glycan_formula = {mg: mass_tools.Formula(mono_glycan_atoms[mg]) for mg in mono_glycan_atoms}
 
-fc_glycans = {"Man5": [("Hex", 5), ("HexNAc", 2)],
-              "G0": [("Hex", 3), ("HexNAc", 4)],
-              "G1": [("Hex", 4), ("HexNAc", 4)],
-              "G2": [("Hex", 5), ("HexNAc", 4)],
-              "G0F": [("Hex", 3), ("HexNAc", 4), ("Fuc", 1)],
-              "G1F": [("Hex", 4), ("HexNAc", 4), ("Fuc", 1)],
-              "G2F": [("Hex", 5), ("HexNAc", 4), ("Fuc", 1)],
-              "G2FSA1": [("Hex", 5), ("HexNAc", 4), ("Fuc", 1), ("Neu5Ac", 1)],
-              "G2FSA2": [("Hex", 5), ("HexNAc", 4), ("Fuc", 1), ("Neu5Ac", 2)]}
-
-# # typical combinations of fc_glycans found on the two N-glycosylation sites of mABs
-# mab_glycans = {"(Man5)/2": [("Hex", 10), ("HexNAc", 4)],
-#                "(G0F)/2": [("Hex", 6), ("HexNAc", 8), ("Fuc", 2)],
-#                "G0F/G1F": [("Hex", 7), ("HexNAc", 8), ("Fuc", 2)],
-#                "G0F/G2F or (G1F)2": [("Hex", 8), ("HexNAc", 8), ("Fuc", 2)],
-#                "G1F/G2F": [("Hex", 9), ("HexNAc", 8), ("Fuc", 2)],
-#                "(G2F)2": [("Hex", 10), ("HexNAc", 8), ("Fuc", 2)],
-#                "G1F/G2F SA": [("Hex", 9), ("HexNAc", 8), ("Fuc", 2), ("Neu5Ac", 1)],
-#                "G1F/G2F (SA)2": [("Hex", 9), ("HexNAc", 8), ("Fuc", 2), ("Neu5Ac", 2)],
-#                "G2F/G2F SA": [("Hex", 10), ("HexNAc", 8), ("Fuc", 2), ("Neu5Ac", 1)],
-#                "G2F/G2F (SA)2": [("Hex", 10), ("HexNAc", 8), ("Fuc", 2), ("Neu5Ac", 2)]}
+fc_glycans = {"Man5": [("Hex", 2), ("N-core", 1)],
+              "G0": [("HexNAc", 2), ("N-core", 1)],
+              "G1": [("Hex", 1), ("HexNAc", 2), ("N-core", 1)],
+              "G2": [("Hex", 2), ("HexNAc", 2), ("N-core", 1)],
+              "G0F": [("HexNAc", 2), ("Fuc", 1), ("N-core", 1)],
+              "G1F": [("Hex", 1), ("HexNAc", 2), ("Fuc", 1), ("N-core", 1)],
+              "G2F": [("Hex", 2), ("HexNAc", 2), ("Fuc", 1), ("N-core", 1)],
+              "G2FSA1": [("Hex", 2), ("HexNAc", 2), ("Fuc", 1), ("Neu5Ac", 1), ("N-core", 1)],
+              "G2FSA2": [("Hex", 2), ("HexNAc", 2), ("Fuc", 1), ("Neu5Ac", 2), ("N-core", 1)]}
 
 
 def glycanlist_to_modlist(glycans, max_counts=2, use_monoisotopic_masses=False):
@@ -97,21 +85,21 @@ def glycanlist_to_modlist(glycans, max_counts=2, use_monoisotopic_masses=False):
     return result
 
 
-def glycanlist_generator(glycans, max_counts=2, mono_masses=False):
+def glycanlist_generator(glycans):
     """
     Generator that convert a list of glycans to a list of modifications
 
     :param glycans: Dict {name: composition} of glycans; format like fc_glycans
-    :param max_counts: maximum count for the modification search
-    :param mono_masses: if true, use monoisotopic masses for calculation, otherwise average masses
-    :return: A list of triples: (1) Name of the glycan, (2) its mass, (3) max count
+    :return: name, composition
     """
-    for name, composition in glycans.items():
-        formula = mass_tools.combine_formulas([glycan_formula[name] * count for name, count in composition])
-        if mono_masses:
-            yield name, formula.monoisotopic_mass, max_counts
-        else:
-            yield name, formula.average_mass, max_counts
+    for name, monomers in glycans.items():
+        composition = []
+        for monomer, count in monomers:
+            if count == 1:
+                composition.append(monomer)
+            else:
+                composition.append(str(count) + " " + monomer)
+        yield name, ", ".join(composition)
 
 
 # def glycopattern_formula(pattern, name=None):

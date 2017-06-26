@@ -456,7 +456,7 @@
                 <number>6</number>
                </property>
                <attribute name="horizontalHeaderDefaultSectionSize">
-                <number>70</number>
+                <number>60</number>
                </attribute>
                <column>
                 <property name="text">
@@ -1167,6 +1167,8 @@
    <addaction name="acSaveSettings"/>
    <addaction name="separator"/>
    <addaction name="acSaveAnnotation"/>
+   <addaction name="separator"/>
+   <addaction name="acQuit"/>
   </widget>
   <action name="acHelp">
    <property name="text">

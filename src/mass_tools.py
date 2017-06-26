@@ -131,21 +131,28 @@ class Formula:
         self._composition: A pandas.Series
     """
 
-    def __init__(self, input=None):
-        if type(input) == dict:
-            self._composition = pd.Series(input)
-        elif type(input) == pd.core.series.Series:
-            self._composition = input
-        elif type(input) == str:
-            self._composition = formstring_to_composition(input)
-        else:
-            self._composition = pd.Series()
-        self._composition = self._composition.replace(np.nan, 0)
-        for element in "CHNOPS":
-            if element not in self._composition.index:
-                self._composition.set_value(element, 0)
+    def __init__(self, composition=None):
+        """
+        Create a new Formula.
 
-        self._composition = self._composition.astype(int)
+        :param composition: one of the following:
+                            - a pandas Series, like pd.Series(dict(C=6, H=12, O=6))
+                            - a dict, like {"C": 6; "H": 12; "O": 6}
+                            - a string, like "C6 H12 O6"
+                            raises a ValueError if composition is of a different type
+        """
+        if type(composition) == dict:
+            self._composition = pd.Series(composition)
+        elif type(composition) == pd.core.series.Series:
+            self._composition = composition
+        elif type(composition) == str:
+            self._composition = formstring_to_composition(composition)
+        elif composition is None:
+            self._composition = pd.Series()
+        else:
+            raise ValueError("Could not create formula from " + str(composition))
+        self._composition = self._composition.replace(np.nan, 0).astype(int)
+        self._composition = self._composition
     
     def change_atom_count(self, atom, count):
         """
@@ -160,7 +167,8 @@ class Formula:
     
     def _update_masses(self):
         """
-        Update the average and monoisotopic mass from the composition
+        Update the average and monoisotopic mass from the composition.
+        Raises a ValueError if an unknown atom symbol is found.
 
         Changes:
             self._average_mass
@@ -171,9 +179,12 @@ class Formula:
 
         self._average_mass = 0
         self._monoisotopic_mass = 0
-        for a in self._composition.index:
-            self._average_mass += self._composition[a] * configure.average_masses[a]
-            self._monoisotopic_mass += self._composition[a] * configure.monoisotopic_masses[a]
+        try:
+            for a in self._composition.index:
+                self._average_mass += self._composition[a] * configure.average_masses[a]
+                self._monoisotopic_mass += self._composition[a] * configure.monoisotopic_masses[a]
+        except KeyError as e:
+            raise ValueError("Atom symbol '" + e.args[0] + "' unknown.")
 
     @property
     def average_mass(self):
@@ -198,12 +209,11 @@ class Formula:
     
     def __repr__(self):
         result = []
-        for element in "CHNOPS":
-            if element in self._composition.index:
-                if self._composition[element] == 1:
-                    result.append(element)
-                elif self._composition[element] > 1:
-                    result.append("%s%d" % (element, self._composition[element]))
+        for element, count in self._composition.items():
+            if count == 1:
+                result.append(element)
+            else:
+                result.append("{:s}{:d}".format(element, count))
         return " ".join(result)
 
 
