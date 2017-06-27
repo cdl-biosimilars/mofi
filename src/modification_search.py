@@ -11,13 +11,11 @@
 import numpy as np
 import pandas as pd
 from findmods_source import findmods
-import glyco_tools
 import re
 from itertools import product
 
 
-def find_monomers(mods, unexplained_masses, mass_tolerance=5.0, explained_mass=0,
-                  n_glycans=pd.DataFrame(), n_positions=0, all_nsites_occupied=True):
+def find_monomers(mods, unexplained_masses, mass_tolerance=5.0, explained_mass=0):
     """
     Wrapper function that runs the C function findmods.examine_modifications on a list of target masses.
 
@@ -26,10 +24,6 @@ def find_monomers(mods, unexplained_masses, mass_tolerance=5.0, explained_mass=0
     :param mass_tolerance: tolerance for the unexplained mass in Da; either a single value, which applies to all
                            unexplained_masses, or a list of tolerances (one value per unexplained mass)
     :param explained_mass: mass explained by the protein sequence and known modifications
-    :param n_glycans: a pandas dataframe containing the N-glycan library
-                      columns: "Name" and "Nr." (=index of site)
-    :param n_positions: number of N-glycosylation sites
-    :param all_nsites_occupied: indicates whether all N-glycosylation sites must be occupied
     :return: a dataframe with index (1) Massindex (corresponds to index of experimental mass in input list of peaks),
                                     (2) Isobar (0-based consecutive numbering of found masses) and
                                     (3) Hit (0-based consecutive numbering of hits per Massindex
@@ -92,7 +86,7 @@ def find_monomers(mods, unexplained_masses, mass_tolerance=5.0, explained_mass=0
         # (b) create a dataframe from combs_per_mass
         combs_frame = pd.DataFrame(combs_per_mass)
 
-        # only accept solutions with at most 2 Neu5Ac per O-core
+        # only accept solutions with at most 2 Neu5Ac per O-core  TODO remove?
         if "O-core" in mod_names and "Neu5Ac" in mod_names:
             combs_frame = combs_frame[2 * combs_frame["O-core"] >= combs_frame["Neu5Ac"]]
 
@@ -241,17 +235,22 @@ def find_polymers(combinations, glycan_library, monomers):
         .drop("Monomers", 1)
     # print(df_glycan_combinations)
 
-    found_comb = combinations \
-        .reset_index(combinations.index.names) \
+    # df_found_polymers: combinations with monomer composition as multiindex, with additional columns for
+    # the polymer sites
+    old_index = combinations.index.names
+    df_found_polymers = combinations \
+        .reset_index(old_index) \
         .set_index(monomers) \
-        .sort_index()
+        .sort_index() \
+        .join(df_glycan_combinations, how="inner")
     # combinations.to_csv("csv/df_combinations.csv")
-    # found_comb.to_csv("csv/df_found_comb.csv")
     # df_glycan_combinations.to_csv("csv/df_polymers.csv")
-    found_polymers = found_comb.join(df_glycan_combinations, how="inner")
-    found_polymers.to_csv("csv/df_found_polymers.csv")
+    df_found_polymers.to_csv("csv/df_found_polymers.csv")
 
-    return combinations
+    return df_found_polymers \
+        .reset_index(df_found_polymers.index.names) \
+        .set_index(old_index) \
+        .sort_index()
 
 
 

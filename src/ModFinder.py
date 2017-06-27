@@ -23,10 +23,11 @@ import sys
 import os
 import re
 import pickle
+import time
 import qtpy
 from qtpy.QtWidgets import (QApplication, QMainWindow, QMenu, QActionGroup, QVBoxLayout, QTableWidgetItem, QCheckBox,
                             QMessageBox, QFileDialog, QTreeWidgetItem, QHeaderView, QSpinBox, QDoubleSpinBox,
-                            QWidget, QHBoxLayout)
+                            QWidget, QHBoxLayout, QAction)
 from qtpy.QtGui import QColor, QBrush
 
 from qtpy.QtCore import Qt
@@ -46,17 +47,20 @@ from matplotlib.figure import Figure
 
 
 import configure
-import glyco_tools
 import mass_tools
 import modification_search
-import output_tools
 import sequence_tools
 
 from ModFinder_UI import Ui_ModFinder
 
 
 class SortableTreeWidgetItem(QTreeWidgetItem):
-    """ A QTreeWidget which implements numerical sorting """
+    """
+    A QTreeWidget which supports numerical sorting.
+    """
+    def __init__(self, parent=None):
+        super(SortableTreeWidgetItem, self).__init__(parent)
+
     def __lt__(self, other):
         column = self.treeWidget().sortColumn()
         key1 = self.text(column)
@@ -86,7 +90,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.acSaveAnnotation.triggered.connect(self.save_csv)
         self.acSaveSettings.triggered.connect(self.save_settings)
 
-        self.btCalcCombinations.clicked.connect(self.run_modification_search)
+        self.btCalcCombinations.clicked.connect(self.sample_modifications)
         self.btClearMonomers.clicked.connect(lambda: self.table_clear(self.tbMonomers))
         self.btClearPolymers.clicked.connect(lambda: self.table_clear(self.tbPolymers))
         self.btDeleteRowMonomers.clicked.connect(lambda: self.table_delete_row(self.tbMonomers))
@@ -95,19 +99,21 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.btInsertRowAbovePolymers.clicked.connect(lambda: self.table_insert_row(self.tbPolymers, above=True))
         self.btInsertRowBelowMonomers.clicked.connect(lambda: self.table_insert_row(self.tbMonomers, above=False))
         self.btInsertRowBelowPolymers.clicked.connect(lambda: self.table_insert_row(self.tbPolymers, above=False))
-        # self.btLoadMods.clicked.connect(self.read_nglycan_file)  TODO
-        # self.btUpdateMass.clicked.connect(self.calculate_protein_mass)
-        self.btUpdateMass.clicked.connect(self.sample_polymers)
+        self.btLoadMonomers.clicked.connect(self.load_monomers)
+        self.btLoadPolymers.clicked.connect(self.load_polymers)
+        self.btSaveMonomers.clicked.connect(self.save_monomers)
+        self.btSavePolymers.clicked.connect(self.save_polymers)
+        self.btUpdateMass.clicked.connect(self.calculate_protein_mass)
+        self.btShowPolymerHits.clicked.connect(lambda: self.set_result_tree(show_monomers=False))
 
         self.cbTolerance.activated.connect(self.choose_tolerance_units)
 
         self.chDelta1.clicked.connect(self.show_deltas1)
         self.chDelta2.clicked.connect(self.show_deltas2)
+        self.chOnlyPolymerResults.clicked.connect(lambda: self.set_result_tree(show_monomers=True))
         self.chPngase.clicked.connect(self.calculate_protein_mass)
-        self.chRemoveUnannotated.clicked.connect(self.set_result_tree)
 
-        self.lwPeaks.currentItemChanged.connect(
-            lambda: self.sbSingleMass.setValue(float(self.lwPeaks.currentItem().text())))
+        self.lwPeaks.currentItemChanged.connect(lambda: self.set_result_tree(show_monomers=True))
 
         self.sbDelta1.valueChanged.connect(self.show_deltas1)
         self.sbDelta2.valueChanged.connect(self.show_deltas2)
@@ -117,13 +123,22 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.teSequence.textChanged.connect(
             lambda: self.teSequence.setStyleSheet("QTextEdit { background-color: rgb(255, 225, 225) }"))
 
-        # group the mass set selectors
-        self.agAverage = QActionGroup(self.menuAtomicMasses)
-        self.agAverage.addAction(self.acAverageIupac)
-        self.agAverage.addAction(self.acAverageZhang)
-        self.agAverage.addAction(self.acMonoisotopic)
+        # generate mass set selectors from config file
+        self.agSelectMassSet = QActionGroup(self.menuAtomicMasses)
+        set_id = 0
+        for mass_set in configure.mass_sets:
+            ac_select_set = QAction(self)
+            ac_select_set.setCheckable(True)
+            if set_id == 0:
+                ac_select_set.setChecked(True)
+            ac_select_set.setObjectName("acSelectMassSet{:d}".format(set_id))
+            ac_select_set.setText(mass_set)
+            ac_select_set.setToolTip(configure.mass_sets[mass_set].get("description", ""))
+            self.menuAtomicMasses.addAction(ac_select_set)
+            self.agSelectMassSet.addAction(ac_select_set)
+            set_id += 1
         # noinspection PyUnresolvedReferences
-        self.agAverage.triggered.connect(self.choose_mass_set)
+        self.agSelectMassSet.triggered.connect(self.choose_mass_set)
 
         # set up the plot
         layout = QVBoxLayout(self.spectrumView)
@@ -134,59 +149,43 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         layout.addWidget(NavigationToolbar(self.canvas, self.spectrumView))  # TODO: vertical?
 
         # init the monomer table and associated buttons
-        menu = QMenu()
-        menu.addAction("Monosaccharides", lambda: self.load_default_monomers(monomers="monosaccharides"))
-        menu.addAction("C-terminal lysines", lambda: self.load_default_monomers(monomers="lysines"))
-        self.btDefaultModsMonomers.setMenu(menu)
-
         self.tbMonomers.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
         for col, width in [(0, 25), (2, 130), (3, 45), (4, 45), (5, 40)]:
             self.tbMonomers.setColumnWidth(col, width)
         self.tbMonomers.verticalHeader().setSectionResizeMode(QHeaderView.Fixed)
         self.tbMonomers.verticalHeader().setDefaultSectionSize(22)
 
-        # init the polymer table and associated buttons
         menu = QMenu()
-        menu.addAction("Typical mAB glycans", lambda: self.load_default_polymers("mAB glycans"))
-        self.btDefaultModsPolymers.setMenu(menu)
+        for library in configure.default_monomer_libraries:
+            menu.addAction(library, self.load_default_monomers)
+        self.btDefaultModsMonomers.setMenu(menu)
 
+        # init the polymer table and associated buttons
         self.tbPolymers.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
         for col, width in [(0, 25), (2, 130), (3, 80), (4, 60)]:
             self.tbPolymers.setColumnWidth(col, width)
         self.tbPolymers.verticalHeader().setSectionResizeMode(QHeaderView.Fixed)
         self.tbPolymers.verticalHeader().setDefaultSectionSize(22)
 
+        menu = QMenu()
+        for library in configure.default_polymer_libraries:
+            menu.addAction(library, self.load_default_polymers)
+        self.btDefaultModsPolymers.setMenu(menu)
+
         self.choose_tolerance_units()
 
         # initialize private members
         # these variables completely describe the state of the program
-        self._all_hits = None  # results from the modification search
+        self._monomer_hits = None  # results from the monomer search
         self._delta_lines_1 = None  # delta 1 lines in the mass spectrum
         self._delta_lines_2 = None  # delta 2 lines in the mass spectrum
         self._exp_mass_data = None  # pandas dataframe containing the contents of the mass file
         self._known_mods_mass = 0  # mass of known modification
         self._mass_filename = None  # name of the mass file
-        self._mass_set = configure.default_masses  # currently used atomic masses
-        self._nglycans = None  # list of N-glycan modifications
-        self._nglycans_data = None  # pandas dataframe containing the N-glycan library
         self._path = configure.path  # last path selected in a file chooser dialog
+        self._polymer_hits = None  # results from the polymer search
         self._protein = None  # a Protein object representing the input sequence with disulfides and PNGase F digest
         self._protein_mass = 0  # mass of the current Protein object
-
-
-    def sample_polymers(self):
-        polymers = {}
-        for row_id in range(self.tbPolymers.rowCount()):
-            if self.tbPolymers.cellWidget(row_id, 0).findChild(QCheckBox).isChecked():
-                name = self.tbPolymers.item(row_id, 1).text()
-                composition = self.tbPolymers.item(row_id, 2).text()
-                sites = self.tbPolymers.item(row_id, 3).text()
-                score = self.tbPolymers.cellWidget(row_id, 4).value()
-                polymers[name] = (composition, sites, score)
-
-        df_polymers = pd.DataFrame.from_dict(polymers, orient="index")
-        df_polymers.columns = ["Composition", "Sites", "Score"]
-        modification_search.find_polymers(df_polymers)
 
 
     def _monomer_table_create_row(self, row_id, active=False, name="", composition="",
@@ -211,6 +210,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         active_checkbox = QCheckBox()
         active_checkbox.setChecked(active)
+        # noinspection PyUnresolvedReferences
+        active_checkbox.clicked.connect(self.calculate_mod_mass)
         active_ch_widget = QWidget()
         active_ch_layout = QHBoxLayout(active_ch_widget)
         active_ch_layout.addWidget(active_checkbox)
@@ -226,6 +227,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         min_spinbox.setMinimum(0)
         min_spinbox.setFrame(False)
         min_spinbox.setValue(min_count)
+        # noinspection PyUnresolvedReferences
+        min_spinbox.valueChanged.connect(self.calculate_mod_mass)
         self.tbMonomers.setCellWidget(row_id, 3, min_spinbox)
 
         max_spinbox = QSpinBox()
@@ -313,7 +316,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self._polymer_table_create_row(last_row)
 
 
-    def table_clear(self, table_widget):
+    @staticmethod
+    def table_clear(table_widget):
         """
         Delete all rows in the table of modifications.
 
@@ -324,7 +328,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             table_widget.removeRow(0)
 
 
-    def table_delete_row(self, table_widget):
+    @staticmethod
+    def table_delete_row(table_widget):
         """
         Delete selected rows in the table of modifications.
 
@@ -336,43 +341,35 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 table_widget.removeRow(i.row())
 
 
-    def load_default_monomers(self, monomers="monosaccharides"):
+    def load_default_monomers(self):
         """
-        Create a default modification: 0 to 2 C-terminal lysines
+        Load a default monomer library.
 
-        :param monomers: specifies which set of monomers should be loaded
         :return: nothing
         """
         self.table_clear(self.tbMonomers)
+        library = self.sender().text()
+        row_id = 0
 
-        if monomers == "monosaccharides":
-            for row_id, m in enumerate(glyco_tools.monosaccharides):
-                self._monomer_table_create_row(row_id, name=m, composition=str(glyco_tools.glycan_formula[m]),
-                                               min_count=0, max_count=-1, part_of_polymer=True)
-        elif monomers == "lysines":
-            lysine = mass_tools.Formula(sequence_tools.amino_acid_compositions["K"])
-            self._monomer_table_create_row(0, name="C-terminal Lys", composition=str(lysine),
-                                           min_count=0, max_count=2, part_of_polymer=False)
-        else:
-            pass
+        for name, data in configure.default_monomer_libraries[library].items():
+            self._monomer_table_create_row(row_id, name=name, composition=data["composition"],
+                                           min_count=int(data["min"]), max_count=int(data["max"]), part_of_polymer=True)
+            row_id += 1
 
 
-    def load_default_polymers(self, polymers="mAB glycans"):
+    def load_default_polymers(self):
         """
-        Create a default modification: Typical mAB glycans
+        Load a default polymer library.
 
-        :param polymers: specifies which set of polymers should be loaded
         :return: nothing
         """
         self.table_clear(self.tbPolymers)
+        library = self.sender().text()
+        row_id = 0
 
-        if polymers == "mAB glycans":
-            last_row = 0
-            for name, composition in glyco_tools.glycanlist_generator(glyco_tools.fc_glycans):
-                self._polymer_table_create_row(last_row, name=name, composition=composition, sites="ch_A, ch_B")
-                last_row += 1
-        else:
-            pass
+        for name, data in configure.default_polymer_libraries[library].items():
+            self._polymer_table_create_row(row_id, name=name, composition=data["composition"], sites=data["sites"])
+            row_id += 1
 
 
     def show_about(self):
@@ -479,10 +476,10 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self.lwPeaks.clear()
             self.twResults.clear()
             self.fig.clear()
-            self._all_hits = None
+            self._monomer_hits = None
+            self._polymer_hits = None
             self.lwPeaks.addItems(["{:.2f}".format(i) for i in self._exp_mass_data["Average Mass"]])
             self.lwPeaks.setCurrentRow(0)
-            self.sbSingleMass.setValue(float(self.lwPeaks.currentItem().text()))
             self.draw_naked_plot()
 
 
@@ -514,12 +511,19 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                     parameters.append((name + "_min", min_count))
                     parameters.append((name + "_max", max_count))
 
-            mindex = self._all_hits.reset_index(level=0)["Massindex"]
+            mindex = self._monomer_hits.reset_index(level=0)["Massindex"]  # TODO also save polymer hits; optimize code
             ra = mindex.map(self._exp_mass_data["Relative Abundance"]).reset_index()
-            self._all_hits["Relative Abundance"] = list(ra["Massindex"])
+            self._monomer_hits["Relative Abundance"] = list(ra["Massindex"])
 
             try:
-                output_tools.write_hits_to_csv(self._all_hits, outfilename, parameters)
+                parameter_string = ["{}: {}".format(k, v) for k, v in parameters]
+                with open(outfilename, "w") as f:
+                    f.write("# Combinatorial search results by ModFinder\n")
+                    f.write("# Date: " + time.strftime("%c") + "\n")
+                    f.write("# Parameters: ")
+                    f.write(", ".join(parameter_string))
+                    f.write("\n")
+                    self._monomer_hits.to_csv(f)
             except IOError:
                 QMessageBox.warning(self, "Warning", "Permission denied for {}".format(outfilename))
 
@@ -530,15 +534,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         :return: nothing
         """
-        if self.acAverageIupac.isChecked():
-            self._mass_set = "AtomsAverageIUPAC"
-            configure.set_average_masses(self._mass_set)
-        elif self.acAverageZhang.isChecked():
-            self._mass_set = "AtomsAverageZhang"
-            configure.set_average_masses(self._mass_set)
-        else:
-            self._mass_set = "AtomsMonoisotopic"
-
+        configure.select_mass_set(self.agSelectMassSet.checkedAction().text())
         if self.teSequence.toPlainText():
             self.calculate_protein_mass()
             self.calculate_mod_mass()
@@ -573,17 +569,14 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.chPngase.setEnabled(True)
         self.sbDisulfides.setMaximum(self._protein.amino_acid_composition["C"] / 2)
         self.teSequence.setStyleSheet("QTextEdit { background-color: rgb(240, 251, 240) }")
-        if self._mass_set == "AtomsMonoisotopic":
-            self._protein_mass = self._protein.monoisotopic_mass
-        else:
-            self._protein_mass = self._protein.average_mass
+        self._protein_mass = self._protein.mass
         self.lbMassProtein.setText("{:,.2f}".format(self._protein_mass))
         self.lbMassMods.setText("{:,.2f}".format(self._known_mods_mass))
         self.lbMassTotal.setText("{:,.2f}".format(self._protein_mass + self._known_mods_mass))
         return True
 
 
-    def calculate_mod_mass(self):
+    def calculate_mod_mass(self, return_values=""):
         """
         Calculate the mass of known modifications.
 
@@ -591,7 +584,10 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self._known_mods_mass to the mass of known modifications
             updates the value of self.lbMassProtein, self.lbMassMods and self.lbMassTotal
 
-        :return: list of (name, mass, min count, max count, include in polymer search) tuples
+        :param return_values: influences the return value (see below)
+        :return: if return_values is "all": list of (checked, name, composition, min count,
+                                                     max count, include in polymer search) tuples
+                 otherwise list of (name, mass, min count, max count, include in polymer search) tuples
         """
 
         self._known_mods_mass = 0
@@ -601,27 +597,27 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         for row_id in range(self.tbMonomers.rowCount()):
             ch = self.tbMonomers.cellWidget(row_id, 0).findChild(QCheckBox)
             name = self.tbMonomers.item(row_id, 1).text()
+            composition = self.tbMonomers.item(row_id, 2).text()
             min_count = self.tbMonomers.cellWidget(row_id, 3).value()
             max_count = self.tbMonomers.cellWidget(row_id, 4).value()
             is_poly = self.tbMonomers.cellWidget(row_id, 5).findChild(QCheckBox).isChecked()
-            if ch.isChecked():
-                composition = self.tbMonomers.item(row_id, 2).text()
-                monomer_mass = 0
-                try:  # 'composition' could be a mass
-                    monomer_mass = float(composition)
-                except ValueError:  # 'composition' could be a formula
-                    try:
-                        monomer_formula = mass_tools.Formula(composition)
-                        if self._mass_set == "AtomsMonoisotopic":
-                            monomer_mass = monomer_formula.monoisotopic_mass
-                        else:
-                            monomer_mass = monomer_formula.average_mass
-                    except ValueError:  # 'composition' is invalid
-                        QMessageBox.critical(self,
-                                             "Error",
-                                             "Invalid formula in row {:d}: {}".format(row_id + 1, composition))
-                self._known_mods_mass += monomer_mass * min_count
-                result.append((name, monomer_mass, min_count, max_count, is_poly))
+            if return_values == "all":
+                result.append((ch.isChecked(), name, composition, min_count, max_count, is_poly))
+            else:
+                if ch.isChecked():
+                    mass = 0
+                    try:  # 'composition' could be a mass
+                        mass = float(composition)
+                    except ValueError:  # 'composition' could be a formula
+                        try:
+                            monomer_formula = mass_tools.Formula(composition)
+                            mass = monomer_formula.mass
+                        except ValueError:  # 'composition' is invalid
+                            QMessageBox.critical(self,
+                                                 "Error",
+                                                 "Invalid formula in row {:d}: {}".format(row_id + 1, composition))
+                    self._known_mods_mass += mass * min_count
+                    result.append((name, mass, min_count, max_count, is_poly))
 
         self.lbMassProtein.setText("{:,.2f}".format(self._protein_mass))
         self.lbMassMods.setText("{:,.2f}".format(self._known_mods_mass))
@@ -635,6 +631,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         :return: nothing
         """
+
+        self.calculate_protein_mass()
 
         # calculate required input if a single mass was entered (i.e., no peak list was loaded)
         if self.rbSingleMass.isChecked():
@@ -719,26 +717,33 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         print(", ".join(monomers_in_library))
 
         # stage 1: monomer search
-        self._all_hits = modification_search.find_monomers(
+        self._monomer_hits = modification_search.find_monomers(
             modifications,
             list(unknown_masses),
             mass_tolerance=mass_tolerance,
             explained_mass=explained_mass)
 
-        print("Monomer search DONE!!!")
+        print("Monomer search DONE!")
         # the modification search was not successful
-        if self._all_hits is None:
+        if self._monomer_hits is None:
             QMessageBox.critical(self, "Error", "Combinatorial search was unsuccessful.")
 
         # add the minimum monomer counts to the result data frame
         for name, _, min_count, _, _ in monomers:
-            self._all_hits[name] += min_count
+            self._monomer_hits[name] += min_count
 
         # stage 2: polymer search
         if polymers:
-            self._all_hits = modification_search.find_polymers(self._all_hits,
-                                                               glycan_library=df_polymers,
-                                                               monomers=monomers_in_library)
+            self._polymer_hits = modification_search.find_polymers(self._monomer_hits,
+                                                                   glycan_library=df_polymers,
+                                                                   monomers=monomers_in_library)
+        print("Polymer search DONE!")
+        # self._monomer_hits.to_csv("csv/monomer_hits.csv")
+        # self._polymer_hits.to_csv("csv/polymer_hits.csv")
+
+        if self._monomer_hits is not None:
+            self.set_result_tree(show_monomers=True)
+            # self.draw_annotated_plot()  TODO
 
 
     def draw_naked_plot(self):
@@ -761,9 +766,11 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         axes.yaxis.set_ticks_position("left")
         axes.xaxis.set_ticks_position("bottom")
         axes.tick_params(direction="out")
+        self.fig.tight_layout(pad=0)  # TODO does not work
         self.show_deltas1()
         self.show_deltas2()
         self.canvas.draw()
+
 
 
     def draw_annotated_plot(self):
@@ -789,10 +796,10 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         axes.xaxis.set_ticks_position("bottom")
         axes.tick_params(direction="out")
 
-        for i in self._all_hits.index.levels[0]:
+        for i in self._monomer_hits.index.levels[0]:
             x = self._exp_mass_data.loc[i, "Average Mass"]
             y = self._exp_mass_data.loc[i, "Relative Abundance"]
-            first_hit = self._all_hits.loc[i].iloc[0]
+            first_hit = self._monomer_hits.loc[i].iloc[0]
             s = "%.2f" % x
             s += "(%.1f %s)\n" % (first_hit["ppm"], "ppm")
             axes.annotate(s,
@@ -809,70 +816,67 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.canvas.draw()
 
 
-    def set_result_tree(self):
-        """
-        Displays results from the combinatorial search in the result tree.
+    def set_result_tree(self, show_monomers=True):
+        try:
+            self.sbSingleMass.setValue(float(self.lwPeaks.currentItem().text()))
+        except AttributeError:  # occurs when second peak file is loaded
+            pass
 
-        :return: nothing
-        """
-        number_not_annotated = len(self._exp_mass_data) - len(self._all_hits.index.levels[0])
-        self.chRemoveUnannotated.setText("Show unannotated (%d out of %d not annotated)"
-                                         % (number_not_annotated, len(self._exp_mass_data)))
-        self.twResults.clear()
+        if self._monomer_hits is not None:
+            self.twResults.clear()
+            self.twResults.setUpdatesEnabled(False)
 
-        # set column headers
-        header_labels = ["Exp. Mass", "%"]
-        header_labels.extend(self._all_hits.columns)
-        self.twResults.setColumnCount(len(header_labels))
-        self.twResults.setHeaderLabels(header_labels)
-
-        # fill the tree
-        if self.chRemoveUnannotated.isChecked():
-            iterindex = self._exp_mass_data.index
-        else:
-            iterindex = self._all_hits.index.levels[0]
-        fcolor = QColor(255, 185, 200)
-        for mass_index in iterindex:
-            # generate root item (experimental mass, relative abundance)
-            root_item = SortableTreeWidgetItem(self.twResults)
-            root_item.setText(0, "{:.2f}".format(self._exp_mass_data.loc[mass_index]["Average Mass"]))
-            root_item.setTextAlignment(0, AlignRight)
-            root_item.setText(1, "{:.1f}".format(self._exp_mass_data.loc[mass_index]["Relative Abundance"]))
-            root_item.setTextAlignment(1, AlignRight)
-
-            if mass_index not in self._all_hits.index.levels[0]:
-                root_item.setBackground(0, QBrush(fcolor))
-                root_item.setBackground(1, QBrush(fcolor))  # i.e., for both columns
+            missing_color = QColor(255, 185, 200)
+            if show_monomers:
+                indices = [self.lwPeaks.currentRow()]
+                df_hit = self._monomer_hits
+                self.chOnlyPolymerResults.setEnabled(True)
             else:
-                # generate child items, one per possible combination of modifications
-                for _, hit in self._all_hits.loc[mass_index].iterrows():
-                    child_item = SortableTreeWidgetItem(root_item)
-                    mods = hit[:-5].index
-                    for j, mod in enumerate(mods):
-                        child_item.setText(j + 2, "{:d}".format(hit[mod]))
-                        child_item.setTextAlignment(j + 2, AlignHCenter)
-                    child_item.setText(len(mods) + 2, "{:.2f}".format(hit["Exp. Mass"]))
-                    child_item.setTextAlignment(len(mods) + 2, AlignRight)
-                    child_item.setText(len(mods) + 3, "{:.2f}".format(hit["Theo. Mass"]))
-                    child_item.setTextAlignment(len(mods) + 3, AlignRight)
-                    child_item.setText(len(mods) + 4, "{:.2f}".format(hit["Da."]))
-                    child_item.setTextAlignment(len(mods) + 4, AlignRight)
-                    child_item.setText(len(mods) + 5, "{:.1f}".format(hit["ppm"]))
-                    child_item.setTextAlignment(len(mods) + 5, AlignRight)
-        self.twResults.expandAll()
-        self.twResults.header().setSectionResizeMode(QHeaderView.ResizeToContents)
-        self.twResults.header().setStretchLastSection(False)
+                indices = self._polymer_hits.index.levels[0]
+                df_hit = self._polymer_hits
+                self.chOnlyPolymerResults.setEnabled(False)
+
+            # set column headers
+            header_labels = ["Exp. Mass", "%"]
+            header_labels.extend(df_hit.columns)
+            self.twResults.setColumnCount(len(header_labels))
+            self.twResults.setHeaderLabels(header_labels)
+
+            for mass_index in indices:
+                # generate root item (experimental mass, relative abundance)
+                root_item = SortableTreeWidgetItem(self.twResults)
+                root_item.setText(0, "{:.2f}".format(self._exp_mass_data.loc[mass_index]["Average Mass"]))
+                root_item.setTextAlignment(0, AlignRight)
+                root_item.setText(1, "{:.1f}".format(self._exp_mass_data.loc[mass_index]["Relative Abundance"]))
+                root_item.setTextAlignment(1, AlignRight)
+
+                if mass_index not in df_hit.index.levels[0]:
+                    root_item.setBackground(0, QBrush(missing_color))
+                    root_item.setBackground(1, QBrush(missing_color))
+                else:
+                    # generate child items, one per possible combination of modifications
+                    for _, hit in df_hit.loc[mass_index].iterrows():
+                        child_item = SortableTreeWidgetItem(root_item)
+
+                        monomers = hit[:df_hit.columns.get_loc("Exp. Mass")].index
+                        for j, monomer in enumerate(monomers):
+                            child_item.setText(2 + j, "{:.0f}".format(hit[monomer]))
+                            child_item.setTextAlignment(2 + j, AlignHCenter)
+
+                        for j, label in enumerate(["Exp. Mass", "Theo. Mass", "Da.", "ppm"]):
+                            child_item.setText(len(monomers) + 2 + j, "{:.2f}".format(hit[label]))
+                            child_item.setTextAlignment(len(monomers) + 2 + j, AlignRight)
+
+                        sites = hit[df_hit.columns.get_loc("ppm")+1:].index
+                        for j, site in enumerate(sites):
+                            child_item.setText(len(monomers) + 6 + j, "{}".format(hit[site]))
+                            child_item.setTextAlignment(len(monomers) + 6 + j, AlignHCenter)
 
 
-    def set_result_text(self, output):
-        """
-        Displays output in the result text browser.
-
-        :param output: The contents of the text edit.
-        :return: nothing
-        """
-        self.showGlycans.clear()
-        self.showGlycans.setText(str(output))
+            self.twResults.expandAll()
+            self.twResults.header().setSectionResizeMode(QHeaderView.ResizeToContents)
+            self.twResults.header().setStretchLastSection(False)
+            self.twResults.setUpdatesEnabled(True)
 
 
     # def selection_plot(self):
@@ -973,7 +977,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         :return: nothing
         """
         settings_filename = QFileDialog.getSaveFileName(self,
-                                                        "Save Settings",
+                                                        "Save settings",
                                                         self._path,
                                                         "ModFinder settings (*.mofi)")[0]
         self._path = os.path.split(settings_filename)[0]
@@ -1034,7 +1038,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
             self._mass_filename = settings["mass filename"]
 
-            self._all_hits = None
+            self._monomer_hits = None
+            self._polymer_hits = None
             self.twResults.clear()
             self.fig.clear()
             if settings["exp mass data"] is not None:
@@ -1060,25 +1065,147 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self.calculate_mod_mass()
 
 
-    def run_modification_search(self):
+    def save_monomers(self):
         """
-        Prepares everysthing for the main algorithm, runs the combinatorial search,
-        and displays the results (annotated peak plot, tree and text browser).
+        Export the contents of the monomer table.
 
         :return: nothing
         """
-        self.calculate_protein_mass()
-        self.sample_modifications()
-        # if self._all_hits is not None:
-        #     self.draw_annotated_plot()
-        #     outstring = ["Protein Mass Assessment:",
-        #                  "Disulfide bonds:\t%s" % self.sbDisulfides.value(),
-        #                  "PNGaseF:\t\t%s" % self.chPngase.isChecked(),
-        #                  "Protein sum formula:\t%s" % self._protein.formula,
-        #                  "Average mass:\t%f Da" % self._protein_mass, "%s\nMASS SEARCH:" % (50 * "-"),
-        #                  self._all_hits.round(2).set_index("Exp. Mass").to_string(max_cols=999)]
-        #     self.set_result_text("\n".join(outstring))
-        #     self.set_result_tree()
+        filename = QFileDialog.getSaveFileName(self,
+                                               "Export monomers",
+                                               self._path,
+                                               "Comma-separated value (*.csv)")[0]
+        self._path = os.path.split(filename)[0]
+        if filename:
+            if not filename.endswith(".csv"):
+                filename += ".csv"
+            df_monomers = pd.DataFrame(self.calculate_mod_mass(return_values="all"),
+                                       columns=["Checked", "Name", "Composition", "Min", "Max", "Poly?"])
+            try:
+                df_monomers.to_csv(filename, index=False)
+            except IOError:
+                QMessageBox.critical(self, "Error", "Error when writing to " + filename + IOError.args)
+
+
+    def save_polymers(self):
+        """
+        Export the contents of the polymer table.
+
+        :return: nothing
+        """
+        filename = QFileDialog.getSaveFileName(self,
+                                               "Export polymers",
+                                               self._path,
+                                               "Comma-separated value (*.csv)")[0]
+        self._path = os.path.split(filename)[0]
+        if filename:
+            if not filename.endswith(".csv"):
+                filename += ".csv"
+
+            polymer_data = []
+            for row_id in range(self.tbPolymers.rowCount()):
+                ch = self.tbPolymers.cellWidget(row_id, 0).findChild(QCheckBox)
+                name = self.tbPolymers.item(row_id, 1).text()
+                composition = self.tbPolymers.item(row_id, 2).text()
+                sites = self.tbPolymers.item(row_id, 3).text()
+                score = self.tbPolymers.cellWidget(row_id, 4).value()
+
+                polymer_data.append((ch.isChecked(), name, composition, sites, score))
+
+            df_polymers = pd.DataFrame(polymer_data,
+                                       columns=["Checked", "Name", "Composition", "Sites", "Score"])
+            try:
+                df_polymers.to_csv(filename, index=False)
+            except IOError:
+                QMessageBox.critical(self, "Error", "Error when writing to " + filename + IOError.args)
+
+
+    def load_monomers(self):
+        """
+        Import the contents of the monomer table.
+        Columns labelled "Name" and "Composition" must exists in the input file.
+        The following columns are optional and are filled with the indicated default values if missing:
+        "Checked" (False), "Min" (0), "Max" (-1, i.e., inf) and "Poly?" (False).
+
+        :return: nothing
+        """
+        filename = QFileDialog.getOpenFileName(self,
+                                               "Import monomers",
+                                               self._path,
+                                               "Excel files (*.xlsx *.xls);; CSV files (*.csv *.txt)")[0]
+        self._path = os.path.split(filename)[0]
+        ext = os.path.splitext(filename)[1]
+        if ext in [".xls", ".xlsx"]:
+            df_monomers = pd.read_excel(filename)
+        elif ext in [".txt", ".csv"]:
+            df_monomers = pd.read_csv(filename)
+        else:
+            return
+
+        if "Name" not in df_monomers.columns:
+            QMessageBox.warning(self, "Warning", "Column 'Name' missing in monomer input. No data imported.")
+            return
+        if "Composition" not in df_monomers.columns:
+            QMessageBox.warning(self, "Warning", "Column 'Composition' missing in monomer input. No data imported.")
+            return
+
+        if "Checked" not in df_monomers.columns:
+            df_monomers["Checked"] = False
+        if "Min" not in df_monomers.columns:
+            df_monomers["Min"] = 0
+        if "Max" not in df_monomers.columns:
+            df_monomers["Max"] = -1
+        if "Poly?" not in df_monomers.columns:
+            df_monomers["Poly?"] = False
+
+        self.table_clear(self.tbMonomers)
+        for row_id, data in df_monomers.iterrows():
+            self._monomer_table_create_row(row_id, data["Checked"], data["Name"], data["Composition"],
+                                           data["Min"], data["Max"], data["Poly?"])
+        self.calculate_mod_mass()
+
+
+    def load_polymers(self):
+        """
+        Import the contents of the polymer table.
+        Columns labelled "Name", "Composition" and "Sites" must exists in the input file.
+        The following columns are optional and are filled with the indicated default values if missing:
+        "Checked" (False) and "Score" (0.0).
+
+        :return: nothing
+        """
+        filename = QFileDialog.getOpenFileName(self,
+                                               "Import polymers",
+                                               self._path,
+                                               "Excel files (*.xlsx *.xls);; CSV files (*.csv *.txt)")[0]
+        self._path = os.path.split(filename)[0]
+        ext = os.path.splitext(filename)[1]
+        if ext in [".xls", ".xlsx"]:
+            df_polymers = pd.read_excel(filename)
+        elif ext in [".txt", ".csv"]:
+            df_polymers = pd.read_csv(filename)
+        else:
+            return
+
+        if "Name" not in df_polymers.columns:
+            QMessageBox.warning(self, "Warning", "Column 'Name' missing in polymer input. No data imported.")
+            return
+        if "Composition" not in df_polymers.columns:
+            QMessageBox.warning(self, "Warning", "Column 'Composition' missing in polymer input. No data imported.")
+            return
+        if "Sites" not in df_polymers.columns:
+            QMessageBox.warning(self, "Warning", "Column 'Sites' missing in polymer input. No data imported.")
+            return
+
+        if "Checked" not in df_polymers.columns:
+            df_polymers["Checked"] = False
+        if "Score" not in df_polymers.columns:
+            df_polymers["Score"] = 0.0
+
+        self.table_clear(self.tbPolymers)
+        for row_id, data in df_polymers.iterrows():
+            self._polymer_table_create_row(row_id, data["Checked"], data["Name"], data["Composition"],
+                                           data["Sites"], data["Score"])
 
 
 if __name__ == "__main__":

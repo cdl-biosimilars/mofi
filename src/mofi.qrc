@@ -1,5 +1,7 @@
 <RCC>
   <qresource prefix="mofi resource">
+    <file>images/Open.png</file>
+    <file>images/Save.png</file>
     <file>images/InsertRowBelow.png</file>
     <file>images/InsertRowAbove.png</file>
     <file>images/DeleteRow.png</file>

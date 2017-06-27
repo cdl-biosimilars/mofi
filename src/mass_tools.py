@@ -122,13 +122,13 @@ class Formula:
     """
     A molecular formula comprising the elements C, H, N, O, P and S.
 
-    Members:
-        average_mass
-        monoisotopic_mass: Those are calculated when the Formula is generated or the atom count is changed
-                           using the current settings from the configure module.
+    Properties:
+        mass: Calculated when the Formula is generated or the atom count is changed
+              using the current settings from the configure module.
 
     Protected members:
         self._composition: A pandas.Series
+        self._mass
     """
 
     def __init__(self, composition=None):
@@ -167,34 +167,26 @@ class Formula:
     
     def _update_masses(self):
         """
-        Update the average and monoisotopic mass from the composition.
+        Update the mass from the composition.
         Raises a ValueError if an unknown atom symbol is found.
 
         Changes:
-            self._average_mass
-            self._monoisotopic_mass
+            self._mass
 
         :return: nothing
         """
 
-        self._average_mass = 0
-        self._monoisotopic_mass = 0
+        self._mass = 0
         try:
             for a in self._composition.index:
-                self._average_mass += self._composition[a] * configure.average_masses[a]
-                self._monoisotopic_mass += self._composition[a] * configure.monoisotopic_masses[a]
+                self._mass += self._composition[a] * configure.current_mass_set[a]
         except KeyError as e:
             raise ValueError("Atom symbol '" + e.args[0] + "' unknown.")
 
     @property
-    def average_mass(self):
+    def mass(self):
         self._update_masses()
-        return self._average_mass
-
-    @property
-    def monoisotopic_mass(self):
-        self._update_masses()
-        return self._monoisotopic_mass
+        return self._mass
 
     @property
     def composition(self):
@@ -215,10 +207,3 @@ class Formula:
             else:
                 result.append("{:s}{:d}".format(element, count))
         return " ".join(result)
-
-
-# if __name__ == "__main__":
-#     import sequence_tools
-#     print(sum(
-#         [Formula(sequence_tools.amino_acid_compositions["G"]),
-#          Formula(sequence_tools.amino_acid_compositions["A"])]))

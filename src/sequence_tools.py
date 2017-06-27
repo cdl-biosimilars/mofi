@@ -141,8 +141,7 @@ class Protein:
 
         Members:
             n_sites
-            average_mass
-            monoisotopic_mass
+            mass
             amino_acid_composition
             formula
     """
@@ -160,8 +159,7 @@ class Protein:
         else:
             self.n_sites = find_glycosylation_sites(sequence)[0]
         self.formula = mass_tools.Formula(get_sequence_atoms(sequence, chains, disulfides))
-        self.average_mass = self.formula.average_mass
-        self.monoisotopic_mass = self.formula.monoisotopic_mass
+        self.mass = self.formula.mass
         self.amino_acid_composition = {}
         for a in amino_acid_names:
             self.amino_acid_composition[a] = sequence.count(a)
