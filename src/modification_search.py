@@ -233,6 +233,8 @@ def find_polymers(combinations, glycan_library, monomers):
         .set_index(pd.MultiIndex.from_tuples(df_glycan_combinations["Monomers"], names=monomers)) \
         .sort_index() \
         .drop("Monomers", 1)
+    df_glycan_combinations["Score"] = df_glycan_combinations \
+        .apply(lambda row: np.prod(glycan_library.loc[row]["Score"]) / (100 ** len(df_glycan_combinations.columns)), axis=1)
     # print(df_glycan_combinations)
 
     # df_found_polymers: combinations with monomer composition as multiindex, with additional columns for
@@ -245,7 +247,7 @@ def find_polymers(combinations, glycan_library, monomers):
         .join(df_glycan_combinations, how="inner")
     # combinations.to_csv("csv/df_combinations.csv")
     # df_glycan_combinations.to_csv("csv/df_polymers.csv")
-    df_found_polymers.to_csv("csv/df_found_polymers.csv")
+    # df_found_polymers.to_csv("csv/df_found_polymers.csv")
 
     return df_found_polymers \
         .reset_index(df_found_polymers.index.names) \

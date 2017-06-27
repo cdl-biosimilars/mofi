@@ -1,9 +1,8 @@
 #! python
 
-# Some commands for UI converting and freezing that need to be documented:
-
-# Converting .ui to .py
-# pyside-uic ModFinder_UI.ui -o ModFinder_UI.py
+# Important shell commands:
+# Converting the GUI:    pyuic5 ModFinder_UI.ui > ModFinder_UI.py
+# Converting resources:  pyrcc5 mofi.qrc > mofi_rc.py
 
 # Freezing to .exe:
 # change self._path in config.ini to something useful ('C:/'?).
@@ -44,7 +43,6 @@ from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as FigureCanva
 
 
 from matplotlib.figure import Figure
-
 
 import configure
 import mass_tools
@@ -227,6 +225,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         min_spinbox.setMinimum(0)
         min_spinbox.setFrame(False)
         min_spinbox.setValue(min_count)
+        min_spinbox.setStyleSheet(configure.spin_box_flat_style)
         # noinspection PyUnresolvedReferences
         min_spinbox.valueChanged.connect(self.calculate_mod_mass)
         self.tbMonomers.setCellWidget(row_id, 3, min_spinbox)
@@ -236,6 +235,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         max_spinbox.setSpecialValueText("inf")
         max_spinbox.setFrame(False)
         max_spinbox.setValue(max_count)
+        max_spinbox.setStyleSheet(configure.spin_box_flat_style)
         self.tbMonomers.setCellWidget(row_id, 4, max_spinbox)
 
         monomer_checkbox = QCheckBox()
@@ -282,13 +282,14 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         self.tbPolymers.setItem(row_id, 3, QTableWidgetItem(sites))
 
-        abundance_spinbox = QDoubleSpinBox()
-        abundance_spinbox.setMinimum(0)
-        abundance_spinbox.setMaximum(100)
-        abundance_spinbox.setSingleStep(.1)
-        abundance_spinbox.setFrame(False)
-        abundance_spinbox.setValue(abundance)
-        self.tbPolymers.setCellWidget(row_id, 4, abundance_spinbox)
+        score_spinbox = QDoubleSpinBox()
+        score_spinbox.setMinimum(0)
+        score_spinbox.setMaximum(100)
+        score_spinbox.setSingleStep(.1)
+        score_spinbox.setFrame(False)
+        score_spinbox.setValue(abundance)
+        score_spinbox.setStyleSheet(configure.double_spin_box_flat_style)
+        self.tbPolymers.setCellWidget(row_id, 4, score_spinbox)
 
 
     def table_insert_row(self, table_widget, above=True):

@@ -486,9 +486,6 @@
                  <height>0</height>
                 </size>
                </property>
-               <property name="alternatingRowColors">
-                <bool>true</bool>
-               </property>
                <property name="selectionMode">
                 <enum>QAbstractItemView::ContiguousSelection</enum>
                </property>
@@ -561,9 +558,6 @@
                  <width>400</width>
                  <height>0</height>
                 </size>
-               </property>
-               <property name="alternatingRowColors">
-                <bool>true</bool>
                </property>
                <property name="selectionMode">
                 <enum>QAbstractItemView::ContiguousSelection</enum>

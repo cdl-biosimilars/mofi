@@ -77,3 +77,41 @@ def read_default_libraries(subdir):
 
 default_monomer_libraries = read_default_libraries("monomers")
 default_polymer_libraries = read_default_libraries("polymers")
+
+double_spin_box_flat_style = """
+    QDoubleSpinBox::up-button {
+        background: white
+    }
+    QDoubleSpinBox::up-arrow {
+        image: url(:/mofi resource/images/UpArrow.png);
+        width: 7px;
+        height: 9px
+    }
+    QDoubleSpinBox::down-button {
+        background: white
+    }
+    QDoubleSpinBox::down-arrow {
+        image: url(:/mofi resource/images/DownArrow.png);
+        width: 7px;
+        height: 7px
+    }
+    """
+
+spin_box_flat_style = """
+    QSpinBox::up-button {
+        background: white
+    }
+    QSpinBox::up-arrow {
+        image: url(:/mofi resource/images/UpArrow.png);
+        width: 7px;
+        height: 9px
+    }
+    QSpinBox::down-button {
+        background: white
+    }
+    QSpinBox::down-arrow {
+        image: url(:/mofi resource/images/DownArrow.png);
+        width: 7px;
+        height: 7px
+    }
+    """
