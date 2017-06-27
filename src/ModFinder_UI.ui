@@ -942,9 +942,6 @@
           <property name="sizeAdjustPolicy">
            <enum>QAbstractScrollArea::AdjustToContents</enum>
           </property>
-          <property name="alternatingRowColors">
-           <bool>true</bool>
-          </property>
          </widget>
         </item>
         <item>
@@ -1191,7 +1188,6 @@
     </item>
    </layout>
    <zorder></zorder>
-   <zorder>verticalLayoutWidget</zorder>
    <zorder>line_2</zorder>
    <zorder>line_3</zorder>
   </widget>

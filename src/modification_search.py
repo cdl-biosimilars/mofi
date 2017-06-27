@@ -193,8 +193,7 @@ def get_monomers_from_library(glycan_library):
                 count = 1
             rows.append([name, monomer, count])
     df_monomers = pd.DataFrame(rows, columns=["Glycan", "Monomer", "Count"])
-    result = sorted(df_monomers["Monomer"].unique())
-    return result
+    return list(df_monomers["Monomer"].unique())
 
 
 def find_polymers(combinations, glycan_library, monomers):

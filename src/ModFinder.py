@@ -33,6 +33,7 @@ from qtpy.QtCore import Qt
 AlignHCenter = qtpy.QtCore.Qt.AlignHCenter
 AlignRight = qtpy.QtCore.Qt.AlignRight
 
+import numpy as np
 import pandas as pd
 pd.set_option('display.max_rows', 5000)
 
@@ -40,6 +41,7 @@ import matplotlib
 matplotlib.use("Qt5Agg")
 from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as FigureCanvas,
                                                 NavigationToolbar2QT as NavigationToolbar)
+from matplotlib.backend_bases import PickEvent
 
 
 from matplotlib.figure import Figure
@@ -140,11 +142,12 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         # set up the plot
         layout = QVBoxLayout(self.spectrumView)
-        self.fig = Figure((5.0, 3.0), dpi=100, frameon=False, tight_layout=True, edgecolor="white")
+        self.fig = Figure(dpi=100, frameon=False, tight_layout={"pad": 0}, edgecolor="white")
         self.canvas = FigureCanvas(self.fig)
         self.canvas.setParent(self.spectrumView)
         layout.addWidget(self.canvas)
-        layout.addWidget(NavigationToolbar(self.canvas, self.spectrumView))  # TODO: vertical?
+        # layout.addWidget(NavigationToolbar(self.canvas, self.spectrumView))  # TODO: vertical?
+        self.peak_lines = None
 
         # init the monomer table and associated buttons
         self.tbMonomers.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
@@ -476,7 +479,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self._exp_mass_data = mass_data
             self.lwPeaks.clear()
             self.twResults.clear()
-            self.fig.clear()
             self._monomer_hits = None
             self._polymer_hits = None
             self.lwPeaks.addItems(["{:.2f}".format(i) for i in self._exp_mass_data["Average Mass"]])
@@ -665,7 +667,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             modifications.append((name, mass, max_count - min_count))
             if is_poly:
                 monomers_for_polymer_search.append(name)
-        monomers_for_polymer_search.sort()
 
         # prepare list of polymers for search stage 2
         polymers = {}
@@ -685,7 +686,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             monomers_in_library = []
             df_polymers = pd.DataFrame()
 
-        if monomers_for_polymer_search != monomers_in_library:
+        if sorted(monomers_for_polymer_search) != sorted(monomers_in_library):
             monomers_only_checked = set(monomers_for_polymer_search) - set(monomers_in_library)
             monomers_only_in_library = set(monomers_in_library) - set(monomers_for_polymer_search)
             error_message = []
@@ -737,7 +738,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         if polymers:
             self._polymer_hits = modification_search.find_polymers(self._monomer_hits,
                                                                    glycan_library=df_polymers,
-                                                                   monomers=monomers_in_library)
+                                                                   monomers=monomers_for_polymer_search)
         print("Polymer search DONE!")
         # self._monomer_hits.to_csv("csv/monomer_hits.csv")
         # self._polymer_hits.to_csv("csv/polymer_hits.csv")
@@ -747,6 +748,24 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             # self.draw_annotated_plot()  TODO
 
 
+    def pick_peak(self, event):
+        """
+        If the user clicks on a peak of the spectrum, color this peak in red and select
+        the corresponding mass in the list widget.
+
+        :param event: PickEvent from the canvas
+        :return: nothing
+        """
+        peak_index = event.ind[0]
+        self.lwPeaks.setCurrentRow(peak_index)
+
+        selected_peaks = np.zeros(len(self._exp_mass_data), dtype=int)
+        normal_selected_color = np.array([[0, 0, 0, 1.0], [1, 0, 0, 1.0]])
+        selected_peaks[peak_index] = 1
+        event.artist.set_color(normal_selected_color[selected_peaks])
+        self.canvas.draw()
+
+
     def draw_naked_plot(self):
         """
         Show a mass spectrum after loading a peak list (i.e., without annotations).
@@ -754,24 +773,26 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         :return: nothing
         """
 
+        self.fig.clear()
         axes = self.fig.add_subplot(111)
-        axes.vlines(self._exp_mass_data["Average Mass"], 0,
-                    self._exp_mass_data["Relative Abundance"], lw=1, picker=10)
-        axes.axhline(0, c="k", lw=1)
+        self.peak_lines = axes.vlines(x=self._exp_mass_data["Average Mass"],
+                                      ymin=0,
+                                      ymax=self._exp_mass_data["Relative Abundance"],
+                                      linewidth=1,
+                                      picker=5)
         axes.set_ylim(0, 115)
-        axes.set_xlabel("Mass (Da.)")
+        axes.set_xlabel("Mass (Da)")
         axes.set_ylabel("Relative Abundance (%)")
-        axes.set_title(self._mass_filename, fontsize=6)
         axes.spines["right"].set_visible(False)
         axes.spines["top"].set_visible(False)
         axes.yaxis.set_ticks_position("left")
         axes.xaxis.set_ticks_position("bottom")
         axes.tick_params(direction="out")
-        self.fig.tight_layout(pad=0)  # TODO does not work
+        self.fig.canvas.mpl_connect("pick_event", self.pick_peak)
         self.show_deltas1()
         self.show_deltas2()
         self.canvas.draw()
-
+        print(self.peak_lines)
 
 
     def draw_annotated_plot(self):
@@ -818,9 +839,15 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
 
     def set_result_tree(self, show_monomers=True):
-        try:
+        try:  # to set the value of the single mass calculation spinbox
             self.sbSingleMass.setValue(float(self.lwPeaks.currentItem().text()))
         except AttributeError:  # occurs when second peak file is loaded
+            pass
+
+        try:  # to highlight the peak that belongs to the selected mass
+            # noinspection PyTypeChecker
+            self.pick_peak(PickEvent("", None, None, self.peak_lines, ind=[self.lwPeaks.currentRow()]))
+        except AttributeError:  # occurs when peak file is loaded
             pass
 
         if self._monomer_hits is not None:
@@ -1042,7 +1069,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self._monomer_hits = None
             self._polymer_hits = None
             self.twResults.clear()
-            self.fig.clear()
             if settings["exp mass data"] is not None:
                 self._exp_mass_data = settings["exp mass data"]
                 self.lwPeaks.clear()
