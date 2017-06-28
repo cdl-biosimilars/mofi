@@ -15,7 +15,7 @@ import re
 from itertools import product
 
 
-def find_monomers(mods, unexplained_masses, mass_tolerance=5.0, explained_mass=0):
+def find_monomers(mods, unexplained_masses, mass_tolerance=5.0, explained_mass=0, progress_bar=None):
     """
     Wrapper function that runs the C function findmods.examine_modifications on a list of target masses.
 
@@ -24,6 +24,7 @@ def find_monomers(mods, unexplained_masses, mass_tolerance=5.0, explained_mass=0
     :param mass_tolerance: tolerance for the unexplained mass in Da; either a single value, which applies to all
                            unexplained_masses, or a list of tolerances (one value per unexplained mass)
     :param explained_mass: mass explained by the protein sequence and known modifications
+    :param progress_bar: a QProgressBar that gets updated during the search
     :return: a dataframe with index (1) Massindex (corresponds to index of experimental mass in input list of peaks),
                                     (2) Isobar (0-based consecutive numbering of found masses) and
                                     (3) Hit (0-based consecutive numbering of hits per Massindex
@@ -48,7 +49,9 @@ def find_monomers(mods, unexplained_masses, mass_tolerance=5.0, explained_mass=0
             current_tolerance = mass_tolerance[mass_index]
         except TypeError:
             current_tolerance = mass_tolerance
-        print(mass_index)
+
+        if progress_bar is not None:
+            progress_bar.setValue(int(mass_index / (len(unexplained_masses) - 1) * 100))
         result = findmods.examine_modifications(sorted_mods, unexplained_mass, current_tolerance)
 
         # (a) transform result to combs_per_mass.
@@ -196,17 +199,21 @@ def get_monomers_from_library(glycan_library):
     return list(df_monomers["Monomer"].unique())
 
 
-def find_polymers(combinations, glycan_library, monomers):
+def find_polymers(combinations, glycan_library, monomers, progress_bar=None):
     """
-
+    Search a polymer library with the results from a combinatorial monomer search.
 
     :param combinations: dataframe with results from combinatorial search
     :param glycan_library: dataframe containing a glycan library
                            index: glycan names
-                           columns: Composition, Sites, Score
+                           columns: Composition, Sites, Abundance
     :param monomers: list of monomers in the library as returned by get_monomers_from_library
+    :param progress_bar: a QProgressBar that gets updated during the search
     :return: nothing
     """
+
+    if progress_bar is not None:
+        progress_bar.setValue(0)
 
     # mods_per_site: a Series with the glycosylation sites as index and lists of possible glycans as values
     rows = []
@@ -216,12 +223,16 @@ def find_polymers(combinations, glycan_library, monomers):
     mods_per_site = pd.DataFrame(rows, columns=["Sites", "Name"]) \
         .groupby("Sites")["Name"] \
         .apply(list)
+    if progress_bar is not None:
+        progress_bar.setValue(20)
 
     # df_glycan_composition: dataframe with glycans as index and columns "Composition" and "Monomers" (list of counts)
     df_glycan_composition = pd.DataFrame(index=glycan_library.index)
     df_glycan_composition["Monomers"] = glycan_library["Composition"] \
         .apply(_calc_monomer_counts, monomers=monomers)
     # print(df_glycan_composition)
+    if progress_bar is not None:
+        progress_bar.setValue(40)
 
     # df_glycan_combinations: a dataframe with monomers (Hex, HexNAc, ...) as multiindex and one column per site,
     # indicating which glycan composition belongs to a given elemental composition
@@ -232,9 +243,13 @@ def find_polymers(combinations, glycan_library, monomers):
         .set_index(pd.MultiIndex.from_tuples(df_glycan_combinations["Monomers"], names=monomers)) \
         .sort_index() \
         .drop("Monomers", 1)
-    df_glycan_combinations["Score"] = df_glycan_combinations \
-        .apply(lambda row: np.prod(glycan_library.loc[row]["Score"]) / (100 ** len(df_glycan_combinations.columns)), axis=1)
+    df_glycan_combinations["Abundance"] = df_glycan_combinations \
+        .apply(lambda row:
+               np.prod(glycan_library.loc[row]["Abundance"]) / (100 ** (len(df_glycan_combinations.columns) - 1)),
+               axis=1)
     # print(df_glycan_combinations)
+    if progress_bar is not None:
+        progress_bar.setValue(60)
 
     # df_found_polymers: combinations with monomer composition as multiindex, with additional columns for
     # the polymer sites
@@ -247,6 +262,8 @@ def find_polymers(combinations, glycan_library, monomers):
     # combinations.to_csv("csv/df_combinations.csv")
     # df_glycan_combinations.to_csv("csv/df_polymers.csv")
     # df_found_polymers.to_csv("csv/df_found_polymers.csv")
+    if progress_bar is not None:
+        progress_bar.setValue(80)
 
     return df_found_polymers \
         .reset_index(df_found_polymers.index.names) \

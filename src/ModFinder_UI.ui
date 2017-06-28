@@ -41,8 +41,8 @@
           </property>
           <property name="font">
            <font>
-            <family>Courier</family>
-            <pointsize>9</pointsize>
+            <family>DejaVu Sans Mono</family>
+            <pointsize>10</pointsize>
            </font>
           </property>
          </widget>
@@ -590,7 +590,7 @@
                </column>
                <column>
                 <property name="text">
-                 <string>Score</string>
+                 <string>Abun.</string>
                 </property>
                </column>
               </widget>
@@ -942,12 +942,18 @@
           <property name="sizeAdjustPolicy">
            <enum>QAbstractScrollArea::AdjustToContents</enum>
           </property>
+          <property name="selectionMode">
+           <enum>QAbstractItemView::ExtendedSelection</enum>
+          </property>
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="btShowPolymerHits">
+         <widget class="QCheckBox" name="chFilterPolymerHits">
           <property name="text">
-           <string>Show polymer hits</string>
+           <string>Filter polymer hits</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
           </property>
          </widget>
         </item>
@@ -1034,7 +1040,7 @@
              <property name="sizeHint" stdset="0">
               <size>
                <width>20</width>
-               <height>40</height>
+               <height>30</height>
               </size>
              </property>
             </spacer>
@@ -1079,7 +1085,7 @@
              <property name="sizeHint" stdset="0">
               <size>
                <width>20</width>
-               <height>40</height>
+               <height>30</height>
               </size>
              </property>
             </spacer>
@@ -1127,71 +1133,58 @@
      </widget>
     </item>
     <item>
-     <layout class="QVBoxLayout" name="verticalLayout">
-      <property name="spacing">
-       <number>3</number>
+     <widget class="QTreeWidget" name="twResults">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
       </property>
-      <item>
-       <widget class="QCheckBox" name="chOnlyPolymerResults">
-        <property name="text">
-         <string>Show only monomer combinations with associated polymers</string>
-        </property>
-        <property name="checked">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QTreeWidget" name="twResults">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="minimumSize">
-         <size>
-          <width>0</width>
-          <height>250</height>
-         </size>
-        </property>
-        <property name="styleSheet">
-         <string notr="true">background-color: rgb(214, 214, 214);</string>
-        </property>
-        <property name="alternatingRowColors">
-         <bool>true</bool>
-        </property>
-        <property name="selectionMode">
-         <enum>QAbstractItemView::ExtendedSelection</enum>
-        </property>
-        <property name="uniformRowHeights">
-         <bool>true</bool>
-        </property>
-        <property name="sortingEnabled">
-         <bool>true</bool>
-        </property>
-        <property name="columnCount">
-         <number>0</number>
-        </property>
-        <attribute name="headerCascadingSectionResizes">
-         <bool>true</bool>
-        </attribute>
-        <attribute name="headerHighlightSections">
-         <bool>true</bool>
-        </attribute>
-        <attribute name="headerShowSortIndicator" stdset="0">
-         <bool>true</bool>
-        </attribute>
-       </widget>
-      </item>
-     </layout>
+      <property name="minimumSize">
+       <size>
+        <width>0</width>
+        <height>250</height>
+       </size>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">background-color: rgb(214, 214, 214);</string>
+      </property>
+      <property name="alternatingRowColors">
+       <bool>true</bool>
+      </property>
+      <property name="selectionMode">
+       <enum>QAbstractItemView::ExtendedSelection</enum>
+      </property>
+      <property name="uniformRowHeights">
+       <bool>true</bool>
+      </property>
+      <property name="sortingEnabled">
+       <bool>true</bool>
+      </property>
+      <property name="columnCount">
+       <number>0</number>
+      </property>
+      <attribute name="headerCascadingSectionResizes">
+       <bool>true</bool>
+      </attribute>
+      <attribute name="headerHighlightSections">
+       <bool>true</bool>
+      </attribute>
+      <attribute name="headerShowSortIndicator" stdset="0">
+       <bool>true</bool>
+      </attribute>
+     </widget>
     </item>
    </layout>
    <zorder></zorder>
    <zorder>line_2</zorder>
    <zorder>line_3</zorder>
+   <zorder>twResults</zorder>
   </widget>
   <widget class="QMenuBar" name="menubar">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
    <property name="geometry">
     <rect>
      <x>0</x>
@@ -1239,8 +1232,7 @@
    <addaction name="menuOptions"/>
    <addaction name="menuHelp"/>
   </widget>
-  <widget class="QStatusBar" name="statusbar"/>
-  <widget class="QToolBar" name="toolBar">
+  <widget class="QToolBar" name="tlFile">
    <property name="windowTitle">
     <string>toolBar</string>
    </property>
@@ -1260,6 +1252,7 @@
    <addaction name="separator"/>
    <addaction name="acQuit"/>
   </widget>
+  <widget class="QStatusBar" name="statusbar"/>
   <action name="acHelp">
    <property name="text">
     <string>Help</string>
@@ -1268,33 +1261,6 @@
   <action name="acAbout">
    <property name="text">
     <string>About</string>
-   </property>
-  </action>
-  <action name="acAverageIupac">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="checked">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Average (IUPAC)</string>
-   </property>
-  </action>
-  <action name="acAverageZhang">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Average (Zhang et al.)</string>
-   </property>
-  </action>
-  <action name="acMonoisotopic">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Monoisotopic</string>
    </property>
   </action>
   <action name="acLoadSettings">

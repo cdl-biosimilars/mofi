@@ -26,7 +26,7 @@ import time
 import qtpy
 from qtpy.QtWidgets import (QApplication, QMainWindow, QMenu, QActionGroup, QVBoxLayout, QTableWidgetItem, QCheckBox,
                             QMessageBox, QFileDialog, QTreeWidgetItem, QHeaderView, QSpinBox, QDoubleSpinBox,
-                            QWidget, QHBoxLayout, QAction)
+                            QWidget, QHBoxLayout, QAction, QToolBar, QProgressBar, QLabel, QSizePolicy)
 from qtpy.QtGui import QColor, QBrush
 
 from qtpy.QtCore import Qt
@@ -39,8 +39,7 @@ pd.set_option('display.max_rows', 5000)
 
 import matplotlib
 matplotlib.use("Qt5Agg")
-from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as FigureCanvas,
-                                                NavigationToolbar2QT as NavigationToolbar)
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backend_bases import PickEvent
 
 
@@ -81,11 +80,12 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         super(MainWindow, self).__init__(parent)
         self.setupUi(self)
 
+        # connect signals to slots
         self.acAbout.triggered.connect(self.show_about)
         self.acHelp.triggered.connect(self.show_help)
         self.acLoadSettings.triggered.connect(self.load_settings)
-        self.acOpenFasta.triggered.connect(self.read_fasta_file)
-        self.acOpenPeaks.triggered.connect(self.read_mass_file)
+        self.acOpenFasta.triggered.connect(self.load_fasta_file)
+        self.acOpenPeaks.triggered.connect(self.load_mass_file)
         self.acQuit.triggered.connect(QApplication.instance().quit)
         self.acSaveAnnotation.triggered.connect(self.save_csv)
         self.acSaveSettings.triggered.connect(self.save_settings)
@@ -104,24 +104,34 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.btSaveMonomers.clicked.connect(self.save_monomers)
         self.btSavePolymers.clicked.connect(self.save_polymers)
         self.btUpdateMass.clicked.connect(self.calculate_protein_mass)
-        self.btShowPolymerHits.clicked.connect(lambda: self.set_result_tree(show_monomers=False))
 
         self.cbTolerance.activated.connect(self.choose_tolerance_units)
 
-        self.chDelta1.clicked.connect(self.show_deltas1)
-        self.chDelta2.clicked.connect(self.show_deltas2)
-        self.chOnlyPolymerResults.clicked.connect(lambda: self.set_result_tree(show_monomers=True))
+        self.chDelta1.clicked.connect(self.show_mass_differences)
+        self.chDelta2.clicked.connect(self.show_mass_differences)
+        self.chFilterPolymerHits.clicked.connect(self.set_result_tree)
         self.chPngase.clicked.connect(self.calculate_protein_mass)
 
-        self.lwPeaks.currentItemChanged.connect(lambda: self.set_result_tree(show_monomers=True))
+        self.lwPeaks.itemSelectionChanged.connect(self.set_result_tree)
 
-        self.sbDelta1.valueChanged.connect(self.show_deltas1)
-        self.sbDelta2.valueChanged.connect(self.show_deltas2)
-        self.sbDeltaTolerance.valueChanged.connect(self.check_tolerance)
+        self.sbDelta1.valueChanged.connect(self.show_mass_differences)
+        self.sbDelta2.valueChanged.connect(self.show_mass_differences)
+        self.sbDeltaTolerance.valueChanged.connect(self.show_mass_differences)
         self.sbDisulfides.valueChanged.connect(self.calculate_protein_mass)
 
         self.teSequence.textChanged.connect(
             lambda: self.teSequence.setStyleSheet("QTextEdit { background-color: rgb(255, 225, 225) }"))
+
+        self.menubar.setVisible(False)
+
+        # add toolbars
+        self.tlMassSet = QToolBar(self)
+        self.tlMassSet.setObjectName("tlMassSet")
+        self.addToolBar(Qt.TopToolBarArea, self.tlMassSet)
+        self.tlHelp = QToolBar(self)
+        self.tlHelp.setObjectName("tlHelp")
+        self.tlHelp.addActions([self.acAbout, self.acHelp])
+        self.addToolBar(Qt.TopToolBarArea, self.tlHelp)
 
         # generate mass set selectors from config file
         self.agSelectMassSet = QActionGroup(self.menuAtomicMasses)
@@ -135,18 +145,31 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             ac_select_set.setText(mass_set)
             ac_select_set.setToolTip(configure.mass_sets[mass_set].get("description", ""))
             self.menuAtomicMasses.addAction(ac_select_set)
+            self.tlMassSet.addAction(ac_select_set)
             self.agSelectMassSet.addAction(ac_select_set)
             set_id += 1
         # noinspection PyUnresolvedReferences
         self.agSelectMassSet.triggered.connect(self.choose_mass_set)
 
-        # set up the plot
+        # init statusbar
+        sb_widget = QWidget(self)
+        sb_layout = QHBoxLayout(sb_widget)
+        sb_layout.setContentsMargins(0, 0, 0, 0)
+        sb_widget.setLayout(sb_layout)
+        sb_layout.addWidget(QLabel("Progress:"))
+        self.pbSearchProgress = QProgressBar(self)
+        self.pbSearchProgress.setValue(0)
+        self.pbSearchProgress.setMinimumWidth(300)
+        self.pbSearchProgress.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)
+        sb_layout.addWidget(self.pbSearchProgress)
+        self.statusbar.addPermanentWidget(sb_widget)
+
+        # set up the mass spectrum
         layout = QVBoxLayout(self.spectrumView)
         self.fig = Figure(dpi=100, frameon=False, tight_layout={"pad": 0}, edgecolor="white")
         self.canvas = FigureCanvas(self.fig)
         self.canvas.setParent(self.spectrumView)
         layout.addWidget(self.canvas)
-        # layout.addWidget(NavigationToolbar(self.canvas, self.spectrumView))  # TODO: vertical?
         self.peak_lines = None
 
         # init the monomer table and associated buttons
@@ -176,10 +199,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.choose_tolerance_units()
 
         # initialize private members
-        # these variables completely describe the state of the program
         self._monomer_hits = None  # results from the monomer search
-        self._delta_lines_1 = None  # delta 1 lines in the mass spectrum
-        self._delta_lines_2 = None  # delta 2 lines in the mass spectrum
+        self._delta_lines = [None, None]  # delta lines in the mass spectrum
         self._exp_mass_data = None  # pandas dataframe containing the contents of the mass file
         self._known_mods_mass = 0  # mass of known modification
         self._mass_filename = None  # name of the mass file
@@ -285,14 +306,14 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         self.tbPolymers.setItem(row_id, 3, QTableWidgetItem(sites))
 
-        score_spinbox = QDoubleSpinBox()
-        score_spinbox.setMinimum(0)
-        score_spinbox.setMaximum(100)
-        score_spinbox.setSingleStep(.1)
-        score_spinbox.setFrame(False)
-        score_spinbox.setValue(abundance)
-        score_spinbox.setStyleSheet(configure.double_spin_box_flat_style)
-        self.tbPolymers.setCellWidget(row_id, 4, score_spinbox)
+        abundance_spinbox = QDoubleSpinBox()
+        abundance_spinbox.setMinimum(0)
+        abundance_spinbox.setMaximum(100)
+        abundance_spinbox.setSingleStep(.1)
+        abundance_spinbox.setFrame(False)
+        abundance_spinbox.setValue(abundance)
+        abundance_spinbox.setStyleSheet(configure.double_spin_box_flat_style)
+        self.tbPolymers.setCellWidget(row_id, 4, abundance_spinbox)
 
 
     def table_insert_row(self, table_widget, above=True):
@@ -398,16 +419,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             QMessageBox.about(self, "Help", helpfile.read())
 
 
-    def check_tolerance(self):
-        """
-        Update delta lines in the plot if the corresponding tolerance value has been changed.
-
-        :return: nothing
-        """
-        self.show_deltas1()
-        self.show_deltas1()
-
-
     def choose_tolerance_units(self):
         """
         Adjust the settings of the tolerance spin box when PPM or Da are selected.
@@ -428,7 +439,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self.sbTolerance.setValue(configure.default_ppm)
 
 
-    def read_fasta_file(self):
+    def load_fasta_file(self):
         """
         Opens a FASTA file and displays its contents in the QTextEdit
 
@@ -456,7 +467,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 QMessageBox.warning(self, "Error loading sequence", "Not a valid file format: {}".format(ext))
 
 
-    def read_mass_file(self):
+    def load_mass_file(self):
         """
         Opens a mass list as generated by Thermo BioPharma Finder and display its contents.
 
@@ -675,12 +686,12 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 name = self.tbPolymers.item(row_id, 1).text()
                 composition = self.tbPolymers.item(row_id, 2).text()
                 sites = self.tbPolymers.item(row_id, 3).text()
-                score = self.tbPolymers.cellWidget(row_id, 4).value()
-                polymers[name] = (composition, sites, score)
+                abundance = self.tbPolymers.cellWidget(row_id, 4).value()
+                polymers[name] = (composition, sites, abundance)
 
         if polymers:  # dict contains at least one entry
             df_polymers = pd.DataFrame.from_dict(polymers, orient="index")
-            df_polymers.columns = ["Composition", "Sites", "Score"]
+            df_polymers.columns = ["Composition", "Sites", "Abundance"]
             monomers_in_library = modification_search.get_monomers_from_library(df_polymers)
         else:  # dict remained empty, i.e., there are no polymers
             monomers_in_library = []
@@ -705,7 +716,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                                  "".join(error_message))
             return
 
-        print("PERFORMING COMBINATORIAL SEARCH...")
+        self.statusbar.showMessage("Starting monomer search (stage 1) ...")
         print("Experimental Masses:", self._exp_mass_data["Average Mass"].head(), sep="\n")
         print("Explained mass (protein + known modifications):", explained_mass)
         print("Unknown masses searched:", unknown_masses.head(), sep="\n")
@@ -723,9 +734,10 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             modifications,
             list(unknown_masses),
             mass_tolerance=mass_tolerance,
-            explained_mass=explained_mass)
+            explained_mass=explained_mass,
+            progress_bar=self.pbSearchProgress)
 
-        print("Monomer search DONE!")
+        self.statusbar.showMessage("Monomer search done! Starting polymer search (stage 2) ...")
         # the modification search was not successful
         if self._monomer_hits is None:
             QMessageBox.critical(self, "Error", "Combinatorial search was unsuccessful.")
@@ -739,13 +751,12 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self._polymer_hits = modification_search.find_polymers(self._monomer_hits,
                                                                    glycan_library=df_polymers,
                                                                    monomers=monomers_for_polymer_search)
-        print("Polymer search DONE!")
+            self.statusbar.showMessage("Polymer search DONE!", 5000)
         # self._monomer_hits.to_csv("csv/monomer_hits.csv")
         # self._polymer_hits.to_csv("csv/polymer_hits.csv")
 
         if self._monomer_hits is not None:
-            self.set_result_tree(show_monomers=True)
-            # self.draw_annotated_plot()  TODO
+            self.set_result_tree()
 
 
     def pick_peak(self, event):
@@ -756,12 +767,13 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         :param event: PickEvent from the canvas
         :return: nothing
         """
-        peak_index = event.ind[0]
-        self.lwPeaks.setCurrentRow(peak_index)
+
+        for i in range(self.lwPeaks.count()):
+            self.lwPeaks.item(i).setSelected(i in event.ind)
 
         selected_peaks = np.zeros(len(self._exp_mass_data), dtype=int)
+        selected_peaks[event.ind] = 1
         normal_selected_color = np.array([[0, 0, 0, 1.0], [1, 0, 0, 1.0]])
-        selected_peaks[peak_index] = 1
         event.artist.set_color(normal_selected_color[selected_peaks])
         self.canvas.draw()
 
@@ -789,56 +801,13 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         axes.xaxis.set_ticks_position("bottom")
         axes.tick_params(direction="out")
         self.fig.canvas.mpl_connect("pick_event", self.pick_peak)
-        self.show_deltas1()
-        self.show_deltas2()
-        self.canvas.draw()
-        print(self.peak_lines)
-
-
-    def draw_annotated_plot(self):
-        """
-        Show an annotated mass spectrum after the modification search.
-
-        :return: nothing
-        """
-        self.fig.clear()
-        axes = self.fig.add_subplot(111)
-        axes.vlines(self._exp_mass_data["Average Mass"],
-                    0,
-                    self._exp_mass_data["Relative Abundance"],
-                    lw=1)
-        axes.axhline(0, c="k", lw=1)
-        axes.set_ylim(0, 115)
-        axes.set_xlabel("Mass (Da.)")
-        axes.set_ylabel("Relative Abundance (%)")
-        axes.set_title(self._mass_filename, fontsize=6)
-        axes.spines["right"].set_visible(False)
-        axes.spines["top"].set_visible(False)
-        axes.yaxis.set_ticks_position("left")
-        axes.xaxis.set_ticks_position("bottom")
-        axes.tick_params(direction="out")
-
-        for i in self._monomer_hits.index.levels[0]:
-            x = self._exp_mass_data.loc[i, "Average Mass"]
-            y = self._exp_mass_data.loc[i, "Relative Abundance"]
-            first_hit = self._monomer_hits.loc[i].iloc[0]
-            s = "%.2f" % x
-            s += "(%.1f %s)\n" % (first_hit["ppm"], "ppm")
-            axes.annotate(s,
-                          xy=(x, y),
-                          fontsize=8,
-                          rotation=0,
-                          va="bottom",
-                          ha="left",
-                          bbox=dict(fc=(0.9, 0.9, 0.9, 1), edgecolor="none", pad=0))
-            axes.plot([x], [y], ".", c="orange")
-
-        self.show_deltas1()
-        self.show_deltas2()
+        self.show_mass_differences()
         self.canvas.draw()
 
 
-    def set_result_tree(self, show_monomers=True):
+    def set_result_tree(self):  # TODO document and add clicks on tree
+        selected_rows = [i.row() for i in self.lwPeaks.selectedIndexes()]
+
         try:  # to set the value of the single mass calculation spinbox
             self.sbSingleMass.setValue(float(self.lwPeaks.currentItem().text()))
         except AttributeError:  # occurs when second peak file is loaded
@@ -846,7 +815,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         try:  # to highlight the peak that belongs to the selected mass
             # noinspection PyTypeChecker
-            self.pick_peak(PickEvent("", None, None, self.peak_lines, ind=[self.lwPeaks.currentRow()]))
+            self.pick_peak(PickEvent("", None, None, self.peak_lines, ind=selected_rows))
         except AttributeError:  # occurs when peak file is loaded
             pass
 
@@ -855,14 +824,10 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self.twResults.setUpdatesEnabled(False)
 
             missing_color = QColor(255, 185, 200)
-            if show_monomers:
-                indices = [self.lwPeaks.currentRow()]
-                df_hit = self._monomer_hits
-                self.chOnlyPolymerResults.setEnabled(True)
-            else:
-                indices = self._polymer_hits.index.levels[0]
+            if self.chFilterPolymerHits.isChecked():
                 df_hit = self._polymer_hits
-                self.chOnlyPolymerResults.setEnabled(False)
+            else:
+                df_hit = self._monomer_hits
 
             # set column headers
             header_labels = ["Exp. Mass", "%"]
@@ -870,7 +835,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self.twResults.setColumnCount(len(header_labels))
             self.twResults.setHeaderLabels(header_labels)
 
-            for mass_index in indices:
+            for mass_index in selected_rows:
                 # generate root item (experimental mass, relative abundance)
                 root_item = SortableTreeWidgetItem(self.twResults)
                 root_item.setText(0, "{:.2f}".format(self._exp_mass_data.loc[mass_index]["Average Mass"]))
@@ -885,20 +850,28 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                     # generate child items, one per possible combination of modifications
                     for _, hit in df_hit.loc[mass_index].iterrows():
                         child_item = SortableTreeWidgetItem(root_item)
-
                         monomers = hit[:df_hit.columns.get_loc("Exp. Mass")].index
+
+                        # monomer counts
                         for j, monomer in enumerate(monomers):
                             child_item.setText(2 + j, "{:.0f}".format(hit[monomer]))
                             child_item.setTextAlignment(2 + j, AlignHCenter)
 
+                        # hit properties
                         for j, label in enumerate(["Exp. Mass", "Theo. Mass", "Da.", "ppm"]):
                             child_item.setText(len(monomers) + 2 + j, "{:.2f}".format(hit[label]))
                             child_item.setTextAlignment(len(monomers) + 2 + j, AlignRight)
 
-                        sites = hit[df_hit.columns.get_loc("ppm")+1:].index
-                        for j, site in enumerate(sites):
-                            child_item.setText(len(monomers) + 6 + j, "{}".format(hit[site]))
-                            child_item.setTextAlignment(len(monomers) + 6 + j, AlignHCenter)
+                        if self.chFilterPolymerHits.isChecked():
+                            # polymer composition
+                            sites = hit[df_hit.columns.get_loc("ppm")+1:-1].index
+                            for j, site in enumerate(sites):
+                                child_item.setText(len(monomers) + 6 + j, "{}".format(hit[site]))
+                                child_item.setTextAlignment(len(monomers) + 6 + j, AlignHCenter)
+
+                            # polymer abundance
+                            child_item.setText(len(monomers) + 7 + j, "{:.2f}".format(hit["Abundance"]))
+                            child_item.setTextAlignment(len(monomers) + 7 + j, AlignHCenter)
 
 
             self.twResults.expandAll()
@@ -907,95 +880,31 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self.twResults.setUpdatesEnabled(True)
 
 
-    # def selection_plot(self):
-    #     # COMMENT: Apparently, whis function was intended to annotate only peaks selected in the tree
-    #     self.fig.clear()
-    #     axes = self.fig.add_subplot(111)
-    #     massdf = self._exp_mass_data
-    #     axes.vlines(massdf['Average Mass'], 0,
-    #     massdf['Relative Abundance'], lw=1)
-    #     axes.axhline(0, c='k', lw=1)
-    #     axes.set_ylim(0,115)
-    #     axes.set_xlabel('Mass (Da.)')
-    #     axes.set_ylabel('Relative Abundance (%)')
-    #     axes.set_title(self._mass_filename, fontsize=6)
-    #     axes.spines['right'].set_visible(False)
-    #     axes.spines['top'].set_visible(False)
-    #     axes.yaxis.set_ticks_position('left')
-    #     axes.xaxis.set_ticks_position('bottom')
-    #     axes.tick_params(direction='out')
-    #     selection = self.twResults.selectedItems()
-    #     for sel in selection:
-    #         mass = round(float(sel.parent().text(0)),4)
-    #         r_abundance = round(float(sel.parent().text(1)),4)
-    #         x = mass
-    #         y = r_abundance
-    #         s = '%.2f' % x
-    #         seldict = {}
-    #         for i in range(2,len(self._hlabels)):
-    #             try:
-    #                 sel_value = int(sel.text(i))
-    #             except:
-    #                 sel_value = float(sel.text(i))
-    #             seldict[self._hlabels[i]] = sel_value
-    #         seldata= pd.Series(seldict)
-    #         mods = self._hlabels[2:-4]
-    #         s += '(%.1f %s)\n' % (seldata[str(self.cbTolerance.currentText())], self.cbTolerance.currentText())
-    #         s += '\n'.join(['%s:%d'%(m,seldata[m]) for m in mods if seldata[m] != 0])
-    #         axes.annotate(s, xy=(x,y),fontsize=8, ha='center',
-    #                      backgroundcolor='lightgreen')
-    #     self.show_deltas1()
-    #     self.show_deltas2()
-    #     self.canvas.draw()
-    #     self.tabWidget.setCurrentIndex(0)
-
-
-    def show_deltas1(self):  # TODO: much too slow!!!
+    def show_mass_differences(self):
         """
-        Show lines between peaks whose masses differ by the value of the Delta1 spinbox (+- tolerance).
+        Show lines between peaks whose masses differ by the value of the Delta1/2 spinboxes (+- tolerance).
 
         :return: nothing
         """
-        if self._exp_mass_data is not None:
-            delta_masses = mass_tools.find_delta_masses(self._exp_mass_data,
-                                                        self.sbDelta1.value(),
-                                                        self.sbDeltaTolerance.value() / 2)
-            delta_plot = self.fig.add_subplot(111)
-            y = [mass[5] for mass in delta_masses]
-            x_start = [mass[3] for mass in delta_masses]
-            x_stop = [mass[4] for mass in delta_masses]
-            if self._delta_lines_1 is not None:
+        for i, ch_delta, sb_delta, color in [(0, self.chDelta1, self.sbDelta1, "green"),
+                                             (1, self.chDelta2, self.sbDelta2, "blue")]:
+            if self._exp_mass_data is not None:
+                delta_masses = mass_tools.find_delta_masses(self._exp_mass_data,
+                                                            sb_delta.value(),
+                                                            self.sbDeltaTolerance.value() / 2)
                 try:
-                    self._delta_lines_1.remove()
-                except ValueError:
-                    pass
-            if self.chDelta1.isChecked():
-                self._delta_lines_1 = delta_plot.hlines(y, x_start, x_stop, lw=1.5, color="green")
-            self.canvas.draw()
+                    x_start, x_stop, y = zip(*delta_masses)
+                except ValueError:  # occurs if delta_masses is empty, so continue with next delta mass
+                    continue
 
-
-    def show_deltas2(self):
-        """
-            Show lines between peaks whose masses differ by the value of the Delta1 spinbox (+- tolerance).
-
-            :return: nothing
-            """
-        if self._exp_mass_data is not None:
-            delta_masses = mass_tools.find_delta_masses(self._exp_mass_data,
-                                                        self.sbDelta2.value(),
-                                                        self.sbDeltaTolerance.value() / 2)
-            delta_plot = self.fig.add_subplot(111)
-            y = [mass[5] * .6 for mass in delta_masses]
-            x_start = [mass[3] for mass in delta_masses]
-            x_stop = [mass[4] for mass in delta_masses]
-            if self._delta_lines_2 is not None:
+                delta_plot = self.fig.add_subplot(111)
                 try:
-                    self._delta_lines_2.remove()
-                except ValueError:
+                    self._delta_lines[i].remove()
+                except (ValueError, AttributeError):  # occurs if no lines are present
                     pass
-            if self.chDelta2.isChecked():
-                self._delta_lines_2 = delta_plot.hlines(y, x_start, x_stop, lw=1.5, color="purple")
-            self.canvas.draw()
+                if ch_delta.isChecked():
+                    self._delta_lines[i] = delta_plot.hlines(y, x_start, x_stop, linewidth=1.5, color=color)
+                self.canvas.draw()
 
 
     def save_settings(self):
@@ -1031,8 +940,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 name = self.tbPolymers.item(row_id, 1).text()
                 composition = self.tbPolymers.item(row_id, 2).text()
                 sites = self.tbPolymers.item(row_id, 3).text()
-                score = self.tbPolymers.cellWidget(row_id, 4).value()
-                polymers.append((is_used, name, composition, sites, score))
+                abundance = self.tbPolymers.cellWidget(row_id, 4).value()
+                polymers.append((is_used, name, composition, sites, abundance))
 
             settings = {"sequence": self.teSequence.toPlainText(),
                         "exp mass data": self._exp_mass_data,
@@ -1086,8 +995,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 self._monomer_table_create_row(row_id, is_used, name, composition, min_count, max_count, is_poly)
 
             self.table_clear(self.tbPolymers)
-            for row_id, (is_used, name, composition, sites, score) in enumerate(settings["polymers"]):
-                self._polymer_table_create_row(row_id, is_used, name, composition, sites, score)
+            for row_id, (is_used, name, composition, sites, abundance) in enumerate(settings["polymers"]):
+                self._polymer_table_create_row(row_id, is_used, name, composition, sites, abundance)
 
             self.calculate_mod_mass()
 
@@ -1135,12 +1044,12 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 name = self.tbPolymers.item(row_id, 1).text()
                 composition = self.tbPolymers.item(row_id, 2).text()
                 sites = self.tbPolymers.item(row_id, 3).text()
-                score = self.tbPolymers.cellWidget(row_id, 4).value()
+                abundance = self.tbPolymers.cellWidget(row_id, 4).value()
 
-                polymer_data.append((ch.isChecked(), name, composition, sites, score))
+                polymer_data.append((ch.isChecked(), name, composition, sites, abundance))
 
             df_polymers = pd.DataFrame(polymer_data,
-                                       columns=["Checked", "Name", "Composition", "Sites", "Score"])
+                                       columns=["Checked", "Name", "Composition", "Sites", "Abundance"])
             try:
                 df_polymers.to_csv(filename, index=False)
             except IOError:
@@ -1197,7 +1106,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         Import the contents of the polymer table.
         Columns labelled "Name", "Composition" and "Sites" must exists in the input file.
         The following columns are optional and are filled with the indicated default values if missing:
-        "Checked" (False) and "Score" (0.0).
+        "Checked" (False) and "Abundance" (0.0).
 
         :return: nothing
         """
@@ -1226,13 +1135,13 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         if "Checked" not in df_polymers.columns:
             df_polymers["Checked"] = False
-        if "Score" not in df_polymers.columns:
-            df_polymers["Score"] = 0.0
+        if "Abundance" not in df_polymers.columns:
+            df_polymers["Abundance"] = 0.0
 
         self.table_clear(self.tbPolymers)
         for row_id, data in df_polymers.iterrows():
             self._polymer_table_create_row(row_id, data["Checked"], data["Name"], data["Composition"],
-                                           data["Sites"], data["Score"])
+                                           data["Sites"], data["Abundance"])
 
 
 if __name__ == "__main__":

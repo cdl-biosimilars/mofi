@@ -47,32 +47,27 @@ def read_massfile(massfile, sort_by=None):
     return massframe
 
 
-def find_delta_masses(massframe, mass_difference, tolerance=2.5):
+def find_delta_masses(df_masses, mass_difference, tolerance=2.5):
     """
     Finds all pairs of peaks in massframe whose masses differ by mass_difference +/- tolerance.
 
-    :param massframe: A pandas dataframe containing MS peaks and associated information, as returned by read_massfile.
+    :param df_masses: A dataframe containing MS peaks and associated information, as returned by read_massfile.
     :param mass_difference: The mass difference to search for.
     :param tolerance: Accept mass differences even if they deviate from mass_difference by this value.
     :return: A list of tuples, each of which describes one of the found mass differences:
-             (1) index of peak 1
-             (2) index of peak 2
-             (3) Mass difference between the two peaks
-             (4) Mass of peak 1
-             (5) Mass of peak 2
-             (6) The larger of the relative abundances of peak 1 or peak 2
+             (1) Mass of peak 1
+             (2) Mass of peak 2
+             (3) The larger of the relative abundances of peak 1 or peak 2
     """
 
-    # indices will be an array of [peak index 1, peak index 2] for all peaks
-    # whose mass difference is mass_difference +- tolerance
-    masses = massframe["Average Mass"]
+    masses = np.array(df_masses["Average Mass"])
     hits = []
-    for i in range(len(masses)):
-        for j in range(i + 1, len(masses)):
-            delta = abs(masses[i] - masses[j])
-            if mass_difference - tolerance <= delta <= mass_difference + tolerance:
-                height = min(massframe.ix[i]["Relative Abundance"], massframe.ix[j]["Relative Abundance"])
-                hits.append((i, j, delta, masses[i], masses[j], height))
+    for i in range(1, len(masses)):
+        delta = np.abs(masses[i:] - masses[:-i])
+        indices = np.where((delta >= mass_difference - tolerance) & (delta <= mass_difference + tolerance))[0]
+        for j in indices:
+            height = min(df_masses.ix[j]["Relative Abundance"], df_masses.ix[j+i]["Relative Abundance"])
+            hits.append((masses[j], masses[j+i], height))
     return hits
 
 
