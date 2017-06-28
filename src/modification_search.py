@@ -230,7 +230,6 @@ def find_polymers(combinations, glycan_library, monomers, progress_bar=None):
     df_glycan_composition = pd.DataFrame(index=glycan_library.index)
     df_glycan_composition["Monomers"] = glycan_library["Composition"] \
         .apply(_calc_monomer_counts, monomers=monomers)
-    # print(df_glycan_composition)
     if progress_bar is not None:
         progress_bar.setValue(40)
 
@@ -247,28 +246,28 @@ def find_polymers(combinations, glycan_library, monomers, progress_bar=None):
         .apply(lambda row:
                np.prod(glycan_library.loc[row]["Abundance"]) / (100 ** (len(df_glycan_combinations.columns) - 1)),
                axis=1)
-    # print(df_glycan_combinations)
     if progress_bar is not None:
         progress_bar.setValue(60)
 
-    # df_found_polymers: combinations with monomer composition as multiindex, with additional columns for
-    # the polymer sites
+    # df_found_polymers: combinations with monomer composition as multiindex,
+    # with additional columns for the polymer sites
     old_index = combinations.index.names
     df_found_polymers = combinations \
         .reset_index(old_index) \
         .set_index(monomers) \
         .sort_index() \
         .join(df_glycan_combinations, how="inner")
-    # combinations.to_csv("csv/df_combinations.csv")
-    # df_glycan_combinations.to_csv("csv/df_polymers.csv")
-    # df_found_polymers.to_csv("csv/df_found_polymers.csv")
     if progress_bar is not None:
         progress_bar.setValue(80)
 
-    return df_found_polymers \
+    df_found_polymers = df_found_polymers \
         .reset_index(df_found_polymers.index.names) \
         .set_index(old_index) \
         .sort_index()
+    if progress_bar is not None:
+        progress_bar.setValue(100)
+
+    return df_found_polymers
 
 
 

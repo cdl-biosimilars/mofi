@@ -23,15 +23,12 @@ import os
 import re
 import pickle
 import time
-import qtpy
+
 from qtpy.QtWidgets import (QApplication, QMainWindow, QMenu, QActionGroup, QVBoxLayout, QTableWidgetItem, QCheckBox,
                             QMessageBox, QFileDialog, QTreeWidgetItem, QHeaderView, QSpinBox, QDoubleSpinBox,
                             QWidget, QHBoxLayout, QAction, QToolBar, QProgressBar, QLabel, QSizePolicy)
 from qtpy.QtGui import QColor, QBrush
-
 from qtpy.QtCore import Qt
-AlignHCenter = qtpy.QtCore.Qt.AlignHCenter
-AlignRight = qtpy.QtCore.Qt.AlignRight
 
 import numpy as np
 import pandas as pd
@@ -41,15 +38,13 @@ import matplotlib
 matplotlib.use("Qt5Agg")
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backend_bases import PickEvent
-
-
+from matplotlib.widgets import SpanSelector
 from matplotlib.figure import Figure
 
 import configure
 import mass_tools
 import modification_search
 import sequence_tools
-
 from ModFinder_UI import Ui_ModFinder
 
 
@@ -170,7 +165,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.canvas = FigureCanvas(self.fig)
         self.canvas.setParent(self.spectrumView)
         layout.addWidget(self.canvas)
-        self.peak_lines = None
+        self.peak_lines = None  # LineCollection object representing the peaks in the spectrum
+        self.span_selector = None  # SpanSelector to select peaks
 
         # init the monomer table and associated buttons
         self.tbMonomers.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
@@ -195,8 +191,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         for library in configure.default_polymer_libraries:
             menu.addAction(library, self.load_default_polymers)
         self.btDefaultModsPolymers.setMenu(menu)
-
-        self.choose_tolerance_units()
 
         # initialize private members
         self._monomer_hits = None  # results from the monomer search
@@ -494,7 +488,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self._polymer_hits = None
             self.lwPeaks.addItems(["{:.2f}".format(i) for i in self._exp_mass_data["Average Mass"]])
             self.lwPeaks.setCurrentRow(0)
-            self.draw_naked_plot()
+            self.draw_spectrum()
 
 
     def save_csv(self):
@@ -750,7 +744,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         if polymers:
             self._polymer_hits = modification_search.find_polymers(self._monomer_hits,
                                                                    glycan_library=df_polymers,
-                                                                   monomers=monomers_for_polymer_search)
+                                                                   monomers=monomers_for_polymer_search,
+                                                                   progress_bar=self.pbSearchProgress)
             self.statusbar.showMessage("Polymer search DONE!", 5000)
         # self._monomer_hits.to_csv("csv/monomer_hits.csv")
         # self._polymer_hits.to_csv("csv/polymer_hits.csv")
@@ -759,28 +754,41 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self.set_result_tree()
 
 
-    def pick_peak(self, event):
+    def select_peaks_by_pick(self, event):
         """
-        If the user clicks on a peak of the spectrum, color this peak in red and select
-        the corresponding mass in the list widget.
+        Select a peak picked by a mouseclick on the spectrum.
 
         :param event: PickEvent from the canvas
         :return: nothing
         """
 
+        self.lwPeaks.blockSignals(True)  # otherwise, each item (de)selection will trigger a signal
         for i in range(self.lwPeaks.count()):
             self.lwPeaks.item(i).setSelected(i in event.ind)
-
-        selected_peaks = np.zeros(len(self._exp_mass_data), dtype=int)
-        selected_peaks[event.ind] = 1
-        normal_selected_color = np.array([[0, 0, 0, 1.0], [1, 0, 0, 1.0]])
-        event.artist.set_color(normal_selected_color[selected_peaks])
-        self.canvas.draw()
+        self.lwPeaks.blockSignals(False)
+        self.set_result_tree()
 
 
-    def draw_naked_plot(self):
+    def select_peaks_by_span(self, min_mass, max_mass):
         """
-        Show a mass spectrum after loading a peak list (i.e., without annotations).
+        Select all peaks that fall within a selected span.
+
+        :param min_mass: lower end of the span
+        :param max_mass: upper end of the span
+        :return: nothing
+        """
+
+        self.lwPeaks.blockSignals(True)  # otherwise, each item (de)selection will trigger a signal
+        for i in range(self.lwPeaks.count()):
+            is_in_span = (min_mass <= float(self.lwPeaks.item(i).text()) <= max_mass)
+            self.lwPeaks.item(i).setSelected(is_in_span)
+        self.lwPeaks.blockSignals(False)
+        self.set_result_tree()
+
+
+    def draw_spectrum(self):
+        """
+        Show a mass spectrum after loading a peak list.
 
         :return: nothing
         """
@@ -792,16 +800,33 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                                       ymax=self._exp_mass_data["Relative Abundance"],
                                       linewidth=1,
                                       picker=5)
-        axes.set_ylim(0, 115)
+        axes.set_ylim(0, 105)
         axes.set_xlabel("Mass (Da)")
         axes.set_ylabel("Relative Abundance (%)")
-        axes.spines["right"].set_visible(False)
-        axes.spines["top"].set_visible(False)
         axes.yaxis.set_ticks_position("left")
         axes.xaxis.set_ticks_position("bottom")
         axes.tick_params(direction="out")
-        self.fig.canvas.mpl_connect("pick_event", self.pick_peak)
         self.show_mass_differences()
+        self.canvas.draw()
+
+        # set up the pick and span selectors.
+        self.fig.canvas.mpl_connect("pick_event", self.select_peaks_by_pick)
+        self.span_selector = SpanSelector(axes,
+                                          self.select_peaks_by_span,
+                                          "horizontal",
+                                          minspan=10,  # in order not to interfere with the picker
+                                          rectprops=dict(alpha=.1))
+
+
+    def highlight_selected_peaks(self):  # TODO color peaks after search if a polymer composition has been found
+        """
+        Highlight peaks in the spectrum that are currently selected in the list of peaks.
+
+        :return: nothing
+        """
+        selected_peaks = np.array([int(self.lwPeaks.item(i).isSelected()) for i in range(self.lwPeaks.count())])
+        normal_selected_color = np.array([[0, 0, 0, 1.0], [1, 0, 0, 1.0]])
+        self.peak_lines.set_color(normal_selected_color[selected_peaks])
         self.canvas.draw()
 
 
@@ -813,11 +838,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         except AttributeError:  # occurs when second peak file is loaded
             pass
 
-        try:  # to highlight the peak that belongs to the selected mass
-            # noinspection PyTypeChecker
-            self.pick_peak(PickEvent("", None, None, self.peak_lines, ind=selected_rows))
-        except AttributeError:  # occurs when peak file is loaded
-            pass
+        self.highlight_selected_peaks()
 
         if self._monomer_hits is not None:
             self.twResults.clear()
@@ -839,9 +860,9 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 # generate root item (experimental mass, relative abundance)
                 root_item = SortableTreeWidgetItem(self.twResults)
                 root_item.setText(0, "{:.2f}".format(self._exp_mass_data.loc[mass_index]["Average Mass"]))
-                root_item.setTextAlignment(0, AlignRight)
+                root_item.setTextAlignment(0, Qt.AlignRight)
                 root_item.setText(1, "{:.1f}".format(self._exp_mass_data.loc[mass_index]["Relative Abundance"]))
-                root_item.setTextAlignment(1, AlignRight)
+                root_item.setTextAlignment(1, Qt.AlignRight)
 
                 if mass_index not in df_hit.index.levels[0]:
                     root_item.setBackground(0, QBrush(missing_color))
@@ -855,23 +876,23 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                         # monomer counts
                         for j, monomer in enumerate(monomers):
                             child_item.setText(2 + j, "{:.0f}".format(hit[monomer]))
-                            child_item.setTextAlignment(2 + j, AlignHCenter)
+                            child_item.setTextAlignment(2 + j, Qt.AlignHCenter)
 
                         # hit properties
                         for j, label in enumerate(["Exp. Mass", "Theo. Mass", "Da.", "ppm"]):
                             child_item.setText(len(monomers) + 2 + j, "{:.2f}".format(hit[label]))
-                            child_item.setTextAlignment(len(monomers) + 2 + j, AlignRight)
+                            child_item.setTextAlignment(len(monomers) + 2 + j, Qt.AlignRight)
 
                         if self.chFilterPolymerHits.isChecked():
                             # polymer composition
                             sites = hit[df_hit.columns.get_loc("ppm")+1:-1].index
                             for j, site in enumerate(sites):
                                 child_item.setText(len(monomers) + 6 + j, "{}".format(hit[site]))
-                                child_item.setTextAlignment(len(monomers) + 6 + j, AlignHCenter)
+                                child_item.setTextAlignment(len(monomers) + 6 + j, Qt.AlignHCenter)
 
                             # polymer abundance
                             child_item.setText(len(monomers) + 7 + j, "{:.2f}".format(hit["Abundance"]))
-                            child_item.setTextAlignment(len(monomers) + 7 + j, AlignHCenter)
+                            child_item.setTextAlignment(len(monomers) + 7 + j, Qt.AlignHCenter)
 
 
             self.twResults.expandAll()
@@ -980,11 +1001,13 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self.twResults.clear()
             if settings["exp mass data"] is not None:
                 self._exp_mass_data = settings["exp mass data"]
+                self.lwPeaks.blockSignals(True)
                 self.lwPeaks.clear()
                 self.lwPeaks.addItems(["{:.2f}".format(i) for i in self._exp_mass_data["Average Mass"]])
                 self.lwPeaks.setCurrentRow(0)
+                self.lwPeaks.blockSignals(False)
                 self.sbSingleMass.setValue(float(self.lwPeaks.currentItem().text()))
-                self.draw_naked_plot()
+                self.draw_spectrum()
 
             self.cbTolerance.setCurrentIndex(settings["tolerance flavor"])
             self.sbTolerance.setValue(settings["tolerance value"])
