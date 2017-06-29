@@ -1,5 +1,6 @@
 <RCC>
   <qresource prefix="mofi resource">
+    <file>images/ResetZoom.png</file>
     <file>images/UpArrow.png</file>
     <file>images/DownArrow.png</file>
     <file>images/Open.png</file>

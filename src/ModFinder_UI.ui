@@ -306,7 +306,7 @@
           <item>
            <widget class="QGroupBox" name="groupBox_2">
             <property name="title">
-             <string>Monomers</string>
+             <string>Composition</string>
             </property>
             <property name="flat">
              <bool>true</bool>
@@ -533,7 +533,7 @@
           <item>
            <widget class="QGroupBox" name="groupBox_4">
             <property name="title">
-             <string>Polymers</string>
+             <string>Structure</string>
             </property>
             <property name="flat">
              <bool>true</bool>
@@ -964,6 +964,9 @@
          </item>
          <item>
           <widget class="QCheckBox" name="chFilterPolymerHits">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
            <property name="text">
             <string>Filter polymer hits</string>
            </property>
@@ -1137,6 +1140,26 @@
               </layout>
              </item>
             </layout>
+           </item>
+           <item row="1" column="0">
+            <widget class="QToolButton" name="btResetZoom">
+             <property name="text">
+              <string>...</string>
+             </property>
+             <property name="icon">
+              <iconset resource="mofi.qrc">
+               <normaloff>:/mofi resource/images/ResetZoom.png</normaloff>:/mofi resource/images/ResetZoom.png</iconset>
+             </property>
+             <property name="iconSize">
+              <size>
+               <width>24</width>
+               <height>24</height>
+              </size>
+             </property>
+             <property name="autoRaise">
+              <bool>true</bool>
+             </property>
+            </widget>
            </item>
           </layout>
          </widget>

@@ -18,10 +18,11 @@
 # If I was motivated, I'd write a freeze wrapper that does those things
 # automatically, but I can't be bothered anymore. ;)
 
-import sys
+import math
 import os
-import re
 import pickle
+import re
+import sys
 import time
 
 from qtpy.QtWidgets import (QApplication, QMainWindow, QMenu, QActionGroup, QVBoxLayout, QTableWidgetItem, QCheckBox,
@@ -37,7 +38,7 @@ pd.set_option('display.max_rows', 5000)
 import matplotlib
 matplotlib.use("Qt5Agg")
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.widgets import SpanSelector
+from matplotlib.widgets import SpanSelector, RectangleSelector
 from matplotlib.figure import Figure
 
 import configure
@@ -47,13 +48,67 @@ import sequence_tools
 from ModFinder_UI import Ui_ModFinder
 
 
+class CollapsingRectangleSelector(RectangleSelector):
+    """
+    Select a rectangular region of an axes.
+    The rectangle collapses to a line if a dimension is less than minspanx and minspany.
+    """
+
+    def __init__(self, *args, collapsex=0, collapsey=0, **kwargs):
+        """
+        Introduces the keys "collapsex" and "collapsey".
+
+        :param args: Positional arguments passed to the superclass.
+        :param collapsex: Minimum height of the rectangle (in data space).
+        :param collapsey: Minimum width of the rectangle (in data space).
+        :param kwargs: Optional arguments passed to the superclass.
+        """
+        super().__init__(*args, **kwargs)
+        self.collapsex = collapsex
+        self.collapsey = collapsey
+
+
+    def draw_shape(self, extents):
+        """
+        Overrides method from parent: Calculate the coordinates of the drawn rectangle.
+
+        :param extents: Coordinates of the rectangle selector.
+        :return: nothing
+        """
+        xmin, xmax, ymin, ymax = extents
+
+        # Collapse coordinates if their distance is too small
+        if abs(xmax - xmin) < self.collapsex:
+            xmax = xmin
+        if abs(ymax - ymin) < self.collapsey:
+            ymax = ymin
+
+        self.to_draw.set_x(xmin)
+        self.to_draw.set_y(ymin)
+        self.to_draw.set_width(xmax - xmin)
+        self.to_draw.set_height(ymax - ymin)
+
+    # @property
+    # def _rect_bbox(self):
+    #     if self.drawtype == 'box':
+    #         x, y = self.to_draw.center
+    #         width = self.to_draw.width
+    #         height = self.to_draw.height
+    #         return x - width / 2., y - height / 2., width, height
+    #     else:
+    #         x, y = self.to_draw.get_data()
+    #         x0, x1 = min(x), max(x)
+    #         y0, y1 = min(y), max(y)
+    #         return x0, y0, x1 - x0, y1 - y0
+
+
 class SortableTreeWidgetItem(QTreeWidgetItem):
     """
     A QTreeWidget which supports numerical sorting.
     Additionally, the attribute mass_index stores mass index of a top level widget.
     """
     def __init__(self, parent=None):
-        super(SortableTreeWidgetItem, self).__init__(parent)
+        super().__init__(parent)
         self.mass_index = None
 
     def __lt__(self, other):
@@ -97,6 +152,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.btInsertRowBelowPolymers.clicked.connect(lambda: self.table_insert_row(self.tbPolymers, above=False))
         self.btLoadMonomers.clicked.connect(self.load_monomers)
         self.btLoadPolymers.clicked.connect(self.load_polymers)
+        self.btResetZoom.clicked.connect(self.reset_zoom)
         self.btSaveMonomers.clicked.connect(self.save_monomers)
         self.btSavePolymers.clicked.connect(self.save_polymers)
         self.btUpdateMass.clicked.connect(self.calculate_protein_mass)
@@ -170,6 +226,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         layout.addWidget(self.canvas)
         self.peak_lines = None  # LineCollection object representing the peaks in the spectrum
         self.span_selector = None  # SpanSelector to select peaks
+        self.rectangle_selector = None  # CollapsingRectangleSelector to zoom the spectrum
+        self.spectrum_x_limits = None  # original limits of the x axis when the plot is drawn
 
         # init the monomer table and associated buttons
         self.tbMonomers.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
@@ -488,6 +546,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self.twResults.clear()
             self._monomer_hits = None
             self._polymer_hits = None
+            self.chFilterPolymerHits.setEnabled(False)
             self.lwPeaks.blockSignals(True)
             self.lwPeaks.clear()
             self.lwPeaks.addItems(["{:.2f}".format(i) for i in self._exp_mass_data["Average Mass"]])
@@ -503,9 +562,9 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         :return: nothing
         """
         outfilename = QFileDialog.getSaveFileName(self,
-                                                  "Save Annotation",
+                                                  "Save results",
                                                   self._path,
-                                                  "MoFi Annotation (*.csv)")[0]
+                                                  "Comma-separated value (*.csv)")[0]
         self._path = os.path.split(outfilename)[0]
         if outfilename:
             if not outfilename.endswith(".csv"):
@@ -778,11 +837,12 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         :return: nothing
         """
 
-        self.lwPeaks.blockSignals(True)  # otherwise, each item (de)selection will trigger a signal
-        for i in range(self.lwPeaks.count()):
-            self.lwPeaks.item(i).setSelected(i in event.ind)
-        self.lwPeaks.blockSignals(False)
-        self.set_result_tree()
+        if event.mouseevent.button == 1:
+            self.lwPeaks.blockSignals(True)  # otherwise, each item (de)selection will trigger a signal
+            for i in range(self.lwPeaks.count()):
+                self.lwPeaks.item(i).setSelected(i in event.ind)
+            self.lwPeaks.blockSignals(False)
+            self.set_result_tree()
 
 
     def select_peaks_by_span(self, min_mass, max_mass):
@@ -811,6 +871,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         self.fig.clear()
         axes = self.fig.add_subplot(111)
+        axes.set_xmargin(.02)
         self.peak_lines = axes.vlines(x=self._exp_mass_data["Average Mass"],
                                       ymin=0,
                                       ymax=self._exp_mass_data["Relative Abundance"],
@@ -823,6 +884,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         axes.xaxis.set_ticks_position("bottom")
         axes.tick_params(direction="out")
         self.show_mass_differences()
+        self.spectrum_x_limits = axes.get_xlim()
         self.canvas.draw()
 
         # set up the pick and span selectors.
@@ -831,7 +893,46 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                                           self.select_peaks_by_span,
                                           "horizontal",
                                           minspan=10,  # in order not to interfere with the picker
-                                          rectprops=dict(alpha=.1))
+                                          rectprops=dict(alpha=.1),
+                                          button=1)  # only the left mouse button spans
+        self.rectangle_selector = CollapsingRectangleSelector(axes,
+                                                              self.zoom_spectrum,
+                                                              collapsex=50,
+                                                              collapsey=5,
+                                                              button=3,
+                                                              rectprops=dict(facecolor=(1, 0, 0, .1),
+                                                                             edgecolor="black",
+                                                                             fill=True,
+                                                                             linewidth=1.5))
+
+
+    def zoom_spectrum(self, start, stop):
+        """
+        Set the new limits of the x and y axis after drawing the zoom rectangle.
+
+        :param start: MouseEvent that describes the coordinates where the mouse button was pressed.
+        :param stop: MouseEvent that describes the coordinates where the mouse button was released.
+        :return: nothing
+        """
+
+        if math.isclose(start.ydata, stop.ydata):  # only zoom x axis
+            self.fig.axes[0].set_xlim(start.xdata, stop.xdata)
+        elif math.isclose(start.xdata, stop.xdata):  # only zoom y axis
+            self.fig.axes[0].set_ylim(start.ydata, stop.ydata)
+        else:  # zoom to rectangle
+            self.fig.axes[0].set_xlim(start.xdata, stop.xdata)
+            self.fig.axes[0].set_ylim(start.ydata, stop.ydata)
+
+
+    def reset_zoom(self):
+        """
+        Restore the view of the complete spectrum.
+
+        :return: nothing
+        """
+        self.fig.axes[0].set_xlim(*self.spectrum_x_limits)
+        self.fig.axes[0].set_ylim(0, 105)
+        self.canvas.draw()
 
 
     def highlight_selected_peaks(self):
@@ -892,6 +993,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         except AttributeError:  # occurs when second peak file is loaded
             pass
 
+        self.chFilterPolymerHits.setEnabled(True)
         self.highlight_selected_peaks()
 
         if self._monomer_hits is not None:
@@ -1053,6 +1155,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
             self._monomer_hits = None
             self._polymer_hits = None
+            self.chFilterPolymerHits.setEnabled(False)
             self.twResults.clear()
             if settings["exp mass data"] is not None:
                 self._exp_mass_data = settings["exp mass data"]
