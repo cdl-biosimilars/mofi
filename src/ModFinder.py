@@ -37,7 +37,6 @@ pd.set_option('display.max_rows', 5000)
 import matplotlib
 matplotlib.use("Qt5Agg")
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.backend_bases import PickEvent
 from matplotlib.widgets import SpanSelector
 from matplotlib.figure import Figure
 
@@ -51,9 +50,11 @@ from ModFinder_UI import Ui_ModFinder
 class SortableTreeWidgetItem(QTreeWidgetItem):
     """
     A QTreeWidget which supports numerical sorting.
+    Additionally, the attribute mass_index stores mass index of a top level widget.
     """
     def __init__(self, parent=None):
         super(SortableTreeWidgetItem, self).__init__(parent)
+        self.mass_index = None
 
     def __lt__(self, other):
         column = self.treeWidget().sortColumn()
@@ -82,14 +83,14 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.acOpenFasta.triggered.connect(self.load_fasta_file)
         self.acOpenPeaks.triggered.connect(self.load_mass_file)
         self.acQuit.triggered.connect(QApplication.instance().quit)
-        self.acSaveAnnotation.triggered.connect(self.save_csv)
+        self.acSaveAnnotation.triggered.connect(self.save_search_results)
         self.acSaveSettings.triggered.connect(self.save_settings)
 
-        self.btCalcCombinations.clicked.connect(self.sample_modifications)
         self.btClearMonomers.clicked.connect(lambda: self.table_clear(self.tbMonomers))
         self.btClearPolymers.clicked.connect(lambda: self.table_clear(self.tbPolymers))
         self.btDeleteRowMonomers.clicked.connect(lambda: self.table_delete_row(self.tbMonomers))
         self.btDeleteRowPolymers.clicked.connect(lambda: self.table_delete_row(self.tbPolymers))
+        self.btFindModifications.clicked.connect(self.sample_modifications)
         self.btInsertRowAboveMonomers.clicked.connect(lambda: self.table_insert_row(self.tbMonomers, above=True))
         self.btInsertRowAbovePolymers.clicked.connect(lambda: self.table_insert_row(self.tbPolymers, above=True))
         self.btInsertRowBelowMonomers.clicked.connect(lambda: self.table_insert_row(self.tbMonomers, above=False))
@@ -116,6 +117,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         self.teSequence.textChanged.connect(
             lambda: self.teSequence.setStyleSheet("QTextEdit { background-color: rgb(255, 225, 225) }"))
+
+        self.twResults.itemClicked.connect(self.tree_item_clicked)
 
         self.menubar.setVisible(False)
 
@@ -482,16 +485,18 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 return
 
             self._exp_mass_data = mass_data
-            self.lwPeaks.clear()
             self.twResults.clear()
             self._monomer_hits = None
             self._polymer_hits = None
+            self.lwPeaks.blockSignals(True)
+            self.lwPeaks.clear()
             self.lwPeaks.addItems(["{:.2f}".format(i) for i in self._exp_mass_data["Average Mass"]])
             self.lwPeaks.setCurrentRow(0)
+            self.lwPeaks.blockSignals(False)
             self.draw_spectrum()
 
 
-    def save_csv(self):
+    def save_search_results(self):
         """
         Write the results from a combinatorial search to a CSV file.
 
@@ -647,6 +652,16 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self._exp_mass_data = pd.DataFrame({"Average Mass": self.sbSingleMass.value(),
                                                 "Relative Abundance": 100.0}, index=[0])
             self._mass_filename = "Input Mass: {:.2f}".format(self.sbSingleMass.value())
+            self.lwPeaks.blockSignals(True)
+            self.lwPeaks.clear()
+            self.lwPeaks.addItems(["{:.2f}".format(i) for i in self._exp_mass_data["Average Mass"]])
+            self.lwPeaks.setCurrentRow(0)
+            self.lwPeaks.blockSignals(False)
+            self.draw_spectrum()
+
+        if self._exp_mass_data is None:
+            QMessageBox.critical(self, "Error", "No mass list loaded. Aborting search.")
+            return
 
         monomers = self.calculate_mod_mass()
         modifications = []  # list of modifications to be used in the combinatorial search
@@ -672,6 +687,10 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             modifications.append((name, mass, max_count - min_count))
             if is_poly:
                 monomers_for_polymer_search.append(name)
+
+        if not modifications:
+            QMessageBox.critical(self, "Error", "List of monomers is empty. Aborting search.")
+            return
 
         # prepare list of polymers for search stage 2
         polymers = {}
@@ -735,6 +754,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         # the modification search was not successful
         if self._monomer_hits is None:
             QMessageBox.critical(self, "Error", "Combinatorial search was unsuccessful.")
+            return
 
         # add the minimum monomer counts to the result data frame
         for name, _, min_count, _, _ in monomers:
@@ -747,11 +767,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                                                                    monomers=monomers_for_polymer_search,
                                                                    progress_bar=self.pbSearchProgress)
             self.statusbar.showMessage("Polymer search DONE!", 5000)
-        # self._monomer_hits.to_csv("csv/monomer_hits.csv")
-        # self._polymer_hits.to_csv("csv/polymer_hits.csv")
-
-        if self._monomer_hits is not None:
-            self.set_result_tree()
+        self.set_result_tree()
 
 
     def select_peaks_by_pick(self, event):
@@ -818,19 +834,57 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                                           rectprops=dict(alpha=.1))
 
 
-    def highlight_selected_peaks(self):  # TODO color peaks after search if a polymer composition has been found
+    def highlight_selected_peaks(self):
         """
         Highlight peaks in the spectrum that are currently selected in the list of peaks.
 
         :return: nothing
         """
+        polymer_peaks = np.zeros(self.lwPeaks.count(), dtype=int)
+        try:
+            polymer_peaks[self._polymer_hits.index.levels[0]] = 2
+        except AttributeError:
+            pass
+
         selected_peaks = np.array([int(self.lwPeaks.item(i).isSelected()) for i in range(self.lwPeaks.count())])
-        normal_selected_color = np.array([[0, 0, 0, 1.0], [1, 0, 0, 1.0]])
-        self.peak_lines.set_color(normal_selected_color[selected_peaks])
+
+        # peak colors will be an array with one entry per peak:
+        # no polymers: 0 - not selected, 1 - selected
+        # polymers:    2 - not selected, 3 - selected
+        # alternative colors: orange [1, .49, .16, 1.0], light red [1, .66, .66, 1.0]
+        peak_colors = polymer_peaks + selected_peaks
+        color_set = np.array([[0, 0, 0, 1.0],    # black for unselected peaks without polymers
+                              [1, .8, 0, 1.0],   # yellow for selected peaks without polymers
+                              [0, .75, 0, 1.0],  # green for unselected peaks with polymers
+                              [1, 0, 0, 1.0]])   # red for selected peaks with polymers
+        self.peak_lines.set_color(color_set[peak_colors])
         self.canvas.draw()
 
 
-    def set_result_tree(self):  # TODO document and add clicks on tree
+    def tree_item_clicked(self):
+        """
+        Select the mass corresponding to an entry in the result tree and update accordingly
+
+        :return: nothing
+        """
+
+        self.lwPeaks.blockSignals(True)
+        self.lwPeaks.clearSelection()
+        toplevel_item = self.twResults.currentItem()
+        while toplevel_item.parent():
+            toplevel_item = toplevel_item.parent()
+        self.lwPeaks.item(toplevel_item.mass_index).setSelected(True)
+        self.lwPeaks.blockSignals(False)
+        self.set_result_tree()
+
+
+    def set_result_tree(self):
+        """
+        Fill the result tree, e.g., after a successful search or whenever peaks are selected
+        in the chromatogram or the mass list.
+
+        :return: nothing
+        """
         selected_rows = [i.row() for i in self.lwPeaks.selectedIndexes()]
 
         try:  # to set the value of the single mass calculation spinbox
@@ -863,6 +917,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 root_item.setTextAlignment(0, Qt.AlignRight)
                 root_item.setText(1, "{:.1f}".format(self._exp_mass_data.loc[mass_index]["Relative Abundance"]))
                 root_item.setTextAlignment(1, Qt.AlignRight)
+                root_item.mass_index = mass_index
 
                 if mass_index not in df_hit.index.levels[0]:
                     root_item.setBackground(0, QBrush(missing_color))

@@ -25,7 +25,8 @@ def find_monomers(mods, unexplained_masses, mass_tolerance=5.0, explained_mass=0
                            unexplained_masses, or a list of tolerances (one value per unexplained mass)
     :param explained_mass: mass explained by the protein sequence and known modifications
     :param progress_bar: a QProgressBar that gets updated during the search
-    :return: a dataframe with index (1) Massindex (corresponds to index of experimental mass in input list of peaks),
+    :return: None if the search completely failed, i.e., no single combination was found; otherwise:
+             a dataframe with index (1) Massindex (corresponds to index of experimental mass in input list of peaks),
                                     (2) Isobar (0-based consecutive numbering of found masses) and
                                     (3) Hit (0-based consecutive numbering of hits per Massindex
              columns: one column for each modification
@@ -42,6 +43,7 @@ def find_monomers(mods, unexplained_masses, mass_tolerance=5.0, explained_mass=0
     mod_masses = np.array([m[1] for m in sorted_mods])
     sorted_mods = [(m[1], m[2]) for m in sorted_mods]
     combinations = {}
+    any_combination_found = False  # is set to true as soon as a combination is found
 
     # run the search on each peak
     for mass_index, unexplained_mass in enumerate(unexplained_masses):
@@ -51,7 +53,7 @@ def find_monomers(mods, unexplained_masses, mass_tolerance=5.0, explained_mass=0
             current_tolerance = mass_tolerance
 
         if progress_bar is not None:
-            progress_bar.setValue(int(mass_index / (len(unexplained_masses) - 1) * 100))
+            progress_bar.setValue(int((mass_index + 1) / len(unexplained_masses) * 100))
         result = findmods.examine_modifications(sorted_mods, unexplained_mass, current_tolerance)
 
         # (a) transform result to combs_per_mass.
@@ -64,6 +66,7 @@ def find_monomers(mods, unexplained_masses, mass_tolerance=5.0, explained_mass=0
         # ppm: mass difference in ppm
         combs_per_mass = []
         if result:
+            any_combination_found = True
             for r in result:
                 theoretical_mass = explained_mass + sum(np.array(r) * mod_masses)  # mass of protein + found mods
                 experimental_mass = explained_mass + unexplained_mass  # mass measured by the mass spectrometer
@@ -74,7 +77,7 @@ def find_monomers(mods, unexplained_masses, mass_tolerance=5.0, explained_mass=0
                 r["abs(Delta)"] = abs(r["Da."])
                 r["ppm"] = (experimental_mass - theoretical_mass) / theoretical_mass * 1_000_000
                 combs_per_mass.append(r)
-        else:  # what to do if examine_modifications didn"t find any modifications
+        else:  # no appropriate combination was found
             r = np.zeros(len(sorted_mods), dtype="int")
             theoretical_mass = 0
             experimental_mass = explained_mass + unexplained_mass
@@ -108,6 +111,8 @@ def find_monomers(mods, unexplained_masses, mass_tolerance=5.0, explained_mass=0
     #                              (2) theoretical mass
     #                              (3) 1-based counter for hits per experimental mass
     combinations: pd.DataFrame = pd.concat(combinations)
+    if not any_combination_found:
+        return
 
     # sort columns so that they have the original order from the monomer table
     sortlist = [m[0] for m in mods] + ["Exp. Mass", "Theo. Mass", "Da.", "ppm"]
