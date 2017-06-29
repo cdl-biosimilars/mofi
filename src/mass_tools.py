@@ -1,11 +1,11 @@
 """
-    mass_tools.py
+mass_tools.py
 
-    Helper functions/classes for atomic masses.
+Helper functions/classes for atomic masses.
 
-    Authors: Stefan Senn, Wolfgang Skala
+Authors: Stefan Senn, Wolfgang Skala
 
-    (c) 2017 Christian Doppler Laboratory for Biosimilar Characterization
+(c) 2017 Christian Doppler Laboratory for Biosimilar Characterization
 """
 
 import re
@@ -93,24 +93,14 @@ def formstring_to_composition(formstring):
     :return: pd.Series labelled by the element (example: C: 50, H: 100, N: 20)
     """
 
-    pattern = re.compile(r'[A-Z][a-z]?\d*')
+    pattern = re.compile(r"([A-Z][a-z]?)(\d*)")
     composition = {}
-    for i in pattern.findall(formstring):
-        if len(i) == 1:
-            composition[i] = 1
+    for atom, count in pattern.findall(formstring):
+        if count:
+            composition[atom] = int(count)
         else:
-            composition[i[0]] = int(i[1:])
+            composition[atom] = 1
     return pd.Series(composition)
-
-
-# def compare_masses(masslist_a, masslist_b, tolerance=0.01):
-#     hits = {}
-#     for i in range(len(masslist_a)):
-#         for j in range(len(masslist_b)):
-#             delta = abs(masslist_a[i]-masslist_b[j])
-#             if delta <= tolerance:
-#                 hits[(i,j)] = (masslist_a[i], masslist_b[j], delta)
-#     return hits
 
 
 class Formula:
@@ -136,6 +126,7 @@ class Formula:
                             - a string, like "C6 H12 O6"
                             raises a ValueError if composition is of a different type
         """
+        # noinspection PyUnresolvedReferences
         if type(composition) == dict:
             self._composition = pd.Series(composition)
         elif type(composition) == pd.core.series.Series:

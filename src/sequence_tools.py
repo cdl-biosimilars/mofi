@@ -1,11 +1,11 @@
 """
-    sequence_tools.py
+sequence_tools.py
 
-    Helper functions/classes for protein sequences.
+Helper functions/classes for protein sequences.
 
-    Authors: Stefan Senn, Wolfgang Skala
+Authors: Stefan Senn, Wolfgang Skala
 
-    (c) 2017 Christian Doppler Laboratory for Biosimilar Characterization
+(c) 2017 Christian Doppler Laboratory for Biosimilar Characterization
 """
 
 import re
@@ -71,6 +71,7 @@ def read_fasta_string(fasta_string):
     Extracts the chain number and sequence from a string in FASTA format.
     The chain number equals the number of header lines (i.e., lines starting with "<").
     The sequences of all chains are merged
+
     :param fasta_string: String in FASTA format
     :return: (1) number of chains, (2) string containing the raw sequence
     """
@@ -87,6 +88,7 @@ def read_fasta_string(fasta_string):
 def get_sequence_atoms(sequence, chains=1, disulfide_bonds=0):
     """
     Calculates the atoms in an amino acid sequence
+
     :param sequence: String of amino acids in one-letter format
     :param chains: number of chains; for each chain, the weight of a water molecule must be added to the total weight.
     :param disulfide_bonds: number of disulfide bonds

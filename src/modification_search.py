@@ -1,11 +1,11 @@
 """
-    modification_search.py
+modification_search.py
 
-    Helper functions for searching modifications.
+Helper functions for searching modifications.
 
-    Authors: Stefan Senn, Wolfgang Skala, Gabriel Huber
+Authors: Stefan Senn, Wolfgang Skala, Gabriel Huber
 
-    (c) 2017 Christian Doppler Laboratory for Biosimilar Characterization
+(c) 2017 Christian Doppler Laboratory for Biosimilar Characterization
 """
 
 import numpy as np
