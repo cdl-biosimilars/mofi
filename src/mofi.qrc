@@ -1,5 +1,7 @@
 <RCC>
   <qresource prefix="mofi resource">
+    <file>images/SelectMode.png</file>
+    <file>images/DeltaMassMode.png</file>
     <file>images/ResetZoom.png</file>
     <file>images/UpArrow.png</file>
     <file>images/DownArrow.png</file>

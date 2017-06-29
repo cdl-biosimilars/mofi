@@ -18,6 +18,7 @@
 # If I was motivated, I'd write a freeze wrapper that does those things
 # automatically, but I can't be bothered anymore. ;)
 
+import distutils.util
 import math
 import os
 import pickle
@@ -27,7 +28,7 @@ import time
 
 from qtpy.QtWidgets import (QApplication, QMainWindow, QMenu, QActionGroup, QVBoxLayout, QTableWidgetItem, QCheckBox,
                             QMessageBox, QFileDialog, QTreeWidgetItem, QHeaderView, QSpinBox, QDoubleSpinBox,
-                            QWidget, QHBoxLayout, QAction, QToolBar, QProgressBar, QLabel, QSizePolicy)
+                            QWidget, QHBoxLayout, QAction, QToolBar, QProgressBar, QLabel, QSizePolicy, QButtonGroup)
 from qtpy.QtGui import QColor, QBrush
 from qtpy.QtCore import Qt
 
@@ -88,19 +89,6 @@ class CollapsingRectangleSelector(RectangleSelector):
         self.to_draw.set_width(xmax - xmin)
         self.to_draw.set_height(ymax - ymin)
 
-    # @property
-    # def _rect_bbox(self):
-    #     if self.drawtype == 'box':
-    #         x, y = self.to_draw.center
-    #         width = self.to_draw.width
-    #         height = self.to_draw.height
-    #         return x - width / 2., y - height / 2., width, height
-    #     else:
-    #         x, y = self.to_draw.get_data()
-    #         x0, x1 = min(x), max(x)
-    #         y0, y1 = min(y), max(y)
-    #         return x0, y0, x1 - x0, y1 - y0
-
 
 class SortableTreeWidgetItem(QTreeWidgetItem):
     """
@@ -159,16 +147,13 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         self.cbTolerance.activated.connect(self.choose_tolerance_units)
 
-        self.chDelta1.clicked.connect(self.show_mass_differences)
-        self.chDelta2.clicked.connect(self.show_mass_differences)
         self.chFilterPolymerHits.clicked.connect(self.set_result_tree)
         self.chPngase.clicked.connect(self.calculate_protein_mass)
 
         self.lwPeaks.itemSelectionChanged.connect(self.set_result_tree)
 
-        self.sbDelta1.valueChanged.connect(self.show_mass_differences)
-        self.sbDelta2.valueChanged.connect(self.show_mass_differences)
-        self.sbDeltaTolerance.valueChanged.connect(self.show_mass_differences)
+        self.sbDeltaValue.valueChanged.connect(self.update_mass_differences)
+        self.sbDeltaTolerance.valueChanged.connect(self.update_mass_differences)
         self.sbDisulfides.valueChanged.connect(self.calculate_protein_mass)
 
         self.teSequence.textChanged.connect(
@@ -225,13 +210,20 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.canvas.setParent(self.spectrumView)
         layout.addWidget(self.canvas)
         self.peak_lines = None  # LineCollection object representing the peaks in the spectrum
-        self.span_selector = None  # SpanSelector to select peaks
+        self.pick_selector = None  # picker connection to select a single peak
+        self.span_selector = None  # SpanSelector to select multiple peaks
         self.rectangle_selector = None  # CollapsingRectangleSelector to zoom the spectrum
         self.spectrum_x_limits = None  # original limits of the x axis when the plot is drawn
 
+        # init button group for specrum interaction mode
+        self.bgSpectrum = QButtonGroup()
+        self.bgSpectrum.addButton(self.btModeDelta)
+        self.bgSpectrum.addButton(self.btModeSelection)
+        self.bgSpectrum.buttonClicked.connect(self.toggle_spectrum_mode)
+
         # init the monomer table and associated buttons
         self.tbMonomers.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
-        for col, width in [(0, 25), (2, 130), (3, 45), (4, 45), (5, 40)]:
+        for col, width in [(0, 40), (2, 130), (3, 45), (4, 45), (5, 25)]:
             self.tbMonomers.setColumnWidth(col, width)
         self.tbMonomers.verticalHeader().setSectionResizeMode(QHeaderView.Fixed)
         self.tbMonomers.verticalHeader().setDefaultSectionSize(22)
@@ -243,7 +235,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         # init the polymer table and associated buttons
         self.tbPolymers.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
-        for col, width in [(0, 25), (2, 130), (3, 80), (4, 60)]:
+        for col, width in [(0, 40), (2, 130), (3, 80), (4, 50)]:
             self.tbPolymers.setColumnWidth(col, width)
         self.tbPolymers.verticalHeader().setSectionResizeMode(QHeaderView.Fixed)
         self.tbPolymers.verticalHeader().setDefaultSectionSize(22)
@@ -419,37 +411,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         if table_widget.selectionModel().selectedRows():
             for i in table_widget.selectionModel().selectedRows()[::-1]:
                 table_widget.removeRow(i.row())
-
-
-    def load_default_monomers(self):
-        """
-        Load a default monomer library.
-
-        :return: nothing
-        """
-        self.table_clear(self.tbMonomers)
-        library = self.sender().text()
-        row_id = 0
-
-        for name, data in configure.default_monomer_libraries[library].items():
-            self._monomer_table_create_row(row_id, name=name, composition=data["composition"],
-                                           min_count=int(data["min"]), max_count=int(data["max"]), part_of_polymer=True)
-            row_id += 1
-
-
-    def load_default_polymers(self):
-        """
-        Load a default polymer library.
-
-        :return: nothing
-        """
-        self.table_clear(self.tbPolymers)
-        library = self.sender().text()
-        row_id = 0
-
-        for name, data in configure.default_polymer_libraries[library].items():
-            self._polymer_table_create_row(row_id, name=name, composition=data["composition"], sites=data["sites"])
-            row_id += 1
 
 
     def show_about(self):
@@ -883,12 +844,11 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         axes.yaxis.set_ticks_position("left")
         axes.xaxis.set_ticks_position("bottom")
         axes.tick_params(direction="out")
-        self.show_mass_differences()
         self.spectrum_x_limits = axes.get_xlim()
         self.canvas.draw()
 
         # set up the pick and span selectors.
-        self.fig.canvas.mpl_connect("pick_event", self.select_peaks_by_pick)
+        self.pick_selector = self.fig.canvas.mpl_connect("pick_event", self.select_peaks_by_pick)
         self.span_selector = SpanSelector(axes,
                                           self.select_peaks_by_span,
                                           "horizontal",
@@ -1058,31 +1018,79 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self.twResults.setUpdatesEnabled(True)
 
 
-    def show_mass_differences(self):
+    def toggle_spectrum_mode(self):
+        if self.bgSpectrum.checkedButton() == self.btModeSelection:
+            self.span_selector.active = True
+            self.fig.canvas.mpl_disconnect(self.pick_selector)
+            self.pick_selector = self.fig.canvas.mpl_connect("pick_event", self.select_peaks_by_pick)
+        else:
+            self.span_selector.active = False
+            self.fig.canvas.mpl_disconnect(self.pick_selector)
+            self.pick_selector = self.fig.canvas.mpl_connect("pick_event", self.select_peak_for_delta)
+
+
+    def select_peak_for_delta(self, event):
+        if event.mouseevent.button == 1:
+            main_mass = float(self._exp_mass_data.iloc[event.ind]["Average Mass"])
+            min_mass = float(min(self._exp_mass_data["Average Mass"]))
+            max_mass = float(max(self._exp_mass_data["Average Mass"]))
+            max_iterations = int(self.sbDeltaValue.value() / self.sbDeltaTolerance.value() / 2)
+            intervals = []
+
+            current_mass = main_mass
+            tolerance = self.sbDeltaTolerance.value()
+            i = 0
+            while i < max_iterations and current_mass > min_mass:
+                current_mass -= self.sbDeltaValue.value()
+                intervals.insert(0, (current_mass - tolerance, current_mass + tolerance))
+                tolerance += self.sbDeltaTolerance.value()
+                i += 1
+
+            current_mass = main_mass
+            tolerance = self.sbDeltaTolerance.value()
+            i = 0
+            while i < max_iterations and current_mass < max_mass:
+                current_mass += self.sbDeltaValue.value()
+                intervals.append((current_mass - tolerance, current_mass + tolerance))
+                tolerance += self.sbDeltaTolerance.value()
+                i += 1
+
+            delta_peaks = self._exp_mass_data["Average Mass"].apply(self.find_in_intervals, intervals=intervals)
+
+
+    def find_in_intervals(self, value, intervals=None):
+        for (lower, upper) in intervals:
+            if lower <= value <= upper:
+                return True
+        return False
+
+
+    def update_mass_differences(self):  # TODO new feature
         """
         Show lines between peaks whose masses differ by the value of the Delta1/2 spinboxes (+- tolerance).
 
         :return: nothing
         """
-        for i, ch_delta, sb_delta, color in [(0, self.chDelta1, self.sbDelta1, "green"),
-                                             (1, self.chDelta2, self.sbDelta2, "blue")]:
-            if self._exp_mass_data is not None:
-                delta_masses = mass_tools.find_delta_masses(self._exp_mass_data,
-                                                            sb_delta.value(),
-                                                            self.sbDeltaTolerance.value() / 2)
-                try:
-                    x_start, x_stop, y = zip(*delta_masses)
-                except ValueError:  # occurs if delta_masses is empty, so continue with next delta mass
-                    continue
-
-                delta_plot = self.fig.add_subplot(111)
-                try:
-                    self._delta_lines[i].remove()
-                except (ValueError, AttributeError):  # occurs if no lines are present
-                    pass
-                if ch_delta.isChecked():
-                    self._delta_lines[i] = delta_plot.hlines(y, x_start, x_stop, linewidth=1.5, color=color)
-                self.canvas.draw()
+        pass
+        # for i, ch_delta, sb_delta, color in [(0, self.chDelta1, self.sbDelta1, "green"),
+        #                                      (1, self.chDelta2, self.sbDelta2, "blue")]:
+        #     if self._exp_mass_data is not None:
+        #         delta_masses = mass_tools.find_delta_masses(self._exp_mass_data,
+        #                                                     sb_delta.value(),
+        #                                                     self.sbDeltaTolerance.value() / 2)
+        #         try:
+        #             x_start, x_stop, y = zip(*delta_masses)
+        #         except ValueError:  # occurs if delta_masses is empty, so continue with next delta mass
+        #             continue
+        #
+        #         delta_plot = self.fig.add_subplot(111)
+        #         try:
+        #             self._delta_lines[i].remove()
+        #         except (ValueError, AttributeError):  # occurs if no lines are present
+        #             pass
+        #         if ch_delta.isChecked():
+        #             self._delta_lines[i] = delta_plot.hlines(y, x_start, x_stop, linewidth=1.5, color=color)
+        #         self.canvas.draw()
 
 
     def save_settings(self):
@@ -1204,39 +1212,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 QMessageBox.critical(self, "Error", "Error when writing to " + filename + IOError.args)
 
 
-    def save_polymers(self):
-        """
-        Export the contents of the polymer table.
-
-        :return: nothing
-        """
-        filename = QFileDialog.getSaveFileName(self,
-                                               "Export polymers",
-                                               self._path,
-                                               "Comma-separated value (*.csv)")[0]
-        self._path = os.path.split(filename)[0]
-        if filename:
-            if not filename.endswith(".csv"):
-                filename += ".csv"
-
-            polymer_data = []
-            for row_id in range(self.tbPolymers.rowCount()):
-                ch = self.tbPolymers.cellWidget(row_id, 0).findChild(QCheckBox)
-                name = self.tbPolymers.item(row_id, 1).text()
-                composition = self.tbPolymers.item(row_id, 2).text()
-                sites = self.tbPolymers.item(row_id, 3).text()
-                abundance = self.tbPolymers.cellWidget(row_id, 4).value()
-
-                polymer_data.append((ch.isChecked(), name, composition, sites, abundance))
-
-            df_polymers = pd.DataFrame(polymer_data,
-                                       columns=["Checked", "Name", "Composition", "Sites", "Abundance"])
-            try:
-                df_polymers.to_csv(filename, index=False)
-            except IOError:
-                QMessageBox.critical(self, "Error", "Error when writing to " + filename + IOError.args)
-
-
     def load_monomers(self):
         """
         Import the contents of the monomer table.
@@ -1282,6 +1257,59 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.calculate_mod_mass()
 
 
+    def load_default_monomers(self):
+        """
+        Load a default monomer library.
+
+        :return: nothing
+        """
+        self.table_clear(self.tbMonomers)
+        library = self.sender().text()
+        row_id = 0
+
+        for name, data in configure.default_monomer_libraries[library].items():
+            self._monomer_table_create_row(row_id,
+                                           name=name,
+                                           composition=data["composition"],
+                                           min_count=int(data["min"]),
+                                           max_count=int(data["max"]),
+                                           part_of_polymer=distutils.util.strtobool(data["glycan"]))
+            row_id += 1
+
+
+    def save_polymers(self):
+        """
+        Export the contents of the polymer table.
+
+        :return: nothing
+        """
+        filename = QFileDialog.getSaveFileName(self,
+                                               "Export polymers",
+                                               self._path,
+                                               "Comma-separated value (*.csv)")[0]
+        self._path = os.path.split(filename)[0]
+        if filename:
+            if not filename.endswith(".csv"):
+                filename += ".csv"
+
+            polymer_data = []
+            for row_id in range(self.tbPolymers.rowCount()):
+                ch = self.tbPolymers.cellWidget(row_id, 0).findChild(QCheckBox)
+                name = self.tbPolymers.item(row_id, 1).text()
+                composition = self.tbPolymers.item(row_id, 2).text()
+                sites = self.tbPolymers.item(row_id, 3).text()
+                abundance = self.tbPolymers.cellWidget(row_id, 4).value()
+
+                polymer_data.append((ch.isChecked(), name, composition, sites, abundance))
+
+            df_polymers = pd.DataFrame(polymer_data,
+                                       columns=["Checked", "Name", "Composition", "Sites", "Abundance"])
+            try:
+                df_polymers.to_csv(filename, index=False)
+            except IOError:
+                QMessageBox.critical(self, "Error", "Error when writing to " + filename + IOError.args)
+
+
     def load_polymers(self):
         """
         Import the contents of the polymer table.
@@ -1323,6 +1351,20 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         for row_id, data in df_polymers.iterrows():
             self._polymer_table_create_row(row_id, data["Checked"], data["Name"], data["Composition"],
                                            data["Sites"], data["Abundance"])
+
+    def load_default_polymers(self):
+        """
+        Load a default polymer library.
+
+        :return: nothing
+        """
+        self.table_clear(self.tbPolymers)
+        library = self.sender().text()
+        row_id = 0
+
+        for name, data in configure.default_polymer_libraries[library].items():
+            self._polymer_table_create_row(row_id, name=name, composition=data["composition"], sites=data["sites"])
+            row_id += 1
 
 
 if __name__ == "__main__":
