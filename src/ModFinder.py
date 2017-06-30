@@ -37,6 +37,7 @@ import pandas as pd
 pd.set_option('display.max_rows', 5000)
 
 import matplotlib
+import matplotlib.text
 matplotlib.use("Qt5Agg")
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.widgets import SpanSelector, RectangleSelector
@@ -147,19 +148,20 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         self.cbTolerance.activated.connect(self.choose_tolerance_units)
 
-        self.chFilterPolymerHits.clicked.connect(self.set_result_tree)
+        self.chFilterPolymerHits.clicked.connect(lambda: self.display_selected_peaks())
         self.chPngase.clicked.connect(self.calculate_protein_mass)
 
-        self.lwPeaks.itemSelectionChanged.connect(self.set_result_tree)
+        self.lwPeaks.itemSelectionChanged.connect(self.select_peaks_in_list)
 
-        self.sbDeltaValue.valueChanged.connect(self.update_mass_differences)
-        self.sbDeltaTolerance.valueChanged.connect(self.update_mass_differences)
+        self.sbDeltaRepetition.valueChanged.connect(lambda: self.display_selected_peaks())
+        self.sbDeltaTolerance.valueChanged.connect(lambda: self.display_selected_peaks())
+        self.sbDeltaValue.valueChanged.connect(lambda: self.display_selected_peaks())
         self.sbDisulfides.valueChanged.connect(self.calculate_protein_mass)
 
         self.teSequence.textChanged.connect(
             lambda: self.teSequence.setStyleSheet("QTextEdit { background-color: rgb(255, 225, 225) }"))
 
-        self.twResults.itemClicked.connect(self.tree_item_clicked)
+        self.twResults.itemClicked.connect(self.select_peaks_in_tree)
 
         self.menubar.setVisible(False)
 
@@ -203,22 +205,25 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         sb_layout.addWidget(self.pbSearchProgress)
         self.statusbar.addPermanentWidget(sb_widget)
 
-        # set up the mass spectrum
+        # set up the mass spectrum plot
         layout = QVBoxLayout(self.spectrumView)
-        self.fig = Figure(dpi=100, frameon=False, tight_layout={"pad": 0}, edgecolor="white")
-        self.canvas = FigureCanvas(self.fig)
-        self.canvas.setParent(self.spectrumView)
-        layout.addWidget(self.canvas)
-        self.peak_lines = None  # LineCollection object representing the peaks in the spectrum
-        self.pick_selector = None  # picker connection to select a single peak
-        self.span_selector = None  # SpanSelector to select multiple peaks
-        self.rectangle_selector = None  # CollapsingRectangleSelector to zoom the spectrum
+        self.spectrum_fig = Figure(dpi=100, frameon=False, tight_layout={"pad": 0}, edgecolor="white")
+        self.spectrum_canvas = FigureCanvas(self.spectrum_fig)
+        self.spectrum_canvas.setParent(self.spectrumView)
+        layout.addWidget(self.spectrum_canvas)
+        self.spectrum_axes = None  # single Axes of the figure
+        self.spectrum_peak_lines = None  # LineCollection object representing the peaks in the spectrum
+        self.spectrum_pick_selector = None  # picker connection to select a single peak
+        self.spectrum_span_selector = None  # SpanSelector to select multiple peaks
+        self.spectrum_rectangle_selector = None  # CollapsingRectangleSelector to zoom the spectrum
         self.spectrum_x_limits = None  # original limits of the x axis when the plot is drawn
+        self.spectrum_picked_peak = None  # picked single peak
 
         # init button group for specrum interaction mode
         self.bgSpectrum = QButtonGroup()
         self.bgSpectrum.addButton(self.btModeDelta)
         self.bgSpectrum.addButton(self.btModeSelection)
+        # noinspection PyUnresolvedReferences
         self.bgSpectrum.buttonClicked.connect(self.toggle_spectrum_mode)
 
         # init the monomer table and associated buttons
@@ -730,7 +735,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             monomers_in_library = []
             df_polymers = pd.DataFrame()
 
-        if sorted(monomers_for_polymer_search) != sorted(monomers_in_library):
+        if sorted(monomers_for_polymer_search) != sorted(monomers_in_library):  # TODO make this check automatic!
             monomers_only_checked = set(monomers_for_polymer_search) - set(monomers_in_library)
             monomers_only_in_library = set(monomers_in_library) - set(monomers_for_polymer_search)
             error_message = []
@@ -787,40 +792,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                                                                    monomers=monomers_for_polymer_search,
                                                                    progress_bar=self.pbSearchProgress)
             self.statusbar.showMessage("Polymer search DONE!", 5000)
-        self.set_result_tree()
-
-
-    def select_peaks_by_pick(self, event):
-        """
-        Select a peak picked by a mouseclick on the spectrum.
-
-        :param event: PickEvent from the canvas
-        :return: nothing
-        """
-
-        if event.mouseevent.button == 1:
-            self.lwPeaks.blockSignals(True)  # otherwise, each item (de)selection will trigger a signal
-            for i in range(self.lwPeaks.count()):
-                self.lwPeaks.item(i).setSelected(i in event.ind)
-            self.lwPeaks.blockSignals(False)
-            self.set_result_tree()
-
-
-    def select_peaks_by_span(self, min_mass, max_mass):
-        """
-        Select all peaks that fall within a selected span.
-
-        :param min_mass: lower end of the span
-        :param max_mass: upper end of the span
-        :return: nothing
-        """
-
-        self.lwPeaks.blockSignals(True)  # otherwise, each item (de)selection will trigger a signal
-        for i in range(self.lwPeaks.count()):
-            is_in_span = (min_mass <= float(self.lwPeaks.item(i).text()) <= max_mass)
-            self.lwPeaks.item(i).setSelected(is_in_span)
-        self.lwPeaks.blockSignals(False)
-        self.set_result_tree()
+        self.display_selected_peaks()
 
 
     def draw_spectrum(self):
@@ -830,40 +802,40 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         :return: nothing
         """
 
-        self.fig.clear()
-        axes = self.fig.add_subplot(111)
-        axes.set_xmargin(.02)
-        self.peak_lines = axes.vlines(x=self._exp_mass_data["Average Mass"],
-                                      ymin=0,
-                                      ymax=self._exp_mass_data["Relative Abundance"],
-                                      linewidth=1,
-                                      picker=5)
-        axes.set_ylim(0, 105)
-        axes.set_xlabel("Mass (Da)")
-        axes.set_ylabel("Relative Abundance (%)")
-        axes.yaxis.set_ticks_position("left")
-        axes.xaxis.set_ticks_position("bottom")
-        axes.tick_params(direction="out")
-        self.spectrum_x_limits = axes.get_xlim()
-        self.canvas.draw()
+        self.spectrum_fig.clear()
+        self.spectrum_axes = self.spectrum_fig.add_subplot(111)
+        self.spectrum_axes.set_xmargin(.02)
+        self.spectrum_peak_lines = self.spectrum_axes.vlines(x=self._exp_mass_data["Average Mass"],
+                                                             ymin=0,
+                                                             ymax=self._exp_mass_data["Relative Abundance"],
+                                                             linewidth=1,
+                                                             picker=5)
+        self.spectrum_axes.set_ylim(0, 110)
+        self.spectrum_axes.set_xlabel("Mass (Da)")
+        self.spectrum_axes.set_ylabel("Relative Abundance (%)")
+        self.spectrum_axes.yaxis.set_ticks_position("left")
+        self.spectrum_axes.xaxis.set_ticks_position("bottom")
+        self.spectrum_axes.tick_params(direction="out")
+        self.spectrum_x_limits = self.spectrum_axes.get_xlim()
+        self.spectrum_canvas.draw()
 
         # set up the pick and span selectors.
-        self.pick_selector = self.fig.canvas.mpl_connect("pick_event", self.select_peaks_by_pick)
-        self.span_selector = SpanSelector(axes,
-                                          self.select_peaks_by_span,
-                                          "horizontal",
-                                          minspan=10,  # in order not to interfere with the picker
-                                          rectprops=dict(alpha=.1),
-                                          button=1)  # only the left mouse button spans
-        self.rectangle_selector = CollapsingRectangleSelector(axes,
-                                                              self.zoom_spectrum,
-                                                              collapsex=50,
-                                                              collapsey=5,
-                                                              button=3,
-                                                              rectprops=dict(facecolor=(1, 0, 0, .1),
-                                                                             edgecolor="black",
-                                                                             fill=True,
-                                                                             linewidth=1.5))
+        self.spectrum_pick_selector = self.spectrum_fig.canvas.mpl_connect("pick_event", self.select_peaks_by_pick)
+        self.spectrum_span_selector = SpanSelector(self.spectrum_axes,
+                                                   self.select_peaks_by_span,
+                                                   "horizontal",
+                                                   minspan=10,  # in order not to interfere with the picker
+                                                   rectprops=dict(alpha=.1),
+                                                   button=1)  # only the left mouse button spans
+        self.spectrum_rectangle_selector = CollapsingRectangleSelector(self.spectrum_axes,
+                                                                       self.zoom_spectrum,
+                                                                       collapsex=50,
+                                                                       collapsey=5,
+                                                                       button=3,
+                                                                       rectprops=dict(facecolor=(1, 0, 0, .1),
+                                                                                      edgecolor="black",
+                                                                                      fill=True,
+                                                                                      linewidth=1.5))
 
 
     def zoom_spectrum(self, start, stop):
@@ -876,12 +848,12 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         """
 
         if math.isclose(start.ydata, stop.ydata):  # only zoom x axis
-            self.fig.axes[0].set_xlim(start.xdata, stop.xdata)
+            self.spectrum_axes.set_xlim(start.xdata, stop.xdata)
         elif math.isclose(start.xdata, stop.xdata):  # only zoom y axis
-            self.fig.axes[0].set_ylim(start.ydata, stop.ydata)
+            self.spectrum_axes.set_ylim(start.ydata, stop.ydata)
         else:  # zoom to rectangle
-            self.fig.axes[0].set_xlim(start.xdata, stop.xdata)
-            self.fig.axes[0].set_ylim(start.ydata, stop.ydata)
+            self.spectrum_axes.set_xlim(start.xdata, stop.xdata)
+            self.spectrum_axes.set_ylim(start.ydata, stop.ydata)
 
 
     def reset_zoom(self):
@@ -890,15 +862,180 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         :return: nothing
         """
-        self.fig.axes[0].set_xlim(*self.spectrum_x_limits)
-        self.fig.axes[0].set_ylim(0, 105)
-        self.canvas.draw()
+        try:
+            self.spectrum_axes.set_xlim(*self.spectrum_x_limits)
+            self.spectrum_axes.set_ylim(0, 110)
+            self.spectrum_canvas.draw()
+        except AttributeError:  # i.e., there is currently no spectrum
+            pass
 
 
-    def highlight_selected_peaks(self):
+    def toggle_spectrum_mode(self):
         """
-        Highlight peaks in the spectrum that are currently selected in the list of peaks.
+        Toggle between peak selection for monomer/polymer analysis
+        and peak selection for mass difference analysis.
 
+        :return: nothing
+        """
+        try:
+            if self.bgSpectrum.checkedButton() == self.btModeSelection:
+                self.gbDeltaSeries.setEnabled(False)
+                self.spectrum_span_selector.active = True
+            else:
+                self.gbDeltaSeries.setEnabled(True)
+                self.spectrum_span_selector.active = False
+        except AttributeError:  # i.e., there is currently no spectrum
+            pass
+
+
+    def select_peaks_in_list(self):
+        """
+        Select one or several peaks in the peak list.
+
+        :return: nothing
+        """
+        if self.bgSpectrum.checkedButton() == self.btModeDelta:
+            self.spectrum_picked_peak = self.lwPeaks.currentRow()
+        else:
+            self.spectrum_picked_peak = None
+        self.display_selected_peaks()
+
+
+    def select_peaks_in_tree(self):
+        """
+        Select the peak corresponding to an entry in the result tree.
+
+        :return: nothing
+        """
+
+        toplevel_item = self.twResults.currentItem()
+        while toplevel_item.parent():
+            toplevel_item = toplevel_item.parent()
+        self.display_selected_peaks([toplevel_item.mass_index])
+
+
+    def select_peaks_by_pick(self, event):
+        """
+        Select a peak picked by a mouseclick on the spectrum.
+
+        :param event: PickEvent from the canvas
+        :return: nothing
+        """
+
+        if self.bgSpectrum.checkedButton() == self.btModeDelta:
+            self.spectrum_picked_peak = event.ind[0]
+        else:
+            self.spectrum_picked_peak = None
+        self.display_selected_peaks(event.ind)
+
+
+    def select_peaks_by_span(self, min_mass, max_mass):
+        """
+        Select all peaks that fall within a selected span.
+
+        :param min_mass: lower end of the span
+        :param max_mass: upper end of the span
+        :return: nothing
+        """
+
+        peak_indices = []
+        for i in range(self.lwPeaks.count()):
+            if min_mass <= float(self.lwPeaks.item(i).text()) <= max_mass:
+                peak_indices.append(i)
+        self.display_selected_peaks(peak_indices)
+
+
+    def highlight_delta_series(self):
+        """
+        Highlights a series of peaks that differ by a given mass.
+
+        :return: list of peak indices in the delta series
+        """
+
+        main_mass = float(self._exp_mass_data.iloc[self.spectrum_picked_peak]["Average Mass"])
+        min_mass = float(min(self._exp_mass_data["Average Mass"]))
+        max_mass = float(max(self._exp_mass_data["Average Mass"]))
+        max_iterations = int(self.sbDeltaValue.value() / self.sbDeltaTolerance.value() / 2)  # TODO spin box
+        intervals = {}  # will be a {number of mass differences: (interval start, interval end)} dict
+
+        # calculate possible intervals for peaks separated from the selected peaks
+        # by an integer number of mass differences
+        # for each added difference, increase the interval size by the original tolerance times two
+        current_mass = main_mass
+        tolerance = self.sbDeltaTolerance.value()
+        i = 1
+        while i <= max_iterations and current_mass > min_mass:
+            current_mass -= self.sbDeltaValue.value()
+            intervals[-i] = (current_mass - tolerance, current_mass + tolerance)
+            tolerance += self.sbDeltaTolerance.value()
+            i += 1
+
+        current_mass = main_mass
+        tolerance = self.sbDeltaTolerance.value()
+        i = 1
+        while i <= max_iterations and current_mass < max_mass:
+            current_mass += self.sbDeltaValue.value()
+            intervals[i] = (current_mass - tolerance, current_mass + tolerance)
+            tolerance += self.sbDeltaTolerance.value()
+            i += 1
+
+        # pd.Series with the interval name per mass index
+        delta_distances = self._exp_mass_data["Average Mass"] \
+            .apply(self.find_in_intervals, intervals=intervals)
+        delta_distances[self.spectrum_picked_peak] = "0"
+
+        # pd.Series with the following values:
+        # 0 - peaks not in the delta mass series
+        # 1 - peaks in the series
+        # 2 - selected peak
+        delta_peaks = delta_distances \
+            .map(lambda x: 1 if x else 0)
+        delta_peaks[self.spectrum_picked_peak] = 2
+
+        # color the peaks in the delata series and increase their line width
+        color_set = np.array(["#b3b3b3",  # light gray
+                              "#aa0088",  # violet
+                              "#ff0000"])  # red
+        linewidth_set = np.array([1, 2, 3])
+        self.spectrum_peak_lines.set_color(color_set[delta_peaks])
+        self.spectrum_peak_lines.set_linewidth(linewidth_set[delta_peaks])
+
+        # annotate the peaks in the delta series
+        for annotation in self.spectrum_axes.findobj(matplotlib.text.Annotation):
+            annotation.remove()
+        for peak_id in np.where(delta_peaks > 0)[0]:
+            self.spectrum_axes.annotate(s=delta_distances[peak_id],
+                                        xy=(self._exp_mass_data.iloc[peak_id]["Average Mass"],
+                                            self._exp_mass_data.iloc[peak_id]["Relative Abundance"]),
+                                        xytext=(0, 5),
+                                        textcoords="offset pixels",
+                                        horizontalalignment="center")
+        self.spectrum_canvas.draw()
+        return list(np.where(delta_peaks > 0)[0])
+
+
+    @staticmethod
+    def find_in_intervals(value, intervals=None):
+        """
+        Simple O(n) algorithm to determine whether a value falls into a set of intervals.
+        Example: value=12,  intervals=[(1, 6), (9, 14)] -> True
+                 value=8, intervals=[(1, 6), (9, 14)] -> False
+
+        :param value: Value to search
+        :param intervals: {interval name: (lower interval boundary, upper interval boundary)} dict
+        :return: Name of the interval containing the value; "" if no such interval exists
+        """
+        for name, (lower, upper) in intervals.items():
+            if lower <= value <= upper:
+                return name
+        return ""
+
+
+    def highlight_selected_peaks(self, peak_indices):
+        """
+        Highlight selected peaks in the spectrum.
+
+        :param peak_indices: list of indices of peaks that should be highlighted
         :return: nothing
         """
         polymer_peaks = np.zeros(self.lwPeaks.count(), dtype=int)
@@ -907,55 +1044,56 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         except AttributeError:
             pass
 
-        selected_peaks = np.array([int(self.lwPeaks.item(i).isSelected()) for i in range(self.lwPeaks.count())])
+        selected_peaks = np.zeros(self.lwPeaks.count(), dtype=int)
+        selected_peaks[peak_indices] = 1
 
         # peak colors will be an array with one entry per peak:
         # no polymers: 0 - not selected, 1 - selected
         # polymers:    2 - not selected, 3 - selected
         # alternative colors: orange [1, .49, .16, 1.0], light red [1, .66, .66, 1.0]
-        peak_colors = polymer_peaks + selected_peaks
-        color_set = np.array([[0, 0, 0, 1.0],    # black for unselected peaks without polymers
-                              [1, .8, 0, 1.0],   # yellow for selected peaks without polymers
-                              [0, .75, 0, 1.0],  # green for unselected peaks with polymers
-                              [1, 0, 0, 1.0]])   # red for selected peaks with polymers
-        self.peak_lines.set_color(color_set[peak_colors])
-        self.canvas.draw()
+        peak_colors = selected_peaks + polymer_peaks
+        color_set = np.array(["#000000",   # black for unselected peaks without polymers
+                              "#ffcc00",   # yellow for selected peaks without polymers
+                              "#00c000",   # green for unselected peaks with polymers
+                              "#ff0000"])  # red for selected peaks with polymers
+        self.spectrum_peak_lines.set_color(color_set[peak_colors])
+        self.spectrum_peak_lines.set_linewidth(1)
+        for annotation in self.spectrum_axes.findobj(matplotlib.text.Annotation):
+            annotation.remove()
+        self.spectrum_canvas.draw()
 
 
-    def tree_item_clicked(self):
+    def display_selected_peaks(self, selected_peaks=None):
         """
-        Select the mass corresponding to an entry in the result tree and update accordingly
+        Update the spectrum, the list of masses and the result tree after the selection
+        or parameters influencing the selection have changed.
 
+        :param selected_peaks: list of selected peaks
         :return: nothing
         """
+
+        if selected_peaks is None:
+            selected_peaks = [i.row() for i in self.lwPeaks.selectedIndexes()]
+
+        if self.bgSpectrum.checkedButton() == self.btModeSelection:
+            self.highlight_selected_peaks(selected_peaks)
+        else:
+            selected_peaks = self.highlight_delta_series()
 
         self.lwPeaks.blockSignals(True)
-        self.lwPeaks.clearSelection()
-        toplevel_item = self.twResults.currentItem()
-        while toplevel_item.parent():
-            toplevel_item = toplevel_item.parent()
-        self.lwPeaks.item(toplevel_item.mass_index).setSelected(True)
+        for i in range(self.lwPeaks.count()):
+            self.lwPeaks.item(i).setSelected(i in selected_peaks)
         self.lwPeaks.blockSignals(False)
-        self.set_result_tree()
 
+        if self._exp_mass_data is not None:
+            self.chFilterPolymerHits.setEnabled(True)
 
-    def set_result_tree(self):
-        """
-        Fill the result tree, e.g., after a successful search or whenever peaks are selected
-        in the chromatogram or the mass list.
-
-        :return: nothing
-        """
-        selected_rows = [i.row() for i in self.lwPeaks.selectedIndexes()]
-
-        try:  # to set the value of the single mass calculation spinbox
+        try:
             self.sbSingleMass.setValue(float(self.lwPeaks.currentItem().text()))
         except AttributeError:  # occurs when second peak file is loaded
             pass
 
-        self.chFilterPolymerHits.setEnabled(True)
-        self.highlight_selected_peaks()
-
+        # update the results tree if available
         if self._monomer_hits is not None:
             self.twResults.clear()
             self.twResults.setUpdatesEnabled(False)
@@ -972,7 +1110,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self.twResults.setColumnCount(len(header_labels))
             self.twResults.setHeaderLabels(header_labels)
 
-            for mass_index in selected_rows:
+            for mass_index in selected_peaks:
                 # generate root item (experimental mass, relative abundance)
                 root_item = SortableTreeWidgetItem(self.twResults)
                 root_item.setText(0, "{:.2f}".format(self._exp_mass_data.loc[mass_index]["Average Mass"]))
@@ -1016,81 +1154,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self.twResults.header().setSectionResizeMode(QHeaderView.ResizeToContents)
             self.twResults.header().setStretchLastSection(False)
             self.twResults.setUpdatesEnabled(True)
-
-
-    def toggle_spectrum_mode(self):
-        if self.bgSpectrum.checkedButton() == self.btModeSelection:
-            self.span_selector.active = True
-            self.fig.canvas.mpl_disconnect(self.pick_selector)
-            self.pick_selector = self.fig.canvas.mpl_connect("pick_event", self.select_peaks_by_pick)
-        else:
-            self.span_selector.active = False
-            self.fig.canvas.mpl_disconnect(self.pick_selector)
-            self.pick_selector = self.fig.canvas.mpl_connect("pick_event", self.select_peak_for_delta)
-
-
-    def select_peak_for_delta(self, event):
-        if event.mouseevent.button == 1:
-            main_mass = float(self._exp_mass_data.iloc[event.ind]["Average Mass"])
-            min_mass = float(min(self._exp_mass_data["Average Mass"]))
-            max_mass = float(max(self._exp_mass_data["Average Mass"]))
-            max_iterations = int(self.sbDeltaValue.value() / self.sbDeltaTolerance.value() / 2)
-            intervals = []
-
-            current_mass = main_mass
-            tolerance = self.sbDeltaTolerance.value()
-            i = 0
-            while i < max_iterations and current_mass > min_mass:
-                current_mass -= self.sbDeltaValue.value()
-                intervals.insert(0, (current_mass - tolerance, current_mass + tolerance))
-                tolerance += self.sbDeltaTolerance.value()
-                i += 1
-
-            current_mass = main_mass
-            tolerance = self.sbDeltaTolerance.value()
-            i = 0
-            while i < max_iterations and current_mass < max_mass:
-                current_mass += self.sbDeltaValue.value()
-                intervals.append((current_mass - tolerance, current_mass + tolerance))
-                tolerance += self.sbDeltaTolerance.value()
-                i += 1
-
-            delta_peaks = self._exp_mass_data["Average Mass"].apply(self.find_in_intervals, intervals=intervals)
-
-
-    def find_in_intervals(self, value, intervals=None):
-        for (lower, upper) in intervals:
-            if lower <= value <= upper:
-                return True
-        return False
-
-
-    def update_mass_differences(self):  # TODO new feature
-        """
-        Show lines between peaks whose masses differ by the value of the Delta1/2 spinboxes (+- tolerance).
-
-        :return: nothing
-        """
-        pass
-        # for i, ch_delta, sb_delta, color in [(0, self.chDelta1, self.sbDelta1, "green"),
-        #                                      (1, self.chDelta2, self.sbDelta2, "blue")]:
-        #     if self._exp_mass_data is not None:
-        #         delta_masses = mass_tools.find_delta_masses(self._exp_mass_data,
-        #                                                     sb_delta.value(),
-        #                                                     self.sbDeltaTolerance.value() / 2)
-        #         try:
-        #             x_start, x_stop, y = zip(*delta_masses)
-        #         except ValueError:  # occurs if delta_masses is empty, so continue with next delta mass
-        #             continue
-        #
-        #         delta_plot = self.fig.add_subplot(111)
-        #         try:
-        #             self._delta_lines[i].remove()
-        #         except (ValueError, AttributeError):  # occurs if no lines are present
-        #             pass
-        #         if ch_delta.isChecked():
-        #             self._delta_lines[i] = delta_plot.hlines(y, x_start, x_stop, linewidth=1.5, color=color)
-        #         self.canvas.draw()
 
 
     def save_settings(self):
