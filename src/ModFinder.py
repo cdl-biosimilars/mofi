@@ -156,7 +156,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         self.sbDeltaRepetition.valueChanged.connect(lambda: self.display_selected_peaks())
         self.sbDeltaTolerance.valueChanged.connect(lambda: self.display_selected_peaks())
-        self.sbDeltaValue.valueChanged.connect(lambda: self.display_selected_peaks())
+        self.sbDeltaValue1.valueChanged.connect(lambda: self.display_selected_peaks())
         self.sbDisulfides.valueChanged.connect(self.calculate_protein_mass)
 
         self.teSequence.textChanged.connect(
@@ -218,7 +218,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.spectrum_span_selector = None  # SpanSelector to select multiple peaks
         self.spectrum_rectangle_selector = None  # CollapsingRectangleSelector to zoom the spectrum
         self.spectrum_x_limits = None  # original limits of the x axis when the plot is drawn
-        self.spectrum_picked_peak = None  # picked single peak
+        self.spectrum_picked_peak = None  # the single peak that was picked, or (in a span) a representative singe peak
 
         # init button group for specrum interaction mode
         self.bgSpectrum = QButtonGroup()
@@ -914,10 +914,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         :return: nothing
         """
-        if self.bgSpectrum.checkedButton() == self.btModeDelta:
-            self.spectrum_picked_peak = self.lwPeaks.currentRow()
-        else:
-            self.spectrum_picked_peak = None
+        self.spectrum_picked_peak = self.lwPeaks.currentRow()
         self.display_selected_peaks()
 
 
@@ -931,6 +928,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         toplevel_item = self.twResults.currentItem()
         while toplevel_item.parent():
             toplevel_item = toplevel_item.parent()
+        self.spectrum_picked_peak = toplevel_item.mass_index
         self.display_selected_peaks([toplevel_item.mass_index])
 
 
@@ -942,10 +940,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         :return: nothing
         """
 
-        if self.bgSpectrum.checkedButton() == self.btModeDelta:
-            self.spectrum_picked_peak = event.ind[0]
-        else:
-            self.spectrum_picked_peak = None
+        self.spectrum_picked_peak = event.ind[0]
         self.display_selected_peaks(event.ind)
 
 
@@ -965,6 +960,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.chFilterStructureHits.blockSignals(True)
         self.chFilterStructureHits.setChecked(True)
         self.chFilterStructureHits.blockSignals(False)
+        self.spectrum_picked_peak = peak_indices[0]
         self.display_selected_peaks(peak_indices)
 
 
@@ -979,7 +975,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         min_mass = float(min(self._exp_mass_data["Average Mass"]))
         max_mass = float(max(self._exp_mass_data["Average Mass"]))
         if self.sbDeltaRepetition.value() == -1:
-            max_iterations = int(self.sbDeltaValue.value() / self.sbDeltaTolerance.value() / 2)
+            max_iterations = int(self.sbDeltaValue1.value() / self.sbDeltaTolerance.value() / 2)
         else:
             max_iterations = self.sbDeltaRepetition.value()
         intervals = {}  # will be a {number of mass differences: (interval start, interval end)} dict
@@ -991,7 +987,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         tolerance = self.sbDeltaTolerance.value()
         i = 1
         while i <= max_iterations and current_mass > min_mass:
-            current_mass -= self.sbDeltaValue.value()
+            current_mass -= self.sbDeltaValue1.value()
             intervals[-i] = (current_mass - tolerance, current_mass + tolerance)
             tolerance += self.sbDeltaTolerance.value()
             i += 1
@@ -1000,7 +996,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         tolerance = self.sbDeltaTolerance.value()
         i = 1
         while i <= max_iterations and current_mass < max_mass:
-            current_mass += self.sbDeltaValue.value()
+            current_mass += self.sbDeltaValue1.value()
             intervals[i] = (current_mass - tolerance, current_mass + tolerance)
             tolerance += self.sbDeltaTolerance.value()
             i += 1
@@ -1283,8 +1279,9 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 self.lwPeaks.addItems(["{:.2f}".format(i) for i in self._exp_mass_data["Average Mass"]])
                 self.lwPeaks.setCurrentRow(0)
                 self.lwPeaks.blockSignals(False)
-                self.sbSingleMass.setValue(float(self.lwPeaks.currentItem().text()))
                 self.draw_spectrum()
+                self.spectrum_picked_peak = 0
+                self.display_selected_peaks()
 
             self.cbTolerance.setCurrentIndex(settings["tolerance flavor"])
             self.sbTolerance.setValue(settings["tolerance value"])
