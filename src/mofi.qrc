@@ -1,5 +1,6 @@
 <RCC>
   <qresource prefix="mofi resource">
+    <file>images/Label.png</file>
     <file>images/SelectMode.png</file>
     <file>images/DeltaMassMode.png</file>
     <file>images/ResetZoom.png</file>

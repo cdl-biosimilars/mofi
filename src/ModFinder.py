@@ -139,6 +139,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.btInsertRowAbovePolymers.clicked.connect(lambda: self.table_insert_row(self.tbPolymers, above=True))
         self.btInsertRowBelowMonomers.clicked.connect(lambda: self.table_insert_row(self.tbMonomers, above=False))
         self.btInsertRowBelowPolymers.clicked.connect(lambda: self.table_insert_row(self.tbPolymers, above=False))
+        self.btLabelPeaks.clicked.connect(lambda: self.display_selected_peaks())
         self.btLoadMonomers.clicked.connect(self.load_monomers)
         self.btLoadPolymers.clicked.connect(self.load_polymers)
         self.btResetZoom.clicked.connect(self.reset_zoom)
@@ -148,7 +149,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         self.cbTolerance.activated.connect(self.choose_tolerance_units)
 
-        self.chFilterPolymerHits.clicked.connect(lambda: self.display_selected_peaks())
+        self.chFilterStructureHits.clicked.connect(self.filter_structure_hits)
         self.chPngase.clicked.connect(self.calculate_protein_mass)
 
         self.lwPeaks.itemSelectionChanged.connect(self.select_peaks_in_list)
@@ -512,7 +513,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self.twResults.clear()
             self._monomer_hits = None
             self._polymer_hits = None
-            self.chFilterPolymerHits.setEnabled(False)
+            self.chFilterStructureHits.setEnabled(False)
             self.lwPeaks.blockSignals(True)
             self.lwPeaks.clear()
             self.lwPeaks.addItems(["{:.2f}".format(i) for i in self._exp_mass_data["Average Mass"]])
@@ -792,6 +793,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                                                                    monomers=monomers_for_polymer_search,
                                                                    progress_bar=self.pbSearchProgress)
             self.statusbar.showMessage("Polymer search DONE!", 5000)
+        self.chFilterStructureHits.setEnabled(True)
         self.display_selected_peaks()
 
 
@@ -888,6 +890,24 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             pass
 
 
+    def filter_structure_hits(self):
+        """
+        Called when the checkbox "Filter structure hits" is (un)checked.
+        Ensure that only a single mass is displayed in the result tree if this box is unchecked.
+
+        :return: nothing
+        """
+        if not self.chFilterStructureHits.isChecked():
+            i = 0
+            for i in range(self.lwPeaks.count()):
+                if self.lwPeaks.item(i).isSelected():
+                    break
+            self.display_selected_peaks([i])
+        else:
+            self.display_selected_peaks()
+
+
+
     def select_peaks_in_list(self):
         """
         Select one or several peaks in the peak list.
@@ -942,10 +962,13 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         for i in range(self.lwPeaks.count()):
             if min_mass <= float(self.lwPeaks.item(i).text()) <= max_mass:
                 peak_indices.append(i)
+        self.chFilterStructureHits.blockSignals(True)
+        self.chFilterStructureHits.setChecked(True)
+        self.chFilterStructureHits.blockSignals(False)
         self.display_selected_peaks(peak_indices)
 
 
-    def highlight_delta_series(self):
+    def highlight_delta_series(self):  # TODO add possibility to show two delta series
         """
         Highlights a series of peaks that differ by a given mass.
 
@@ -955,7 +978,10 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         main_mass = float(self._exp_mass_data.iloc[self.spectrum_picked_peak]["Average Mass"])
         min_mass = float(min(self._exp_mass_data["Average Mass"]))
         max_mass = float(max(self._exp_mass_data["Average Mass"]))
-        max_iterations = int(self.sbDeltaValue.value() / self.sbDeltaTolerance.value() / 2)  # TODO spin box
+        if self.sbDeltaRepetition.value() == -1:
+            max_iterations = int(self.sbDeltaValue.value() / self.sbDeltaTolerance.value() / 2)
+        else:
+            max_iterations = self.sbDeltaRepetition.value()
         intervals = {}  # will be a {number of mass differences: (interval start, interval end)} dict
 
         # calculate possible intervals for peaks separated from the selected peaks
@@ -1058,8 +1084,19 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                               "#ff0000"])  # red for selected peaks with polymers
         self.spectrum_peak_lines.set_color(color_set[peak_colors])
         self.spectrum_peak_lines.set_linewidth(1)
+
+        # label the selection by masses
         for annotation in self.spectrum_axes.findobj(matplotlib.text.Annotation):
             annotation.remove()
+        if self.btLabelPeaks.isChecked():
+            for peak_id in peak_indices:
+                self.spectrum_axes.annotate(s="{:.2f}".format(self._exp_mass_data.iloc[peak_id]["Average Mass"]),
+                                            xy=(self._exp_mass_data.iloc[peak_id]["Average Mass"],
+                                                self._exp_mass_data.iloc[peak_id]["Relative Abundance"]),
+                                            xytext=(0, 5),
+                                            textcoords="offset pixels",
+                                            horizontalalignment="center",
+                                            bbox=dict(facecolor="white", alpha=.75, linewidth=0))
         self.spectrum_canvas.draw()
 
 
@@ -1080,18 +1117,29 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         else:
             selected_peaks = self.highlight_delta_series()
 
+        # update the selection in the mass list
         self.lwPeaks.blockSignals(True)
         for i in range(self.lwPeaks.count()):
             self.lwPeaks.item(i).setSelected(i in selected_peaks)
         self.lwPeaks.blockSignals(False)
 
-        if self._exp_mass_data is not None:
-            self.chFilterPolymerHits.setEnabled(True)
+        # show the first currently selected mass or the mass of the central peak of the delta series in the mass list
+        if self.spectrum_picked_peak is not None:
+            self.lwPeaks.scrollToItem(self.lwPeaks.item(self.spectrum_picked_peak))
+        else:
+            self.lwPeaks.scrollToItem(self.lwPeaks.item(selected_peaks[0]))
 
+        # fill the single mass spin box with the currently selected mass
         try:
             self.sbSingleMass.setValue(float(self.lwPeaks.currentItem().text()))
         except AttributeError:  # occurs when second peak file is loaded
             pass
+
+        # activate the polymer hit filter if more than one peak is selected
+        if len(selected_peaks) > 1:
+            self.chFilterStructureHits.blockSignals(True)
+            self.chFilterStructureHits.setChecked(True)
+            self.chFilterStructureHits.blockSignals(False)
 
         # update the results tree if available
         if self._monomer_hits is not None:
@@ -1099,7 +1147,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self.twResults.setUpdatesEnabled(False)
 
             missing_color = QColor(255, 185, 200)
-            if self.chFilterPolymerHits.isChecked():
+            if self.chFilterStructureHits.isChecked():
                 df_hit = self._polymer_hits
             else:
                 df_hit = self._monomer_hits
@@ -1138,7 +1186,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                             child_item.setText(len(monomers) + 2 + j, "{:.2f}".format(hit[label]))
                             child_item.setTextAlignment(len(monomers) + 2 + j, Qt.AlignRight)
 
-                        if self.chFilterPolymerHits.isChecked():
+                        if self.chFilterStructureHits.isChecked():
                             # polymer composition
                             sites = hit[df_hit.columns.get_loc("ppm")+1:-1].index
                             for j, site in enumerate(sites):
@@ -1226,7 +1274,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
             self._monomer_hits = None
             self._polymer_hits = None
-            self.chFilterPolymerHits.setEnabled(False)
+            self.chFilterStructureHits.setEnabled(False)
             self.twResults.clear()
             if settings["exp mass data"] is not None:
                 self._exp_mass_data = settings["exp mass data"]
