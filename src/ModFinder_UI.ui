@@ -484,7 +484,7 @@
                 <enum>QAbstractItemView::ContiguousSelection</enum>
                </property>
                <property name="columnCount">
-                <number>6</number>
+                <number>5</number>
                </property>
                <attribute name="horizontalHeaderDefaultSectionSize">
                 <number>60</number>
@@ -512,11 +512,6 @@
                <column>
                 <property name="text">
                  <string>Max</string>
-                </property>
-               </column>
-               <column>
-                <property name="text">
-                 <string>G?</string>
                 </property>
                </column>
               </widget>

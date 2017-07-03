@@ -234,7 +234,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         # init the monomer table and associated buttons
         self.tbMonomers.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
-        for col, width in [(0, 40), (2, 130), (3, 45), (4, 45), (5, 25)]:
+        for col, width in [(0, 40), (2, 130), (3, 45), (4, 45)]:
             self.tbMonomers.setColumnWidth(col, width)
         self.tbMonomers.verticalHeader().setSectionResizeMode(QHeaderView.Fixed)
         self.tbMonomers.verticalHeader().setDefaultSectionSize(22)
@@ -629,9 +629,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             updates the value of self.lbMassProtein, self.lbMassMods and self.lbMassTotal
 
         :param return_values: influences the return value (see below)
-        :return: if return_values is "all": list of (checked, name, composition, min count,
-                                                     max count, include in polymer search) tuples
-                 otherwise list of (name, mass, min count, max count, include in polymer search) tuples
+        :return: if return_values is "all": list of (checked, name, composition, min count, max count) tuples
+                 otherwise list of (name, mass, min count, max count) tuples
         """
 
         self._known_mods_mass = 0
@@ -644,9 +643,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             composition = self.tbMonomers.item(row_id, 2).text()
             min_count = self.tbMonomers.cellWidget(row_id, 3).value()
             max_count = self.tbMonomers.cellWidget(row_id, 4).value()
-            is_poly = self.tbMonomers.cellWidget(row_id, 5).findChild(QCheckBox).isChecked()
             if return_values == "all":
-                result.append((ch.isChecked(), name, composition, min_count, max_count, is_poly))
+                result.append((ch.isChecked(), name, composition, min_count, max_count))
             else:
                 if ch.isChecked():
                     mass = 0
@@ -661,7 +659,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                                                  "Error",
                                                  "Invalid formula in row {:d}: {}".format(row_id + 1, composition))
                     self._known_mods_mass += mass * min_count
-                    result.append((name, mass, min_count, max_count, is_poly))
+                    result.append((name, mass, min_count, max_count))
 
         self.lbMassProtein.setText("{:,.2f}".format(self._protein_mass))
         self.lbMassMods.setText("{:,.2f}".format(self._known_mods_mass))
@@ -711,13 +709,10 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         # calculate the upper limit of glycans that may appear
         # add all checked single glycans to the list of modifications
-        monomers_for_polymer_search = []
-        for name, mass, min_count, max_count, is_poly in monomers:
+        for name, mass, min_count, max_count in monomers:
             if max_count == -1:
                 max_count = min(int((max_tol_mass - self._protein_mass) / mass), configure.maxmods)
             modifications.append((name, mass, max_count - min_count))
-            if is_poly:
-                monomers_for_polymer_search.append(name)
 
         if not modifications:
             QMessageBox.critical(self, "Error", "List of monomers is empty. Aborting search.")
@@ -736,29 +731,24 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         if polymers:  # dict contains at least one entry
             df_polymers = pd.DataFrame.from_dict(polymers, orient="index")
             df_polymers.columns = ["Composition", "Sites", "Abundance"]
-            monomers_in_library = modification_search.get_monomers_from_library(df_polymers)
+            monomers_in_library = set(modification_search.get_monomers_from_library(df_polymers))
         else:  # dict remained empty, i.e., there are no polymers
-            monomers_in_library = []
+            monomers_in_library = set()
             df_polymers = pd.DataFrame()
 
-        if sorted(monomers_for_polymer_search) != sorted(monomers_in_library):  # TODO make this check automatic!
-            monomers_only_checked = set(monomers_for_polymer_search) - set(monomers_in_library)
-            monomers_only_in_library = set(monomers_in_library) - set(monomers_for_polymer_search)
-            error_message = []
-            if monomers_only_checked:
-                error_message += ["The following monomers are checked for polymer search ",
-                                  "but do not appear in the library: "]
-                error_message += " ".join(sorted(monomers_only_checked))
-                error_message.append(".\n")
-            if monomers_only_in_library:
-                error_message += ["The following monomers appear in the library ",
-                                  "but are not checked for polymer search: "]
-                error_message += " ".join(sorted(monomers_only_in_library))
-                error_message.append(".\n")
+        # check whether all monomers required in search stage 2 are enabled in search stage 1
+        available_monomers = [m[0] for m in modifications]
+        missing_monomers = monomers_in_library - set(available_monomers)
+        if missing_monomers:
+            error_message = ["The following monosaccharides appear in the library ",
+                             "but do not appear in the composition list: "]
+            error_message += " ".join(sorted(missing_monomers))
+            error_message.append(".\n")
             QMessageBox.critical(self,
                                  "Error",
                                  "".join(error_message))
             return
+        monomers_for_polymer_search = [m for m in available_monomers if m in monomers_in_library]
 
         self.statusbar.showMessage("Starting monomer search (stage 1) ...")
         print("Experimental Masses:", self._exp_mass_data["Average Mass"].head(), sep="\n")
@@ -768,10 +758,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         print("Monomers used in search:\nName\tMass\tmax")
         for m in modifications:
             print("{}\t{:.2f}\t{:d}".format(*m))
-        print("Monomers checked for polymer search:")
+        print("Monomers used in polymer search:")
         print(", ".join(monomers_for_polymer_search))
-        print("Monomers extracted from library:")
-        print(", ".join(monomers_in_library))
 
         # stage 1: monomer search
         self._monomer_hits = modification_search.find_monomers(
@@ -788,7 +776,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             return
 
         # add the minimum monomer counts to the result data frame
-        for name, _, min_count, _, _ in monomers:
+        for name, _, min_count, _ in monomers:
             self._monomer_hits[name] += min_count
 
         # stage 2: polymer search
@@ -1377,7 +1365,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             if not filename.endswith(".csv"):
                 filename += ".csv"
             df_monomers = pd.DataFrame(self.calculate_mod_mass(return_values="all"),
-                                       columns=["Checked", "Name", "Composition", "Min", "Max", "Poly?"])
+                                       columns=["Checked", "Name", "Composition", "Min", "Max"])
             try:
                 df_monomers.to_csv(filename, index=False)
             except IOError:
@@ -1419,13 +1407,11 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             df_monomers["Min"] = 0
         if "Max" not in df_monomers.columns:
             df_monomers["Max"] = -1
-        if "Poly?" not in df_monomers.columns:
-            df_monomers["Poly?"] = False
 
         self.table_clear(self.tbMonomers)
         for row_id, data in df_monomers.iterrows():
             self._monomer_table_create_row(row_id, data["Checked"], data["Name"], data["Composition"],
-                                           data["Min"], data["Max"], data["Poly?"])
+                                           data["Min"], data["Max"])
         self.calculate_mod_mass()
 
 
