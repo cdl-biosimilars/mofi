@@ -905,7 +905,6 @@
           <height>280</height>
          </size>
         </property>
-        <zorder></zorder>
        </widget>
       </item>
       <item>
@@ -1044,17 +1043,10 @@
            <string/>
           </property>
           <layout class="QGridLayout" name="gridLayout_9">
-           <item row="0" column="0">
-            <widget class="QLabel" name="label_7">
-             <property name="text">
-              <string>Mass differences (Da):</string>
-             </property>
-            </widget>
-           </item>
-           <item row="3" column="0">
+           <item row="4" column="0">
             <layout class="QHBoxLayout" name="horizontalLayout_7">
              <item>
-              <widget class="QDoubleSpinBox" name="sbDeltaTolerance">
+              <widget class="QDoubleSpinBox" name="sbDeltaTolerance1">
                <property name="minimumSize">
                 <size>
                  <width>75</width>
@@ -1073,33 +1065,55 @@
               </widget>
              </item>
              <item>
-              <widget class="QLabel" name="label_6">
-               <property name="text">
-                <string>Da</string>
+              <widget class="QDoubleSpinBox" name="sbDeltaTolerance2">
+               <property name="minimumSize">
+                <size>
+                 <width>75</width>
+                 <height>20</height>
+                </size>
+               </property>
+               <property name="minimum">
+                <double>0.100000000000000</double>
+               </property>
+               <property name="singleStep">
+                <double>0.100000000000000</double>
+               </property>
+               <property name="value">
+                <double>5.000000000000000</double>
                </property>
               </widget>
              </item>
             </layout>
            </item>
-           <item row="2" column="0">
-            <widget class="QLabel" name="label_3">
+           <item row="1" column="0">
+            <widget class="QLabel" name="label_7">
              <property name="text">
-              <string>Tolerance:</string>
+              <string>Mass differences (Da):</string>
              </property>
             </widget>
            </item>
-           <item row="1" column="0">
+           <item row="3" column="0">
+            <widget class="QLabel" name="label_3">
+             <property name="text">
+              <string>Tolerance (Da):</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0">
             <layout class="QHBoxLayout" name="horizontalLayout_9">
              <item>
               <widget class="QDoubleSpinBox" name="sbDeltaValue1">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
                <property name="minimumSize">
                 <size>
-                 <width>70</width>
+                 <width>75</width>
                  <height>20</height>
                 </size>
                </property>
-               <property name="specialValueText">
-                <string>off</string>
+               <property name="minimum">
+                <double>1.000000000000000</double>
                </property>
                <property name="maximum">
                 <double>999.990000000000009</double>
@@ -1116,12 +1130,12 @@
               <widget class="QDoubleSpinBox" name="sbDeltaValue2">
                <property name="minimumSize">
                 <size>
-                 <width>70</width>
+                 <width>75</width>
                  <height>20</height>
                 </size>
                </property>
-               <property name="specialValueText">
-                <string>off</string>
+               <property name="minimum">
+                <double>1.000000000000000</double>
                </property>
                <property name="maximum">
                 <double>999.990000000000009</double>
@@ -1129,21 +1143,24 @@
                <property name="singleStep">
                 <double>0.100000000000000</double>
                </property>
+               <property name="value">
+                <double>162.139999999999986</double>
+               </property>
               </widget>
              </item>
             </layout>
            </item>
-           <item row="4" column="0">
+           <item row="5" column="0">
             <widget class="QLabel" name="label_11">
              <property name="text">
               <string>Maximum repetitions:</string>
              </property>
             </widget>
            </item>
-           <item row="5" column="0">
+           <item row="6" column="0">
             <layout class="QHBoxLayout" name="horizontalLayout_12">
              <item>
-              <widget class="QSpinBox" name="sbDeltaRepetition">
+              <widget class="QSpinBox" name="sbDeltaRepetition1">
                <property name="minimumSize">
                 <size>
                  <width>75</width>
@@ -1171,16 +1188,88 @@
               </widget>
              </item>
              <item>
+              <widget class="QSpinBox" name="sbDeltaRepetition2">
+               <property name="minimumSize">
+                <size>
+                 <width>75</width>
+                 <height>20</height>
+                </size>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>75</width>
+                 <height>16777215</height>
+                </size>
+               </property>
+               <property name="specialValueText">
+                <string>auto</string>
+               </property>
+               <property name="minimum">
+                <number>-1</number>
+               </property>
+               <property name="maximum">
+                <number>99</number>
+               </property>
+               <property name="value">
+                <number>-1</number>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item row="0" column="0">
+            <layout class="QHBoxLayout" name="horizontalLayout_10">
+             <item>
               <spacer name="horizontalSpacer_3">
                <property name="orientation">
                 <enum>Qt::Horizontal</enum>
                </property>
-               <property name="sizeType">
-                <enum>QSizePolicy::Expanding</enum>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>10</width>
+                 <height>20</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+             <item>
+              <widget class="QCheckBox" name="chDelta1">
+               <property name="text">
+                <string>1</string>
+               </property>
+               <property name="checked">
+                <bool>true</bool>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <spacer name="horizontalSpacer_4">
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
                </property>
                <property name="sizeHint" stdset="0">
                 <size>
-                 <width>20</width>
+                 <width>10</width>
+                 <height>20</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+             <item>
+              <widget class="QCheckBox" name="chDelta2">
+               <property name="text">
+                <string>2</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <spacer name="horizontalSpacer_6">
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>10</width>
                  <height>20</height>
                 </size>
                </property>

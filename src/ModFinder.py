@@ -149,14 +149,19 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         self.cbTolerance.activated.connect(self.choose_tolerance_units)
 
+        self.chDelta1.clicked.connect(self.toggle_delta_series)
+        self.chDelta2.clicked.connect(self.toggle_delta_series)
         self.chFilterStructureHits.clicked.connect(self.filter_structure_hits)
         self.chPngase.clicked.connect(self.calculate_protein_mass)
 
         self.lwPeaks.itemSelectionChanged.connect(self.select_peaks_in_list)
 
-        self.sbDeltaRepetition.valueChanged.connect(lambda: self.display_selected_peaks())
-        self.sbDeltaTolerance.valueChanged.connect(lambda: self.display_selected_peaks())
+        self.sbDeltaRepetition1.valueChanged.connect(lambda: self.display_selected_peaks())
+        self.sbDeltaRepetition2.valueChanged.connect(lambda: self.display_selected_peaks())
+        self.sbDeltaTolerance1.valueChanged.connect(lambda: self.display_selected_peaks())
+        self.sbDeltaTolerance2.valueChanged.connect(lambda: self.display_selected_peaks())
         self.sbDeltaValue1.valueChanged.connect(lambda: self.display_selected_peaks())
+        self.sbDeltaValue2.valueChanged.connect(lambda: self.display_selected_peaks())
         self.sbDisulfides.valueChanged.connect(self.calculate_protein_mass)
 
         self.teSequence.textChanged.connect(
@@ -885,10 +890,30 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 self.spectrum_span_selector.active = True
             else:
                 self.gbDeltaSeries.setEnabled(True)
+                self.toggle_delta_series()
                 self.spectrum_span_selector.active = False
         except AttributeError:  # i.e., there is currently no spectrum
             pass
 
+
+    def toggle_delta_series(self):
+        """
+        Enable the delta series spin boxes whose correspondihc checkbox is checked.
+
+        :return: nothing
+        """
+        for ch, sb_delta, sb_tolerance, sb_repetitions in \
+            [(self.chDelta1, self.sbDeltaValue1, self.sbDeltaTolerance1, self.sbDeltaRepetition1),
+             (self.chDelta2, self.sbDeltaValue2, self.sbDeltaTolerance2, self.sbDeltaRepetition2)]:
+            if ch.isChecked():
+                sb_delta.setEnabled(True)
+                sb_tolerance.setEnabled(True)
+                sb_repetitions.setEnabled(True)
+            else:
+                sb_delta.setEnabled(False)
+                sb_tolerance.setEnabled(False)
+                sb_repetitions.setEnabled(False)
+        self.highlight_delta_series()
 
     def filter_structure_hits(self):
         """
@@ -964,7 +989,24 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.display_selected_peaks(peak_indices)
 
 
-    def highlight_delta_series(self):  # TODO add possibility to show two delta series
+    @staticmethod
+    def concat_interval_names(row):
+        """
+        Concatenate rows from a dataframe indicating interval names.
+        Examples: ["", -1] -> "-1"
+                  [2, -1] -> "2/-1"
+
+        :param row: Row from dataframe.apply(axis=1)
+        :return: a string
+        """
+        result = []
+        for value in row:
+            if value:
+                result.append(str(value))
+        return "/".join(result)
+
+
+    def highlight_delta_series(self):
         """
         Highlights a series of peaks that differ by a given mass.
 
@@ -974,66 +1016,88 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         main_mass = float(self._exp_mass_data.iloc[self.spectrum_picked_peak]["Average Mass"])
         min_mass = float(min(self._exp_mass_data["Average Mass"]))
         max_mass = float(max(self._exp_mass_data["Average Mass"]))
-        if self.sbDeltaRepetition.value() == -1:
-            max_iterations = int(self.sbDeltaValue1.value() / self.sbDeltaTolerance.value() / 2)
-        else:
-            max_iterations = self.sbDeltaRepetition.value()
-        intervals = {}  # will be a {number of mass differences: (interval start, interval end)} dict
 
-        # calculate possible intervals for peaks separated from the selected peaks
-        # by an integer number of mass differences
-        # for each added difference, increase the interval size by the original tolerance times two
-        current_mass = main_mass
-        tolerance = self.sbDeltaTolerance.value()
-        i = 1
-        while i <= max_iterations and current_mass > min_mass:
-            current_mass -= self.sbDeltaValue1.value()
-            intervals[-i] = (current_mass - tolerance, current_mass + tolerance)
-            tolerance += self.sbDeltaTolerance.value()
-            i += 1
+        # dataframe with the mass index as index, the delta series index as columns, and the intervall names als values
+        df_delta_distances = pd.DataFrame(index=self._exp_mass_data.index, dtype=int)
 
-        current_mass = main_mass
-        tolerance = self.sbDeltaTolerance.value()
-        i = 1
-        while i <= max_iterations and current_mass < max_mass:
-            current_mass += self.sbDeltaValue1.value()
-            intervals[i] = (current_mass - tolerance, current_mass + tolerance)
-            tolerance += self.sbDeltaTolerance.value()
-            i += 1
+        # dataframe with the following values:
+        # 0 - peaks not in any delta mass series
+        # 1 - peaks in series 1
+        # 2 - peaks in series 2
+        # 3 - peaks in both series
+        # 4 - selected (central) peak
+        df_delta_peaks = pd.DataFrame(index=self._exp_mass_data.index, dtype=int)
 
-        # pd.Series with the interval name per mass index
-        delta_distances = self._exp_mass_data["Average Mass"] \
-            .apply(self.find_in_intervals, intervals=intervals)
-        delta_distances[self.spectrum_picked_peak] = "0"
+        # the algorithm is the same for both delta series; hence, use this loop
+        for delta_id, ch_delta, sb_value, sb_tolerance, sb_repetitions in \
+                [(1, self.chDelta1, self.sbDeltaValue1, self.sbDeltaTolerance1, self.sbDeltaRepetition1),
+                 (2, self.chDelta2, self.sbDeltaValue2, self.sbDeltaTolerance2, self.sbDeltaRepetition2)]:
+            if not ch_delta.isChecked():
+                continue
 
-        # pd.Series with the following values:
-        # 0 - peaks not in the delta mass series
-        # 1 - peaks in the series
-        # 2 - selected peak
-        delta_peaks = delta_distances \
-            .map(lambda x: 1 if x else 0)
-        delta_peaks[self.spectrum_picked_peak] = 2
+            if sb_repetitions.value() == -1:
+                max_iterations = int(sb_value.value() / sb_tolerance.value() / 2)
+            else:
+                max_iterations = sb_repetitions.value()
+            intervals = {}  # will be a {number of mass differences: (interval start, interval end)} dict
 
-        # color the peaks in the delata series and increase their line width
-        color_set = np.array(["#b3b3b3",  # light gray
-                              "#aa0088",  # violet
+            # calculate possible intervals for peaks separated from the selected peaks
+            # by an integer number of mass differences
+            # for each added difference, increase the interval size by the original tolerance times two
+            current_mass = main_mass
+            tolerance = sb_tolerance.value()
+            i = 1
+            while i <= max_iterations and current_mass > min_mass:
+                current_mass -= sb_value.value()
+                intervals[-i] = (current_mass - tolerance, current_mass + tolerance)
+                tolerance += sb_tolerance.value()
+                i += 1
+
+            current_mass = main_mass
+            tolerance = sb_tolerance.value()
+            i = 1
+            while i <= max_iterations and current_mass < max_mass:
+                current_mass += sb_value.value()
+                intervals[i] = (current_mass - tolerance, current_mass + tolerance)
+                tolerance += sb_tolerance.value()
+                i += 1
+
+            df_delta_distances[delta_id] = self._exp_mass_data["Average Mass"] \
+                .apply(self.find_in_intervals, intervals=intervals)
+            df_delta_distances[delta_id][self.spectrum_picked_peak] = "0"
+
+            df_delta_peaks[delta_id] = df_delta_distances[delta_id] \
+                .map(lambda x: delta_id if x else 0)
+
+        # calculate "total" columns describing the results from both delta series searches
+        df_delta_peaks["total"] = df_delta_peaks.sum(axis="columns")
+        df_delta_peaks["total"][self.spectrum_picked_peak] = 4
+        df_delta_distances["total"] = df_delta_distances.apply(self.concat_interval_names, axis=1)
+
+        # color the peaks in the delta series and increase their line width
+        color_set = np.array(["#b3b3b3",   # light gray
+                              "#aa0088",   # violet
+                              "#2ca05a",   # greenish
+                              "#6b5071",   # mixture of the prevoius two
                               "#ff0000"])  # red
-        linewidth_set = np.array([1, 2, 3])
-        self.spectrum_peak_lines.set_color(color_set[delta_peaks])
-        self.spectrum_peak_lines.set_linewidth(linewidth_set[delta_peaks])
+
+        linewidth_set = np.array([1, 2, 2, 2, 3])
+        self.spectrum_peak_lines.set_color(color_set[df_delta_peaks["total"]])
+        self.spectrum_peak_lines.set_linewidth(linewidth_set[df_delta_peaks["total"]])
 
         # annotate the peaks in the delta series
         for annotation in self.spectrum_axes.findobj(matplotlib.text.Annotation):
             annotation.remove()
-        for peak_id in np.where(delta_peaks > 0)[0]:
-            self.spectrum_axes.annotate(s=delta_distances[peak_id],
+        for peak_id in np.where(df_delta_peaks["total"] > 0)[0]:
+            self.spectrum_axes.annotate(s=df_delta_distances["total"][peak_id],
                                         xy=(self._exp_mass_data.iloc[peak_id]["Average Mass"],
                                             self._exp_mass_data.iloc[peak_id]["Relative Abundance"]),
                                         xytext=(0, 5),
                                         textcoords="offset pixels",
                                         horizontalalignment="center")
         self.spectrum_canvas.draw()
-        return list(np.where(delta_peaks > 0)[0])
+
+        return list(np.where(df_delta_peaks["total"] > 0)[0])
 
 
     @staticmethod
