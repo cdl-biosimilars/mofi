@@ -264,18 +264,8 @@ def find_polymers(combinations, glycan_library, monomers, progress_bar=None):
     df_glycan_composition["Monomers"] = df_glycan_composition["Composition"] \
         .apply(_calc_monomer_counts, monomers=monomers)
 
-    if progress_bar is not None:
-        progress_bar.setValue(40)
-
-    # df_glycan_combinations: dataframe, like
-    #                       N149_A N149_B    N171_A    N171_B     Abundance
-    # Hex HexNAc Fuc N-core
-    # 4   4      2   4          M5     M5     A2G0F     A2G0F  1.225000e-03
-    #     6      2   4        A2G2     M5     A2G0F     A2G0F  2.362500e-02
-    #                4          M5   A2G2     A2G0F     A2G0F  2.362500e-02
-    #            3   4       A2G2F     M5     A2G0F     A2G0F  1.015000e-02
-    #                4          M5  A2G2F     A2G0F     A2G0F  1.015000e-02
-    df_glycan_combinations = pd.DataFrame(list(product(*list(mods_per_site))), columns=list(mods_per_site.index))
+    df_glycan_combinations = pd.DataFrame(list(product(*list(mods_per_site))),
+                                          columns=list(mods_per_site.index))
     df_glycan_combinations["Monomers"], df_glycan_combinations["Abundance"] = zip(
         *df_glycan_combinations.apply(_calc_glycan_composition_and_abundance,
                                       axis=1,
@@ -313,4 +303,6 @@ def find_polymers(combinations, glycan_library, monomers, progress_bar=None):
     if progress_bar is not None:
         progress_bar.setValue(100)
 
+    df_glycan_composition.to_excel("df_glycan_composition.xls")
+    df_glycan_combinations.to_excel("df_glycan_combinations.xls")
     return df_found_polymers

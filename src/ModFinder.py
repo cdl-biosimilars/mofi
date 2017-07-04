@@ -25,6 +25,7 @@ import pickle
 import re
 import sys
 import time
+import webbrowser
 
 from qtpy.QtWidgets import (QApplication, QMainWindow, QMenu, QActionGroup, QVBoxLayout, QTableWidgetItem, QCheckBox,
                             QMessageBox, QFileDialog, QTreeWidgetItem, QHeaderView, QSpinBox, QDoubleSpinBox,
@@ -169,21 +170,30 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         self.twResults.itemClicked.connect(self.select_peaks_in_tree)
 
-        self.menubar.setVisible(False)
+        # self.menubar.setVisible(False)
 
-        # add toolbars
-        self.tlMassSet = QToolBar(self)
-        self.tlMassSet.setObjectName("tlMassSet")
-        self.addToolBar(Qt.TopToolBarArea, self.tlMassSet)
-        self.tlHelp = QToolBar(self)
-        self.tlHelp.setObjectName("tlHelp")
-        self.tlHelp.addActions([self.acAbout, self.acHelp])
-        self.addToolBar(Qt.TopToolBarArea, self.tlHelp)
+        # # add toolbars
+        # self.tlFile = QToolBar(self)
+        # self.tlFile.setObjectName("tlFile")
+        # self.tlFile.addAction(self.acOpenFasta)
+        # self.tlFile.addAction(self.acOpenPeaks)
+        # self.tlFile.addSeparator()
+        # self.tlFile.addAction(self.acLoadSettings)
+        # self.tlFile.addAction(self.acSaveSettings)
+        # self.tlFile.addSeparator()
+        # self.tlFile.addAction(self.acQuit)
+        # self.addToolBar(Qt.TopToolBarArea, self.tlFile)
+        # self.tlMassSet = QToolBar(self)
+        # self.tlMassSet.setObjectName("tlMassSet")
+        # self.addToolBar(Qt.TopToolBarArea, self.tlMassSet)
+        # self.tlHelp = QToolBar(self)
+        # self.tlHelp.setObjectName("tlHelp")
+        # self.tlHelp.addActions([self.acAbout, self.acHelp])
+        # self.addToolBar(Qt.TopToolBarArea, self.tlHelp)
 
         # generate mass set selectors from config file
         self.agSelectMassSet = QActionGroup(self.menuAtomicMasses)
-        set_id = 0
-        for mass_set in configure.mass_sets:
+        for set_id, mass_set in enumerate(configure.mass_sets):
             ac_select_set = QAction(self)
             ac_select_set.setCheckable(True)
             if set_id == 0:
@@ -192,9 +202,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             ac_select_set.setText(mass_set)
             ac_select_set.setToolTip(configure.mass_sets[mass_set].get("description", ""))
             self.menuAtomicMasses.addAction(ac_select_set)
-            self.tlMassSet.addAction(ac_select_set)
+            # self.tlMassSet.addAction(ac_select_set)
             self.agSelectMassSet.addAction(ac_select_set)
-            set_id += 1
         # noinspection PyUnresolvedReferences
         self.agSelectMassSet.triggered.connect(self.choose_mass_set)
 
@@ -436,14 +445,15 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         QMessageBox.about(self, "About ModFinder", v + r + c)
 
 
-    def show_help(self):
+    @staticmethod
+    def show_help():
         """
-        Show the help dialog.
+        Open the manual in the default webbrowser.
 
         :return: nothing
         """
-        with open("../docs/help.txt", "r") as helpfile:
-            QMessageBox.about(self, "Help", helpfile.read())
+
+        webbrowser.open("../docs/MoFi_manual.pdf")
 
 
     def choose_tolerance_units(self):
@@ -736,7 +746,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         # calculate the upper limit of glycans that may appear
         # add all checked single glycans to the list of modifications
-        for name, mass, min_count, max_count in monomers:
+        for name, mass, min_count, max_count in monomers:  # TODO maxcount from glycan library
             if max_count == -1:
                 max_count = min(int((max_tol_mass - self._protein_mass) / mass), configure.maxmods)
             modifications.append((name, mass, max_count - min_count))
