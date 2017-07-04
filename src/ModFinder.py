@@ -127,13 +127,13 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.acOpenFasta.triggered.connect(self.load_fasta_file)
         self.acOpenPeaks.triggered.connect(self.load_mass_file)
         self.acQuit.triggered.connect(QApplication.instance().quit)
-        self.acSaveAnnotation.triggered.connect(self.save_search_results)
         self.acSaveSettings.triggered.connect(self.save_settings)
 
         self.btClearMonomers.clicked.connect(lambda: self.table_clear(self.tbMonomers))
         self.btClearPolymers.clicked.connect(lambda: self.table_clear(self.tbPolymers))
         self.btDeleteRowMonomers.clicked.connect(lambda: self.table_delete_row(self.tbMonomers))
         self.btDeleteRowPolymers.clicked.connect(lambda: self.table_delete_row(self.tbPolymers))
+        self.btExportResults.clicked.connect(self.save_search_results)
         self.btFindModifications.clicked.connect(self.sample_modifications)
         self.btInsertRowAboveMonomers.clicked.connect(lambda: self.table_insert_row(self.tbMonomers, above=True))
         self.btInsertRowAbovePolymers.clicked.connect(lambda: self.table_insert_row(self.tbPolymers, above=True))
@@ -529,7 +529,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
     def save_search_results(self):
         """
-        Write the results from a combinatorial search to a CSV file.
+        Write the dearch results to a CSV file.
 
         :return: nothing
         """
@@ -541,35 +541,39 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         if outfilename:
             if not outfilename.endswith(".csv"):
                 outfilename += ".csv"
-            parameters = [("Disulfides", self.sbDisulfides.value()),
-                          ("PNGaseF", self.chPngase.isChecked()),
-                          ("Tolerance", self.sbTolerance.value()),
-                          ("Tol. Type", self.cbTolerance.currentText())]
-
-            for row_id in range(self.tbMonomers.rowCount()):
-                ch = self.tbMonomers.cellWidget(row_id, 0).findChild(QCheckBox)
-                name = self.tbMonomers.item(row_id, 1).text()
-                min_count = self.tbMonomers.cellWidget(row_id, 3).value()
-                max_count = self.tbMonomers.cellWidget(row_id, 4).value()
-                if ch.isChecked():
-                    parameters.append((name + "_min", min_count))
-                    parameters.append((name + "_max", max_count))
-
-            mindex = self._monomer_hits.reset_index(level=0)["Massindex"]  # TODO also save polymer hits; optimize code
-            ra = mindex.map(self._exp_mass_data["Relative Abundance"]).reset_index()
-            self._monomer_hits["Relative Abundance"] = list(ra["Massindex"])
-
             try:
-                parameter_string = ["{}: {}".format(k, v) for k, v in parameters]
                 with open(outfilename, "w") as f:
                     f.write("# Combinatorial search results by ModFinder\n")
                     f.write("# Date: " + time.strftime("%c") + "\n")
-                    f.write("# Parameters: ")
-                    f.write(", ".join(parameter_string))
-                    f.write("\n")
-                    self._monomer_hits.to_csv(f)
+                    f.write("#   Tolerance: {:.2f} {}\n".format(self.sbTolerance.value(),
+                                                                self.cbTolerance.currentText()))
+
+                    f.write("#   Composition:\n")
+                    for name, mass, min_count, max_count in self.calculate_mod_mass():
+                        f.write("#     {} ({:.2f} Da), min {}, max {}\n".format(name, mass, min_count, max_count))
+
+                    f.write("#   Structures:\n")
+                    for name, composition, sites, abundance in self.get_polymers():
+                        f.write("#     {} ({}); sites: {}; abundance: {:.2f}\n".format(name, composition,
+                                                                                       sites, abundance))
+
+                    if self.chFilterStructureHits.isChecked():
+                        f.write("# Results from structure search (stage 2).\n")
+                        df_hits = self._polymer_hits
+                    else:
+                        f.write("# Results from composition search (stage 1).\n")
+                        df_hits = self._monomer_hits
+
+                    # add a column "Relative abundance" to the hits dataframe
+                    df_relative_abundance = self._exp_mass_data["Relative Abundance"].to_frame()
+                    df_relative_abundance.index.names = ["Mass_ID"]
+                    df_hits = df_relative_abundance.join(df_hits, how="inner")
+
+                    df_hits.to_csv(f)
             except IOError:
-                QMessageBox.warning(self, "Warning", "Permission denied for {}".format(outfilename))
+                QMessageBox.critical(self,
+                                     "Error",
+                                     "Error while writing to {}. No output saved.".format(outfilename))
 
 
     def choose_mass_set(self):
@@ -667,6 +671,29 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         return result
 
 
+    def get_polymers(self, return_values=""):
+        """
+        Read the current polymer library from the table and return as list.
+
+        :param return_values: If true, return all contents from the table.
+        :return: a list of (is_checked, name, composition, sites, abundance) tuples if return_values is "all"
+                 a list of (name, composition, sites, abundance) tuples if return_values is any other string
+        """
+
+        result = []
+        for row_id in range(self.tbPolymers.rowCount()):
+            is_checked = self.tbPolymers.cellWidget(row_id, 0).findChild(QCheckBox).isChecked()
+            name = self.tbPolymers.item(row_id, 1).text()
+            composition = self.tbPolymers.item(row_id, 2).text()
+            sites = self.tbPolymers.item(row_id, 3).text()
+            abundance = self.tbPolymers.cellWidget(row_id, 4).value()
+            if return_values == "all":
+                result.append((is_checked, name, composition, sites, abundance))
+            elif is_checked:
+                result.append((name, composition, sites, abundance))
+        return result
+
+
     def sample_modifications(self):
         """
         Prepare data for the two-stage search and process its results.
@@ -719,20 +746,13 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             return
 
         # prepare list of polymers for search stage 2
-        polymers = {}
-        for row_id in range(self.tbPolymers.rowCount()):
-            if self.tbPolymers.cellWidget(row_id, 0).findChild(QCheckBox).isChecked():
-                name = self.tbPolymers.item(row_id, 1).text()
-                composition = self.tbPolymers.item(row_id, 2).text()
-                sites = self.tbPolymers.item(row_id, 3).text()
-                abundance = self.tbPolymers.cellWidget(row_id, 4).value()
-                polymers[name] = (composition, sites, abundance)
+        polymers = self.get_polymers()
 
-        if polymers:  # dict contains at least one entry
-            df_polymers = pd.DataFrame.from_dict(polymers, orient="index")
-            df_polymers.columns = ["Composition", "Sites", "Abundance"]
+        if polymers:  # list contains at least one entry
+            df_polymers = pd.DataFrame.from_records(polymers, columns=["Name", "Composition", "Sites", "Abundance"])
+            df_polymers.set_index("Name", inplace=True, drop=True)
             monomers_in_library = set(modification_search.get_monomers_from_library(df_polymers))
-        else:  # dict remained empty, i.e., there are no polymers
+        else:  # list remained empty, i.e., there are no polymers
             monomers_in_library = set()
             df_polymers = pd.DataFrame()
 
@@ -981,6 +1001,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
     def concat_interval_names(row):
         """
         Concatenate rows from a dataframe indicating interval names.
+        This is an auxiliary function used by highlight_delta_series().
         Examples: ["", -1] -> "-1"
                   [2, -1] -> "2/-1"
 
@@ -1016,7 +1037,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         # 4 - selected (central) peak
         df_delta_peaks = pd.DataFrame(index=self._exp_mass_data.index, dtype=int)
 
-        # the algorithm is the same for both delta series; hence, use this loop
+        # the algorithm is the same for both delta series; hence, use this loop  # TODO: better way to find the series?
         for delta_id, ch_delta, sb_value, sb_tolerance, sb_repetitions in \
                 [(1, self.chDelta1, self.sbDeltaValue1, self.sbDeltaTolerance1, self.sbDeltaRepetition1),
                  (2, self.chDelta2, self.sbDeltaValue2, self.sbDeltaTolerance2, self.sbDeltaRepetition2)]:
@@ -1267,27 +1288,9 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             if not settings_filename.endswith(".mofi"):
                 settings_filename = settings_filename + ".mofi"
 
-            # get monomers from table
-            monomers = []
-            for row_id in range(self.tbMonomers.rowCount()):
-                is_used = self.tbMonomers.cellWidget(row_id, 0).findChild(QCheckBox).isChecked()
-                name = self.tbMonomers.item(row_id, 1).text()
-                composition = self.tbMonomers.item(row_id, 2).text()
-                min_count = self.tbMonomers.cellWidget(row_id, 3).value()
-                max_count = self.tbMonomers.cellWidget(row_id, 4).value()
-                is_poly = self.tbMonomers.cellWidget(row_id, 5).findChild(QCheckBox).isChecked()
-                monomers.append((is_used, name, composition, min_count, max_count, is_poly))
-
-            # get polymers from table
-            polymers = []
-            for row_id in range(self.tbPolymers.rowCount()):
-                is_used = self.tbPolymers.cellWidget(row_id, 0).findChild(QCheckBox).isChecked()
-                name = self.tbPolymers.item(row_id, 1).text()
-                composition = self.tbPolymers.item(row_id, 2).text()
-                sites = self.tbPolymers.item(row_id, 3).text()
-                abundance = self.tbPolymers.cellWidget(row_id, 4).value()
-                polymers.append((is_used, name, composition, sites, abundance))
-
+            # gather settings
+            monomers = self.calculate_mod_mass(return_values="all")
+            polymers = self.get_polymers(return_values="all")
             settings = {"sequence": self.teSequence.toPlainText(),
                         "exp mass data": self._exp_mass_data,
                         "mass filename": self._mass_filename,
@@ -1450,16 +1453,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             if not filename.endswith(".csv"):
                 filename += ".csv"
 
-            polymer_data = []
-            for row_id in range(self.tbPolymers.rowCount()):
-                ch = self.tbPolymers.cellWidget(row_id, 0).findChild(QCheckBox)
-                name = self.tbPolymers.item(row_id, 1).text()
-                composition = self.tbPolymers.item(row_id, 2).text()
-                sites = self.tbPolymers.item(row_id, 3).text()
-                abundance = self.tbPolymers.cellWidget(row_id, 4).value()
-
-                polymer_data.append((ch.isChecked(), name, composition, sites, abundance))
-
+            polymer_data = self.get_polymers(return_values="all")
             df_polymers = pd.DataFrame(polymer_data,
                                        columns=["Checked", "Name", "Composition", "Sites", "Abundance"])
             try:

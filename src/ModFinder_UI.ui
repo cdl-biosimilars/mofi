@@ -858,7 +858,7 @@
             </property>
             <item>
              <property name="text">
-              <string>Da.</string>
+              <string>Da</string>
              </property>
             </item>
             <item>
@@ -1289,16 +1289,9 @@
          </spacer>
         </item>
         <item>
-         <widget class="QPushButton" name="btExportSelected">
+         <widget class="QPushButton" name="btExportResults">
           <property name="text">
-           <string>Export selected peaks ...</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="btExportAll">
-          <property name="text">
-           <string>Export all peaks ...</string>
+           <string>Export results ...</string>
           </property>
          </widget>
         </item>
@@ -1430,8 +1423,6 @@
     <addaction name="acLoadSettings"/>
     <addaction name="acSaveSettings"/>
     <addaction name="separator"/>
-    <addaction name="acSaveAnnotation"/>
-    <addaction name="separator"/>
     <addaction name="acQuit"/>
    </widget>
    <widget class="QMenu" name="menuOptions">
@@ -1496,11 +1487,6 @@
   <action name="acSaveSettings">
    <property name="text">
     <string>Save settings ...</string>
-   </property>
-  </action>
-  <action name="acSaveAnnotation">
-   <property name="text">
-    <string>Save annotation ...</string>
    </property>
   </action>
   <action name="acQuit">
