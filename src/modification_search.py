@@ -303,6 +303,5 @@ def find_polymers(combinations, glycan_library, monomers, progress_bar=None):
     if progress_bar is not None:
         progress_bar.setValue(100)
 
-    df_glycan_composition.to_excel("df_glycan_composition.xls")
-    df_glycan_combinations.to_excel("df_glycan_combinations.xls")
+    # df_found_polymers.to_excel("df_found_polymers.xls")
     return df_found_polymers

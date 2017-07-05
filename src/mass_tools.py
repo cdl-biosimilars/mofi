@@ -190,6 +190,6 @@ class Formula:
         for element, count in self._composition.items():
             if count == 1:
                 result.append(element)
-            else:
+            elif count > 1:
                 result.append("{:s}{:d}".format(element, count))
         return " ".join(result)

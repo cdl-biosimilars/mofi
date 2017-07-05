@@ -1147,7 +1147,11 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         try:
             polymer_peaks[self._polymer_hits.index.levels[0]] = 2
         except AttributeError:
-            pass
+            try:
+                polymer_peaks[self._monomer_hits.index.levels[0]] = 2
+            except AttributeError:
+                pass
+
 
         selected_peaks = np.zeros(self.lwPeaks.count(), dtype=int)
         selected_peaks[peak_indices] = 1
@@ -1226,7 +1230,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self.twResults.setUpdatesEnabled(False)
 
             missing_color = QColor(255, 185, 200)
-            if self.chFilterStructureHits.isChecked():
+
+            if self.chFilterStructureHits.isChecked() and self._polymer_hits is not None:
                 df_hit = self._polymer_hits
             else:
                 df_hit = self._monomer_hits
@@ -1265,7 +1270,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                             child_item.setText(len(monomers) + 2 + j, "{:.2f}".format(hit[label]))
                             child_item.setTextAlignment(len(monomers) + 2 + j, Qt.AlignRight)
 
-                        if self.chFilterStructureHits.isChecked():
+                        if self.chFilterStructureHits.isChecked() and self._polymer_hits is not None:
                             # polymer composition
                             sites = hit[df_hit.columns.get_loc("ppm")+1:-1].index
                             for j, site in enumerate(sites):
