@@ -18,7 +18,6 @@
 # If I was motivated, I'd write a freeze wrapper that does those things
 # automatically, but I can't be bothered anymore. ;)
 
-import distutils.util
 import math
 import os
 import pickle
@@ -29,7 +28,7 @@ import webbrowser
 
 from qtpy.QtWidgets import (QApplication, QMainWindow, QMenu, QActionGroup, QVBoxLayout, QTableWidgetItem, QCheckBox,
                             QMessageBox, QFileDialog, QTreeWidgetItem, QHeaderView, QSpinBox, QDoubleSpinBox,
-                            QWidget, QHBoxLayout, QAction, QToolBar, QProgressBar, QLabel, QSizePolicy, QButtonGroup)
+                            QWidget, QHBoxLayout, QAction, QProgressBar, QLabel, QSizePolicy, QButtonGroup)
 from qtpy.QtGui import QColor, QBrush
 from qtpy.QtCore import Qt
 
@@ -146,6 +145,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.btResetZoom.clicked.connect(self.reset_zoom)
         self.btSaveMonomers.clicked.connect(self.save_monomers)
         self.btSavePolymers.clicked.connect(self.save_polymers)
+        self.btSaveSpectrum.clicked.connect(self.save_spectrum)
         self.btUpdateMass.clicked.connect(self.calculate_protein_mass)
 
         self.cbTolerance.activated.connect(self.choose_tolerance_units)
@@ -532,6 +532,9 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         :return: nothing
         """
+        if self._monomer_hits is None:
+            return
+
         outfilename = QFileDialog.getSaveFileName(self,
                                                   "Save results",
                                                   self._path,
@@ -1520,6 +1523,19 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         for name, data in configure.default_polymer_libraries[library].items():
             self._polymer_table_create_row(row_id, name=name, composition=data["composition"], sites=data["sites"])
             row_id += 1
+
+
+    def save_spectrum(self):
+        filename = QFileDialog.getSaveFileName(self,
+                                               "Save spectrum",
+                                               self._path,
+                                               "Portable network graphics (*.png)")[0]
+        self._path = os.path.split(filename)[0]
+        if filename:
+            try:
+                self.spectrum_fig.savefig(filename, dpi=200)
+            except IOError:
+                QMessageBox.critical(self, "Error", "Error when writing to " + filename + IOError.args)
 
 
 if __name__ == "__main__":
