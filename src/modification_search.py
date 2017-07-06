@@ -78,23 +78,13 @@ def find_monomers(mods, unexplained_masses, mass_tolerance=5.0, explained_mass=0
                 r["ppm"] = (experimental_mass - theoretical_mass) / theoretical_mass * 1_000_000
                 combs_per_mass.append(r)
         else:  # no appropriate combination was found
-            r = np.zeros(len(sorted_mods), dtype="int")
-            theoretical_mass = 0
-            experimental_mass = explained_mass + unexplained_mass
-            r = dict(zip(mod_names, r))
-            r["Theo. Mass"] = theoretical_mass
-            r["Exp. Mass"] = experimental_mass
-            r["Da."] = 0.0
+            r = dict()
+            r["Theo. Mass"] = 0.0
             r["abs(Delta)"] = 0.0
-            r["ppm"] = 0.0
             combs_per_mass.append(r)
 
         # (b) create a dataframe from combs_per_mass
         combs_frame = pd.DataFrame(combs_per_mass)
-
-        # only accept solutions with at most 2 Neu5Ac per O-core  TODO remove this filter? -> Therese
-        if "O-core" in mod_names and "Neu5Ac" in mod_names:
-            combs_frame = combs_frame[2 * combs_frame["O-core"] >= combs_frame["Neu5Ac"]]
 
         # sort by abs(Delta) and reindex the frame starting from 1 instead of 0
         # thereby, alternative combninations will be numbered 1, 2, ...
@@ -110,7 +100,9 @@ def find_monomers(mods, unexplained_masses, mass_tolerance=5.0, explained_mass=0
     # there will be three indices: (1) consecutive numbers
     #                              (2) theoretical mass
     #                              (3) 1-based counter for hits per experimental mass
+    # drop all rows with NaN values (i.e., rows corresponding to failed searches)
     combinations: pd.DataFrame = pd.concat(combinations)
+    combinations.dropna(inplace=True)
     if not any_combination_found:
         return
 
@@ -121,7 +113,7 @@ def find_monomers(mods, unexplained_masses, mass_tolerance=5.0, explained_mass=0
 
     # amend the index
     # (a) index "Isobar", which is currently a list of (float) theoretical masses,
-    #                     but should be a consecutive (integer) numbering
+    #                     but should be a zero-based consecutive (integer) numbering;
     isodict = {v: i for i, v in enumerate(combinations["Theo. Mass"].unique())}  # a {mass: running counter} dict
     combinations.reset_index("Isobar", drop=True, inplace=True)  # delete index "Isobar"
     combinations["Isobar"] = combinations["Theo. Mass"].map(isodict)
@@ -131,8 +123,9 @@ def find_monomers(mods, unexplained_masses, mass_tolerance=5.0, explained_mass=0
     #                  may have been grouped under a single theo. mass index
     combinations.reset_index("Stage1_hit", drop=True, inplace=True)  # delete index "Stage1_hit"
     combinations["Stage1_hit"] = combinations \
-        .groupby(level="Isobar")\
+        .groupby(level="Isobar") \
         .cumcount()  # create column "Stage1_hit", a counter per isobar
+
     combinations.set_index("Stage1_hit", inplace=True, append=True)  # move column "Stage1_hit" to index
     combinations.reorder_levels(["Mass_ID", "Isobar", "Stage1_hit"])  # organize indices
 
@@ -303,5 +296,4 @@ def find_polymers(combinations, glycan_library, monomers, progress_bar=None):
     if progress_bar is not None:
         progress_bar.setValue(100)
 
-    # df_found_polymers.to_excel("df_found_polymers.xls")
     return df_found_polymers

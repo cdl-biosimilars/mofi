@@ -277,8 +277,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self._protein_mass = 0  # mass of the current Protein object
 
 
-    def _monomer_table_create_row(self, row_id, active=False, name="", composition="",
-                                  min_count=0, max_count=-1, part_of_polymer=False):
+    def _monomer_table_create_row(self, row_id, active=False, name="", composition="", min_count=0, max_count=-1):
         """
         Create a new row in the table of modifications.
         This row describes a modification with the given parameters.
@@ -292,7 +291,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         :param composition: composition or mass of the modification (str)
         :param min_count: minimum number of modifications (int)
         :param max_count: maximum number of modifications (int)
-        :param part_of_polymer: true if the monomer should be used in the polymer search
         :return: nothing
         """
         self.tbMonomers.insertRow(row_id)
@@ -328,15 +326,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         max_spinbox.setValue(max_count)
         max_spinbox.setStyleSheet(configure.spin_box_flat_style)
         self.tbMonomers.setCellWidget(row_id, 4, max_spinbox)
-
-        monomer_checkbox = QCheckBox()
-        monomer_checkbox.setChecked(part_of_polymer)
-        monomer_ch_widget = QWidget()
-        monomer_ch_layout = QHBoxLayout(monomer_ch_widget)
-        monomer_ch_layout.addWidget(monomer_checkbox)
-        monomer_ch_layout.setAlignment(Qt.AlignCenter)
-        monomer_ch_layout.setContentsMargins(0, 0, 0, 0)
-        self.tbMonomers.setCellWidget(row_id, 5, monomer_ch_widget)
 
 
     def _polymer_table_create_row(self, row_id, active=True, name="", composition="", sites="", abundance=0.0):
@@ -1143,12 +1132,13 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         :param peak_indices: list of indices of peaks that should be highlighted
         :return: nothing
         """
-        polymer_peaks = np.zeros(self.lwPeaks.count(), dtype=int)
+
+        peaks_with_result = np.zeros(self.lwPeaks.count(), dtype=int)
         try:
-            polymer_peaks[self._polymer_hits.index.levels[0]] = 2
+            peaks_with_result[self._polymer_hits.index.levels[0]] = 2
         except AttributeError:
             try:
-                polymer_peaks[self._monomer_hits.index.levels[0]] = 2
+                peaks_with_result[self._monomer_hits.index.levels[0]] = 2
             except AttributeError:
                 pass
 
@@ -1160,7 +1150,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         # no polymers: 0 - not selected, 1 - selected
         # polymers:    2 - not selected, 3 - selected
         # alternative colors: orange [1, .49, .16, 1.0], light red [1, .66, .66, 1.0]
-        peak_colors = selected_peaks + polymer_peaks
+        peak_colors = selected_peaks + peaks_with_result
         color_set = np.array(["#000000",   # black for unselected peaks without polymers
                               "#ffcc00",   # yellow for selected peaks without polymers
                               "#00c000",   # green for unselected peaks with polymers
@@ -1357,9 +1347,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self.sbTolerance.setValue(settings["tolerance value"])
 
             self.table_clear(self.tbMonomers)
-            for row_id, (is_used, name, composition,
-                         min_count, max_count, is_poly) in enumerate(settings["monomers"]):
-                self._monomer_table_create_row(row_id, is_used, name, composition, min_count, max_count, is_poly)
+            for row_id, (is_used, name, composition, min_count, max_count) in enumerate(settings["monomers"]):
+                self._monomer_table_create_row(row_id, is_used, name, composition, min_count, max_count)
 
             self.table_clear(self.tbPolymers)
             for row_id, (is_used, name, composition, sites, abundance) in enumerate(settings["polymers"]):
@@ -1448,8 +1437,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                                            name=name,
                                            composition=data["composition"],
                                            min_count=int(data["min"]),
-                                           max_count=int(data["max"]),
-                                           part_of_polymer=distutils.util.strtobool(data["glycan"]))
+                                           max_count=int(data["max"]))
             row_id += 1
 
 
