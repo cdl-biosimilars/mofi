@@ -202,17 +202,24 @@ def get_monomers_from_library(glycan_library):
     return list(df_monomers["Monomer"].unique())
 
 
-def find_polymers(combinations, glycan_library, monomers, progress_bar=None):
+def calc_polymer_combinations(glycan_library, monomers, progress_bar=None):
     """
-    Search a polymer library with the results from a combinatorial monomer search.
+    Calculate all possible polymer combinations based on a library.
 
-    :param combinations: dataframe with results from combinatorial search
     :param glycan_library: dataframe containing a glycan library
                            index: glycan names
                            columns: Composition, Sites, Abundance
     :param monomers: list of monomers in the library as returned by get_monomers_from_library
     :param progress_bar: a QProgressBar that gets updated during the search
-    :return: a datframe that
+    :return: the dataframe df_glycan_combinations, like
+
+                                  N149_A N149_B    N171_A    N171_B  Abundance
+            Hex HexNAc Fuc N-core
+            4   4      2   4          M5     M5     A2G0F     A2G0F        0.0
+                6      2   4        A2G2     M5     A2G0F     A2G0F        0.0
+                           4          M5   A2G2     A2G0F     A2G0F        0.0
+                       3   4       A2G2F     M5     A2G0F     A2G0F        0.0
+                           4          M5  A2G2F     A2G0F     A2G0F        0.0
     """
 
     if progress_bar is not None:
@@ -233,7 +240,7 @@ def find_polymers(combinations, glycan_library, monomers, progress_bar=None):
         .apply(list)
 
     if progress_bar is not None:
-        progress_bar.setValue(20)
+        progress_bar.setValue(50)
 
     # df_glycan_composition: dataframe, like
     #                                       Composition  Abundance      Monomers
@@ -257,6 +264,7 @@ def find_polymers(combinations, glycan_library, monomers, progress_bar=None):
     df_glycan_composition["Monomers"] = df_glycan_composition["Composition"] \
         .apply(_calc_monomer_counts, monomers=monomers)
 
+    # df_glycan_combinations: see above
     df_glycan_combinations = pd.DataFrame(list(product(*list(mods_per_site))),
                                           columns=list(mods_per_site.index))
     df_glycan_combinations["Monomers"], df_glycan_combinations["Abundance"] = zip(
@@ -270,18 +278,57 @@ def find_polymers(combinations, glycan_library, monomers, progress_bar=None):
         .drop("Monomers", axis=1)
 
     if progress_bar is not None:
-        progress_bar.setValue(60)
+        progress_bar.setValue(100)
 
-    # df_found_polymers: combinations with monomer composition as multiindex,
-    # with additional columns for the polymer sites
-    old_index = combinations.index.names
-    df_found_polymers = combinations \
+    return df_glycan_combinations
+
+
+def find_polymers(stage_1_results, polymer_combinations, monomers, progress_bar=None):
+    """
+    Search a polymer library with the results from a combinatorial monomer search.
+
+    :param stage_1_results: dataframe with results from search stage 1
+    :param polymer_combinations: dataframe with all possible combinations of polymers
+                                 as returned by calc_polymer_combinations
+    :param monomers: list of monomers in the library as returned by get_monomers_from_library
+    :param progress_bar: a QProgressBar that gets updated during the search
+    :return: a dataframe like
+                                                  Hex  HexNAc  Neu5Ac  Fuc  N-core  DM5  \
+            Mass_ID Isobar Stage1_hit Stage2_hit
+            0       6      2          0             0       4       0    2       2    0
+            2       137    1          0             1       4       0    2       2    0
+                                      1             1       4       0    2       2    0
+            4       288    0          0             2       4       0    2       2    0
+                                      1             2       4       0    2       2    0
+
+                                                      Exp. Mass    Theo. Mass       Da.  \
+            Mass_ID Isobar Stage1_hit Stage2_hit
+            0       6      2          0           148057.122228  148056.20272  0.919508
+            2       137    1          0           148220.112210  148218.34356  1.768650
+                                      1           148220.112210  148218.34356  1.768650
+            4       288    0          0           148381.360467  148380.48440  0.876067
+                                      1           148381.360467  148380.48440  0.876067
+
+                                                        ppm    ch_A    ch_B  Abundance
+            Mass_ID Isobar Stage1_hit Stage2_hit
+            0       6      2          0            6.210536     G0F     G0F        0.0
+            2       137    1          0           11.932736     G0F     G1F        0.0
+                                      1           11.932736     G1F     G0F        0.0
+            4       288    0          0            5.904193     G0F     G2F        0.0
+                                      1            5.904193     G1F     G1F        0.0
+    """
+
+    if progress_bar is not None:
+        progress_bar.setValue(0)
+
+    old_index = stage_1_results.index.names
+    df_found_polymers = stage_1_results \
         .reset_index(old_index) \
         .set_index(monomers) \
         .sort_index() \
-        .join(df_glycan_combinations, how="inner")
+        .join(polymer_combinations, how="inner")
     if progress_bar is not None:
-        progress_bar.setValue(80)
+        progress_bar.setValue(50)
 
     df_found_polymers = df_found_polymers \
         .reset_index(df_found_polymers.index.names) \

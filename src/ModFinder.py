@@ -731,30 +731,39 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             for _, m in self._exp_mass_data["Average Mass"].iteritems():
                 mass_tolerance.append(m * self.sbTolerance.value() / 1_000_000)
 
+        # prepare polymer combinations for search stage 2
+        available_monomers = [m[0] for m in monomers]
+        polymers = self.get_polymers()
+
+        if polymers:  # list contains at least one entry
+            df_polymers = pd.DataFrame.from_records(polymers,
+                                                    columns=["Name", "Composition", "Sites", "Abundance"])
+            df_polymers.set_index("Name", inplace=True, drop=True)
+            monomers_in_library = set(modification_search.get_monomers_from_library(df_polymers))
+            monomers_for_polymer_search = [m for m in available_monomers if m in monomers_in_library]
+            polymer_combinations = modification_search.calc_polymer_combinations(df_polymers,
+                                                                                 monomers_for_polymer_search,
+                                                                                 self.pbSearchProgress)
+        else:  # list remained empty, i.e., there are no polymers
+            monomers_in_library = set()
+            monomers_for_polymer_search = None
+            polymer_combinations = None
+
         # calculate the upper limit of glycans that may appear
         # add all checked single glycans to the list of modifications
-        for name, mass, min_count, max_count in monomers:  # TODO maxcount from glycan library
+        for name, mass, min_count, max_count in monomers:
             if max_count == -1:
-                max_count = min(int((max_tol_mass - self._protein_mass) / mass), configure.maxmods)
+                if polymer_combinations is not None and name in polymer_combinations.index.names:
+                    max_count = max(polymer_combinations.index.get_level_values(name))
+                else:  # only search stage 1
+                    max_count = min(int((max_tol_mass - self._protein_mass) / mass), configure.maxmods)
             modifications.append((name, mass, max_count - min_count))
 
         if not modifications:
             QMessageBox.critical(self, "Error", "List of monomers is empty. Aborting search.")
             return
 
-        # prepare list of polymers for search stage 2
-        polymers = self.get_polymers()
-
-        if polymers:  # list contains at least one entry
-            df_polymers = pd.DataFrame.from_records(polymers, columns=["Name", "Composition", "Sites", "Abundance"])
-            df_polymers.set_index("Name", inplace=True, drop=True)
-            monomers_in_library = set(modification_search.get_monomers_from_library(df_polymers))
-        else:  # list remained empty, i.e., there are no polymers
-            monomers_in_library = set()
-            df_polymers = pd.DataFrame()
-
         # check whether all monomers required in search stage 2 are enabled in search stage 1
-        available_monomers = [m[0] for m in modifications]
         missing_monomers = monomers_in_library - set(available_monomers)
         if missing_monomers:
             error_message = ["The following monosaccharides appear in the library ",
@@ -765,18 +774,18 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                                  "Error",
                                  "".join(error_message))
             return
-        monomers_for_polymer_search = [m for m in available_monomers if m in monomers_in_library]
 
         self.statusbar.showMessage("Starting monomer search (stage 1) ...")
         print("Experimental Masses:", self._exp_mass_data["Average Mass"].head(), sep="\n")
         print("Explained mass (protein + known modifications):", explained_mass)
         print("Unknown masses searched:", unknown_masses.head(), sep="\n")
         print("Mass tolerance: {:f} {}".format(self.sbTolerance.value(), self.cbTolerance.currentText()))
-        print("Monomers used in search:\nName\tMass\tmax")
+        print("Modifications used in search state 1:\nName\tMass\tmax")
         for m in modifications:
             print("{}\t{:.2f}\t{:d}".format(*m))
-        print("Monomers used in polymer search:")
-        print(", ".join(monomers_for_polymer_search))
+        if monomers_for_polymer_search:
+            print("Modifications used in search stage 2:")
+            print(", ".join(monomers_for_polymer_search))
 
         # stage 1: monomer search
         self._monomer_hits = modification_search.find_monomers(
@@ -787,8 +796,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             progress_bar=self.pbSearchProgress)
 
         self.statusbar.showMessage("Monomer search done! Starting polymer search (stage 2) ...")
-        # the modification search was not successful
-        if self._monomer_hits is None:
+        if self._monomer_hits is None:  # the modification search was not successful
             QMessageBox.critical(self, "Error", "Combinatorial search was unsuccessful.")
             return
 
@@ -799,7 +807,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         # stage 2: polymer search
         if polymers:
             self._polymer_hits = modification_search.find_polymers(self._monomer_hits,
-                                                                   glycan_library=df_polymers,
+                                                                   polymer_combinations=polymer_combinations,
                                                                    monomers=monomers_for_polymer_search,
                                                                    progress_bar=self.pbSearchProgress)
             self.statusbar.showMessage("Polymer search DONE!", 5000)
@@ -1034,7 +1042,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         # 4 - selected (central) peak
         df_delta_peaks = pd.DataFrame(index=self._exp_mass_data.index, dtype=int)
 
-        # the algorithm is the same for both delta series; hence, use this loop  # TODO: better way to find the series?
+        # the algorithm is the same for both delta series; hence, use this loop
         for delta_id, ch_delta, sb_value, sb_tolerance, sb_repetitions in \
                 [(1, self.chDelta1, self.sbDeltaValue1, self.sbDeltaTolerance1, self.sbDeltaRepetition1),
                  (2, self.chDelta2, self.sbDeltaValue2, self.sbDeltaTolerance2, self.sbDeltaRepetition2)]:
