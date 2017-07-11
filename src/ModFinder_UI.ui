@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1351</width>
-    <height>1075</height>
+    <width>1368</width>
+    <height>950</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -326,6 +326,9 @@
              </property>
              <item>
               <layout class="QVBoxLayout" name="verticalLayout_7">
+               <property name="spacing">
+                <number>0</number>
+               </property>
                <item>
                 <widget class="QToolButton" name="btInsertRowAboveMonomers">
                  <property name="toolTip">
@@ -371,6 +374,9 @@
                </item>
                <item>
                 <widget class="QToolButton" name="btDeleteRowMonomers">
+                 <property name="toolTip">
+                  <string>Delete row</string>
+                 </property>
                  <property name="icon">
                   <iconset resource="mofi.qrc">
                    <normaloff>:/mofi resource/images/DeleteRow.png</normaloff>:/mofi resource/images/DeleteRow.png</iconset>
@@ -388,6 +394,9 @@
                </item>
                <item>
                 <widget class="QToolButton" name="btClearMonomers">
+                 <property name="toolTip">
+                  <string>Clear table</string>
+                 </property>
                  <property name="icon">
                   <iconset resource="mofi.qrc">
                    <normaloff>:/mofi resource/images/ClearTable.png</normaloff>:/mofi resource/images/ClearTable.png</iconset>
@@ -404,20 +413,10 @@
                 </widget>
                </item>
                <item>
-                <spacer name="verticalSpacer">
-                 <property name="orientation">
-                  <enum>Qt::Vertical</enum>
-                 </property>
-                 <property name="sizeHint" stdset="0">
-                  <size>
-                   <width>20</width>
-                   <height>40</height>
-                  </size>
-                 </property>
-                </spacer>
-               </item>
-               <item>
                 <widget class="QToolButton" name="btDefaultModsMonomers">
+                 <property name="toolTip">
+                  <string>Load default modifications</string>
+                 </property>
                  <property name="icon">
                   <iconset resource="mofi.qrc">
                    <normaloff>:/mofi resource/images/DefaultEntries.png</normaloff>:/mofi resource/images/DefaultEntries.png</iconset>
@@ -438,6 +437,9 @@
                </item>
                <item>
                 <widget class="QToolButton" name="btLoadMonomers">
+                 <property name="toolTip">
+                  <string>Load modifications</string>
+                 </property>
                  <property name="icon">
                   <iconset resource="mofi.qrc">
                    <normaloff>:/mofi resource/images/Open.png</normaloff>:/mofi resource/images/Open.png</iconset>
@@ -455,6 +457,9 @@
                </item>
                <item>
                 <widget class="QToolButton" name="btSaveMonomers">
+                 <property name="toolTip">
+                  <string>Save modifications</string>
+                 </property>
                  <property name="icon">
                   <iconset resource="mofi.qrc">
                    <normaloff>:/mofi resource/images/Save.png</normaloff>:/mofi resource/images/Save.png</iconset>
@@ -586,6 +591,9 @@
              </item>
              <item>
               <layout class="QVBoxLayout" name="verticalLayout_8">
+               <property name="spacing">
+                <number>0</number>
+               </property>
                <item>
                 <widget class="QToolButton" name="btInsertRowAbovePolymers">
                  <property name="toolTip">
@@ -631,6 +639,9 @@
                </item>
                <item>
                 <widget class="QToolButton" name="btDeleteRowPolymers">
+                 <property name="toolTip">
+                  <string>Delete row</string>
+                 </property>
                  <property name="icon">
                   <iconset resource="mofi.qrc">
                    <normaloff>:/mofi resource/images/DeleteRow.png</normaloff>:/mofi resource/images/DeleteRow.png</iconset>
@@ -648,6 +659,9 @@
                </item>
                <item>
                 <widget class="QToolButton" name="btClearPolymers">
+                 <property name="toolTip">
+                  <string>Clear table</string>
+                 </property>
                  <property name="icon">
                   <iconset resource="mofi.qrc">
                    <normaloff>:/mofi resource/images/ClearTable.png</normaloff>:/mofi resource/images/ClearTable.png</iconset>
@@ -664,20 +678,10 @@
                 </widget>
                </item>
                <item>
-                <spacer name="verticalSpacer_2">
-                 <property name="orientation">
-                  <enum>Qt::Vertical</enum>
-                 </property>
-                 <property name="sizeHint" stdset="0">
-                  <size>
-                   <width>20</width>
-                   <height>40</height>
-                  </size>
-                 </property>
-                </spacer>
-               </item>
-               <item>
                 <widget class="QToolButton" name="btDefaultModsPolymers">
+                 <property name="toolTip">
+                  <string>Load default glycans</string>
+                 </property>
                  <property name="icon">
                   <iconset resource="mofi.qrc">
                    <normaloff>:/mofi resource/images/DefaultEntries.png</normaloff>:/mofi resource/images/DefaultEntries.png</iconset>
@@ -698,6 +702,9 @@
                </item>
                <item>
                 <widget class="QToolButton" name="btLoadPolymers">
+                 <property name="toolTip">
+                  <string>Load glycans</string>
+                 </property>
                  <property name="icon">
                   <iconset resource="mofi.qrc">
                    <normaloff>:/mofi resource/images/Open.png</normaloff>:/mofi resource/images/Open.png</iconset>
@@ -715,6 +722,9 @@
                </item>
                <item>
                 <widget class="QToolButton" name="btSavePolymers">
+                 <property name="toolTip">
+                  <string>Save glycans</string>
+                 </property>
                  <property name="icon">
                   <iconset resource="mofi.qrc">
                    <normaloff>:/mofi resource/images/Save.png</normaloff>:/mofi resource/images/Save.png</iconset>
@@ -889,7 +899,7 @@
       <item>
        <widget class="QWidget" name="spectrumView" native="true">
         <property name="sizePolicy">
-         <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
+         <sizepolicy hsizetype="Expanding" vsizetype="Ignored">
           <horstretch>0</horstretch>
           <verstretch>0</verstretch>
          </sizepolicy>
@@ -897,9 +907,26 @@
         <property name="minimumSize">
          <size>
           <width>500</width>
-          <height>280</height>
+          <height>0</height>
          </size>
         </property>
+        <layout class="QVBoxLayout" name="verticalLayout_10">
+         <property name="leftMargin">
+          <number>0</number>
+         </property>
+         <property name="topMargin">
+          <number>0</number>
+         </property>
+         <property name="rightMargin">
+          <number>0</number>
+         </property>
+         <property name="bottomMargin">
+          <number>0</number>
+         </property>
+         <item>
+          <layout class="QVBoxLayout" name="spectrumViewLayout"/>
+         </item>
+        </layout>
        </widget>
       </item>
       <item>
@@ -1023,7 +1050,7 @@
            <bool>false</bool>
           </property>
           <property name="sizePolicy">
-           <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
@@ -1275,26 +1302,18 @@
           </layout>
          </widget>
         </item>
-        <item>
-         <widget class="QPushButton" name="btSaveSpectrum">
-          <property name="text">
-           <string>Save spectrum ...</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="btExportResults">
-          <property name="text">
-           <string>Export results ...</string>
-          </property>
-         </widget>
-        </item>
        </layout>
       </item>
       <item>
        <layout class="QVBoxLayout" name="verticalLayout_4">
         <item>
          <widget class="QLabel" name="label_9">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
           <property name="text">
            <string>Mass list</string>
           </property>
@@ -1303,7 +1322,7 @@
         <item>
          <widget class="QListWidget" name="lwPeaks">
           <property name="sizePolicy">
-           <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
+           <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
@@ -1311,7 +1330,7 @@
           <property name="minimumSize">
            <size>
             <width>100</width>
-            <height>240</height>
+            <height>150</height>
            </size>
           </property>
           <property name="sizeAdjustPolicy">
@@ -1332,6 +1351,20 @@
           </property>
           <property name="checked">
            <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="btSaveSpectrum">
+          <property name="text">
+           <string>Save spectrum ...</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="btSaveResults">
+          <property name="text">
+           <string>Save results ...</string>
           </property>
          </widget>
         </item>
@@ -1357,7 +1390,7 @@
       <property name="minimumSize">
        <size>
         <width>0</width>
-        <height>250</height>
+        <height>0</height>
        </size>
       </property>
       <property name="styleSheet">
@@ -1403,7 +1436,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1351</width>
+     <width>1368</width>
      <height>19</height>
     </rect>
    </property>

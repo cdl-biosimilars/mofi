@@ -26,7 +26,7 @@ import sys
 import time
 import webbrowser
 
-from qtpy.QtWidgets import (QApplication, QMainWindow, QMenu, QActionGroup, QVBoxLayout, QTableWidgetItem, QCheckBox,
+from qtpy.QtWidgets import (QApplication, QMainWindow, QMenu, QActionGroup, QTableWidgetItem, QCheckBox,
                             QMessageBox, QFileDialog, QTreeWidgetItem, QHeaderView, QSpinBox, QDoubleSpinBox,
                             QWidget, QHBoxLayout, QAction, QProgressBar, QLabel, QSizePolicy, QButtonGroup)
 from qtpy.QtGui import QColor, QBrush
@@ -39,7 +39,7 @@ pd.set_option('display.max_rows', 5000)
 import matplotlib
 import matplotlib.text
 matplotlib.use("Qt5Agg")
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt5agg import FigureCanvas
 from matplotlib.widgets import SpanSelector, RectangleSelector
 from matplotlib.figure import Figure
 
@@ -133,7 +133,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.btClearPolymers.clicked.connect(lambda: self.table_clear(self.tbPolymers))
         self.btDeleteRowMonomers.clicked.connect(lambda: self.table_delete_row(self.tbMonomers))
         self.btDeleteRowPolymers.clicked.connect(lambda: self.table_delete_row(self.tbPolymers))
-        self.btExportResults.clicked.connect(self.save_search_results)
+        self.btSaveResults.clicked.connect(self.save_search_results)
         self.btFindModifications.clicked.connect(self.sample_modifications)
         self.btInsertRowAboveMonomers.clicked.connect(lambda: self.table_insert_row(self.tbMonomers, above=True))
         self.btInsertRowAbovePolymers.clicked.connect(lambda: self.table_insert_row(self.tbPolymers, above=True))
@@ -170,9 +170,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         self.twResults.itemClicked.connect(self.select_peaks_in_tree)
 
+        # # toolbars
         # self.menubar.setVisible(False)
-
-        # # add toolbars
         # self.tlFile = QToolBar(self)
         # self.tlFile.setObjectName("tlFile")
         # self.tlFile.addAction(self.acOpenFasta)
@@ -207,7 +206,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         # noinspection PyUnresolvedReferences
         self.agSelectMassSet.triggered.connect(self.choose_mass_set)
 
-        # init statusbar
+        # status bar
         sb_widget = QWidget(self)
         sb_layout = QHBoxLayout(sb_widget)
         sb_layout.setContentsMargins(0, 0, 0, 0)
@@ -220,28 +219,25 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         sb_layout.addWidget(self.pbSearchProgress)
         self.statusbar.addPermanentWidget(sb_widget)
 
-        # set up the mass spectrum plot
-        layout = QVBoxLayout(self.spectrumView)
+        # mass spectrum plot
         self.spectrum_fig = Figure(dpi=100, frameon=False, tight_layout={"pad": 0}, edgecolor="white")
         self.spectrum_canvas = FigureCanvas(self.spectrum_fig)
-        self.spectrum_canvas.setParent(self.spectrumView)
-        layout.addWidget(self.spectrum_canvas)
+        self.spectrumViewLayout.addWidget(self.spectrum_canvas)
         self.spectrum_axes = None  # single Axes of the figure
         self.spectrum_peak_lines = None  # LineCollection object representing the peaks in the spectrum
-        self.spectrum_pick_selector = None  # picker connection to select a single peak
         self.spectrum_span_selector = None  # SpanSelector to select multiple peaks
         self.spectrum_rectangle_selector = None  # CollapsingRectangleSelector to zoom the spectrum
         self.spectrum_x_limits = None  # original limits of the x axis when the plot is drawn
         self.spectrum_picked_peak = None  # the single peak that was picked, or (in a span) a representative singe peak
 
-        # init button group for specrum interaction mode
+        # button group for specrum interaction mode
         self.bgSpectrum = QButtonGroup()
         self.bgSpectrum.addButton(self.btModeDelta)
         self.bgSpectrum.addButton(self.btModeSelection)
         # noinspection PyUnresolvedReferences
         self.bgSpectrum.buttonClicked.connect(self.toggle_spectrum_mode)
 
-        # init the monomer table and associated buttons
+        # monomer table and associated buttons
         self.tbMonomers.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
         for col, width in [(0, 40), (2, 130), (3, 45), (4, 45)]:
             self.tbMonomers.setColumnWidth(col, width)
@@ -253,7 +249,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             menu.addAction(library, self.load_default_monomers)
         self.btDefaultModsMonomers.setMenu(menu)
 
-        # init the polymer table and associated buttons
+        # polymer table and associated buttons
         self.tbPolymers.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
         for col, width in [(0, 40), (2, 130), (3, 80), (4, 50)]:
             self.tbPolymers.setColumnWidth(col, width)
@@ -265,9 +261,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             menu.addAction(library, self.load_default_polymers)
         self.btDefaultModsPolymers.setMenu(menu)
 
-        # initialize private members
+        # private members
         self._monomer_hits = None  # results from the monomer search
-        self._delta_lines = [None, None]  # delta lines in the mass spectrum
         self._exp_mass_data = None  # pandas dataframe containing the contents of the mass file
         self._known_mods_mass = 0  # mass of known modification
         self._mass_filename = None  # name of the mass file
@@ -837,7 +832,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.spectrum_canvas.draw()
 
         # set up the pick and span selectors.
-        self.spectrum_pick_selector = self.spectrum_fig.canvas.mpl_connect("pick_event", self.select_peaks_by_pick)
+        self.spectrum_fig.canvas.mpl_connect("pick_event", self.select_peaks_by_pick)
         self.spectrum_span_selector = SpanSelector(self.spectrum_axes,
                                                    self.select_peaks_by_span,
                                                    "horizontal",
