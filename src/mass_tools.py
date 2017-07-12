@@ -17,10 +17,12 @@ import configure
 
 def read_massfile(massfile, sort_by=None):
     """
-    Reads a list of masses (peaks) from an external file as generated, e.g., by Thermo BioPharma Finder.
-    Supported file types: Excel, CSV
-    These files should contain at least two columns with labels "Average Mass" and "Relative Abundance",
-    containing the mass and relative abundance of a peak, respectively.
+    Reads a list of masses (peaks) from an external file as generated,
+    e.g., by Thermo BioPharma Finder.
+    Supported file types: Excel, CSV.
+    These files should contain at least two columns with labels "Average Mass"
+    and "Relative Abundance", containing the mass and relative abundance
+    of a peak, respectively.
 
     :param massfile: Name of the file containing the mass list.
     :param sort_by: Sort the generated dataframe by this column
@@ -31,7 +33,10 @@ def read_massfile(massfile, sort_by=None):
     if filext in [".xls", ".xlsx"]:
         massframe = pd.read_excel(massfile)
     elif filext in [".txt", ".csv"]:
-        massframe = pd.read_table(massfile, sep=None, header=0, engine="python")
+        massframe = pd.read_table(massfile,
+                                  sep=None,
+                                  header=0,
+                                  engine="python")
     else:
         return None
 
@@ -49,12 +54,16 @@ def read_massfile(massfile, sort_by=None):
 
 def find_delta_masses(df_masses, mass_difference, tolerance=2.5):
     """
-    Finds all pairs of peaks in massframe whose masses differ by mass_difference +/- tolerance.
+    Finds all pairs of peaks in massframe whose masses
+    differ by mass_difference +/- tolerance.
 
-    :param df_masses: A dataframe containing MS peaks and associated information, as returned by read_massfile.
+    :param df_masses: A dataframe containing MS peaks and associated
+                      information, as returned by read_massfile.
     :param mass_difference: The mass difference to search for.
-    :param tolerance: Accept mass differences even if they deviate from mass_difference by this value.
-    :return: A list of tuples, each of which describes one of the found mass differences:
+    :param tolerance: Accept mass differences even if they deviate
+                      from mass_difference by this value.
+    :return: A list of tuples, each of which describes
+             one of the found mass differences:
              (1) Mass of peak 1
              (2) Mass of peak 2
              (3) The larger of the relative abundances of peak 1 or peak 2
@@ -64,9 +73,11 @@ def find_delta_masses(df_masses, mass_difference, tolerance=2.5):
     hits = []
     for i in range(1, len(masses)):
         delta = np.abs(masses[i:] - masses[:-i])
-        indices = np.where((delta >= mass_difference - tolerance) & (delta <= mass_difference + tolerance))[0]
+        indices = np.where((delta >= mass_difference - tolerance)
+                           & (delta <= mass_difference + tolerance))[0]
         for j in indices:
-            height = min(df_masses.ix[j]["Relative Abundance"], df_masses.ix[j+i]["Relative Abundance"])
+            height = min(df_masses.ix[j]["Relative Abundance"],
+                         df_masses.ix[j+i]["Relative Abundance"])
             hits.append((masses[j], masses[j+i], height))
     return hits
 
@@ -89,7 +100,8 @@ def formstring_to_composition(formstring):
     """
     Converts an elemental composition string to a pandas series.
 
-    :param formstring: collection of elements followed by their counts (example: "C50 H100 N20")
+    :param formstring: collection of elements followed by their counts
+                       (example: "C50 H100 N20")
     :return: pd.Series labelled by the element (example: C: 50, H: 100, N: 20)
     """
 
@@ -108,8 +120,8 @@ class Formula:
     A molecular formula comprising the elements C, H, N, O, P and S.
 
     Properties:
-        mass: Calculated when the Formula is generated or the atom count is changed
-              using the current settings from the configure module.
+        mass: calculated when the Formula is generated or the atom count is
+              changed using the current settings from the configure module.
 
     Protected members:
         self._composition: A pandas.Series
@@ -121,10 +133,10 @@ class Formula:
         Create a new Formula.
 
         :param composition: one of the following:
-                            - a pandas Series, like pd.Series(dict(C=6, H=12, O=6))
-                            - a dict, like {"C": 6; "H": 12; "O": 6}
-                            - a string, like "C6 H12 O6"
-                            raises a ValueError if composition is of a different type
+                   - a pandas Series, like pd.Series(dict(C=6, H=12, O=6))
+                   - a dict, like {"C": 6; "H": 12; "O": 6}
+                   - a string, like "C6 H12 O6".
+                   Raises a ValueError if composition is of a different type
         """
         # noinspection PyUnresolvedReferences
         if type(composition) == dict:
@@ -136,7 +148,8 @@ class Formula:
         elif composition is None:
             self._composition = pd.Series()
         else:
-            raise ValueError("Could not create formula from " + str(composition))
+            raise ValueError("Could not create formula from "
+                             + str(composition))
         self._composition = self._composition.replace(np.nan, 0).astype(int)
         self._composition = self._composition
     
@@ -165,7 +178,8 @@ class Formula:
         self._mass = 0
         try:
             for a in self._composition.index:
-                self._mass += self._composition[a] * configure.current_mass_set[a]
+                self._mass += (self._composition[a]
+                               * configure.current_mass_set[a])
         except KeyError as e:
             raise ValueError("Atom symbol '" + e.args[0] + "' unknown.")
 

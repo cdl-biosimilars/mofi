@@ -25,7 +25,7 @@ path = config.get("Defaults", "path")
 
 # (2) mass sets
 mass_set_parser = ConfigParser()
-mass_set_parser.optionxform = str  # read any key as is, i.e., do not convert to lowercase
+mass_set_parser.optionxform = str  # do not convert keys to lowercase
 mass_set_parser.read("config/mass_sets.ini")
 
 mass_sets = {}
@@ -38,7 +38,8 @@ for set_name in mass_set_parser.sections():
 
 def select_mass_set(name):
     """
-    Change mass set (e.g., average, monoisotopic) to be used for mass calculations.
+    Change mass set (e.g., average, monoisotopic)
+    to be used for mass calculations.
 
     :param name: section name in config/mass_sets.ini
     :return: nothing, but sets the global variable current_mass_set
@@ -56,9 +57,11 @@ select_mass_set(mass_set_parser.sections()[0])
 def read_default_libraries(subdir):
     """
     Generate the default monomer or polymer libraries.
-    Each file in ./config/monomers (or ./config/polymers, respectively) contains the description of a library.
+    Each file in ./config/monomers (or ./config/polymers, respectively)
+    contains the description of a library.
     The file name is used as the name of a library.
-    Sections indicate names, key/values pairs indicate data for the monomer/polymer table.
+    Sections indicate names, key/values pairs indicate data
+    for the monomer/polymer table.
 
     :param subdir: either "monomers" or "polymers"
     :return: a dict containing all found libraries

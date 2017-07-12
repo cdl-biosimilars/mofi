@@ -69,8 +69,8 @@ amino_acid_compositions = {
 def read_fasta_string(fasta_string):
     """
     Extracts the chain number and sequence from a string in FASTA format.
-    The chain number equals the number of header lines (i.e., lines starting with "<").
-    The sequences of all chains are merged
+    The chain number equals the number of header lines (starting with "<").
+    The sequences of all chains are merged.
 
     :param fasta_string: String in FASTA format
     :return: (1) number of chains, (2) string containing the raw sequence
@@ -90,9 +90,10 @@ def get_sequence_atoms(sequence, chains=1, disulfide_bonds=0):
     Calculates the atoms in an amino acid sequence
 
     :param sequence: String of amino acids in one-letter format
-    :param chains: number of chains; for each chain, the weight of a water molecule must be added to the total weight.
+    :param chains: number of chains; for each chain, the weight of a
+               water molecule must be added to the total weight.
     :param disulfide_bonds: number of disulfide bonds
-    :return: the elemental composition of the chains, represented as a dictionary
+    :return: the elemental composition of the chains, represented as a dict
              (example: {"C": 100; "H": 50; "N": 20})
     """
     composition = {a: 0 for a in "CHNOPS"}
@@ -122,10 +123,12 @@ def find_glycosylation_sites(sequence):
 
 def apply_pngasef(sequence):
     """
-    Simulate a digest with PNGase F, that is, change all asparagines in N-glycosylation sites to aspartates.
+    Simulate a digest with PNGase F, that is, change all asparagines
+    in N-glycosylation sites to aspartates.
+
     :param sequence: String of amino acids in one-letter format
     :return: (1) Sequence after treatment with PNGase F,
-             (2) found N-glycosylation sites as returned by find_glycosylation_sites
+             (2) found N-glycan sites as returned by find_glycosylation_sites
     """
     site_list = find_glycosylation_sites(sequence)[0]
     if site_list:
@@ -154,13 +157,14 @@ class Protein:
         :param sequence: sequence of the protein
         :param chains: number of chains
         :param disulfides: number of disulfide bonds
-        :param pngasef: bool, indicates whether the protein was treates with PNGase F
+        :param pngasef: true if the protein was treated with PNGase F
         """
         if pngasef:
             sequence, self.n_sites = apply_pngasef(sequence)
         else:
             self.n_sites = find_glycosylation_sites(sequence)[0]
-        self.formula = mass_tools.Formula(get_sequence_atoms(sequence, chains, disulfides))
+        self.formula = mass_tools.Formula(
+            get_sequence_atoms(sequence, chains, disulfides))
         self.mass = self.formula.mass
         self.amino_acid_composition = {}
         for a in amino_acid_names:
