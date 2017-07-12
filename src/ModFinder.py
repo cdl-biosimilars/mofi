@@ -237,7 +237,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         # noinspection PyUnresolvedReferences
         self.bgSpectrum.buttonClicked.connect(self.toggle_spectrum_mode)
 
-        # monomer table and associated buttons
+        # monomer table and associated buttons  TODO tooltip with molecular weight?
         self.tbMonomers.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
         for col, width in [(0, 40), (2, 130), (3, 45), (4, 45)]:
             self.tbMonomers.setColumnWidth(col, width)
