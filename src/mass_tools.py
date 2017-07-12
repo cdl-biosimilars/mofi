@@ -152,7 +152,7 @@ class Formula:
                              + str(composition))
         self._composition = self._composition.replace(np.nan, 0).astype(int)
         self._composition = self._composition
-    
+
     def change_atom_count(self, atom, count):
         """
         Change the number of a given atom type
@@ -163,7 +163,7 @@ class Formula:
         """
 
         self._composition[atom] = self._composition[atom] + count
-    
+
     def _update_masses(self):
         """
         Update the mass from the composition.
@@ -198,7 +198,7 @@ class Formula:
     def __mul__(self, factor):
         if type(factor) == int:
             return Formula(self._composition * factor)
-    
+
     def __repr__(self):
         result = []
         for element, count in self._composition.items():

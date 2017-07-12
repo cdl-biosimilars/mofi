@@ -34,10 +34,10 @@ amino_acid_names = {
     "V": ("Valine", "Val"),
     "W": ("Tryptophane", "Trp"),
     "Y": ("Tyrosine", "Tyr"),
-    "6": ("Pyroglutamic Acid", "Pyr"), 
-    "7": ("Hydroxyproline", "Hyp"), 
-    "J": ("Phosphoserine", "Sep"), 
-    "Z": ("Phosphothreonine", "Tpo")}  
+    "6": ("Pyroglutamic Acid", "Pyr"),
+    "7": ("Hydroxyproline", "Hyp"),
+    "J": ("Phosphoserine", "Sep"),
+    "Z": ("Phosphothreonine", "Tpo")}
 
 amino_acid_compositions = {
     "A": {"H": 5, "C": 3, "O": 1, "N": 1},

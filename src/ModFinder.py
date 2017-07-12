@@ -180,6 +180,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.sbDeltaValue2.valueChanged.connect(self.show_results)
         self.sbDisulfides.valueChanged.connect(self.calculate_protein_mass)
 
+        self.tbMonomers.cellChanged.connect(self.set_mass_tooltip)
+
         self.teSequence.textChanged.connect(
             lambda: self.teSequence.setStyleSheet(
                 "QTextEdit { background-color: rgb(255, 225, 225) }"))
@@ -263,7 +265,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.bgSpectrum.buttonClicked.connect(self.toggle_spectrum_mode)
 
         # monomer table and associated buttons
-        # TODO tooltip with molecular weight?
         self.tbMonomers.horizontalHeader().setSectionResizeMode(
             1, QHeaderView.Stretch)
         for col, width in [(0, 40), (2, 130), (3, 45), (4, 45)]:
@@ -450,6 +451,25 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         if table_widget.selectionModel().selectedRows():
             for i in table_widget.selectionModel().selectedRows()[::-1]:
                 table_widget.removeRow(i.row())
+
+
+    def set_mass_tooltip(self, row, col):
+        """
+        Set the tooltip of a cell in column "Formula" of the monomer table
+        to show the mass of the formula it contains.
+
+        :param row: row of the table widget item that triggered the method
+        :param col: column of the table widget item that triggered the method
+        :return: nothing
+        """
+
+        if col == 2:
+            formula = mass_tools.Formula(self.tbMonomers.item(row, col).text())
+            if formula.mass == 0:
+                mass = ""
+            else:
+                mass = "{:.2f} Da".format(formula.mass)
+            self.tbMonomers.item(row, col).setToolTip(mass)
 
 
     def show_about(self):
@@ -642,6 +662,9 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         if self.teSequence.toPlainText():
             self.calculate_protein_mass()
             self.calculate_mod_mass()
+
+        for row_id in range(self.tbMonomers.rowCount()):
+            self.set_mass_tooltip(row_id, 2)  # TODO also for polymer table
 
 
     def calculate_protein_mass(self):

@@ -13,9 +13,9 @@ buildOptions = dict(
     #     "qtpy.QtWidgets",
     #     "qtpy.QtGui",
     #     "qtpy.QtCore",
-    #     "numpy",
-    #     "pandas",
-    #     "matplotlib",
+        "numpy",
+        "pandas",
+        "matplotlib",
         "numpy.core._methods",
     ],
     include_files=[
@@ -37,4 +37,7 @@ setup(name='mofi',
       version='1.0',
       description='finds modifications',
       options=dict(build_exe=buildOptions),
-      executables=executables)
+      executables=executables, requires=['numpy', 'matplotlib', 'matplotlib',
+                                         'matplotlib', 'matplotlib',
+                                         'matplotlib', 'pandas', 'qtpy',
+                                         'qtpy', 'qtpy'])

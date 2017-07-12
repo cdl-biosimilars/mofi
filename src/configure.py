@@ -8,6 +8,7 @@ Authors: Stefan Senn, Wolfgang Skala
 (c) 2017 Christian Doppler Laboratory for Biosimilar Characterization
 """
 
+from collections import OrderedDict
 from configparser import ConfigParser
 import os
 
@@ -28,7 +29,7 @@ mass_set_parser = ConfigParser()
 mass_set_parser.optionxform = str  # do not convert keys to lowercase
 mass_set_parser.read("config/mass_sets.ini")
 
-mass_sets = {}
+mass_sets = OrderedDict()
 for set_name in mass_set_parser.sections():
     mass_sets[set_name] = {}
     for (atom, weight) in mass_set_parser.items(set_name):
@@ -66,14 +67,14 @@ def read_default_libraries(subdir):
     :param subdir: either "monomers" or "polymers"
     :return: a dict containing all found libraries
     """
-    result = {}
-    for file in os.listdir("config/" + subdir):
+    result = OrderedDict()
+    for filename in os.listdir("config/" + subdir):
         library_parser = ConfigParser()
-        library_parser.read("config/" + subdir + "/" + file)
-        name = os.path.splitext(file)[0]
-        result[name] = {}
+        library_parser.read("config/" + subdir + "/" + filename)
+        name = os.path.splitext(filename)[0]
+        result[name] = OrderedDict()
         for section in library_parser.sections():
-            result[name][section] = {}
+            result[name][section] = OrderedDict()
             for (k, v) in library_parser.items(section):
                 result[name][section][k] = v
     return result
