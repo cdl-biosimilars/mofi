@@ -719,17 +719,17 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         monomers = self.calculate_mod_mass()
         modifications = []  # list of modifications to be used in the combinatorial search
         explained_mass = self._protein_mass + self._known_mods_mass
-        unknown_masses: pd.DataFrame = self._exp_mass_data["Average Mass"] - explained_mass
+        unknown_masses = self._exp_mass_data["Average Mass"] - explained_mass  # type: pd.DataFrame
 
         if self.cbTolerance.currentIndex() == 0:  # that is, "Da."
             # calculate largest mass plus tolerance
             max_tol_mass = max(self._exp_mass_data["Average Mass"]) + self.sbTolerance.value()
             mass_tolerance = self.sbTolerance.value()
         else:
-            max_tol_mass = max(self._exp_mass_data["Average Mass"]) * (1 + self.sbTolerance.value() / 1_000_000)
+            max_tol_mass = max(self._exp_mass_data["Average Mass"]) * (1 + self.sbTolerance.value() / 1000000)
             mass_tolerance = []  # calculate a mass tolerance for each peak if we're working with ppm tolerance
             for _, m in self._exp_mass_data["Average Mass"].iteritems():
-                mass_tolerance.append(m * self.sbTolerance.value() / 1_000_000)
+                mass_tolerance.append(m * self.sbTolerance.value() / 1000000)
 
         # prepare polymer combinations for search stage 2
         available_monomers = [m[0] for m in monomers]
