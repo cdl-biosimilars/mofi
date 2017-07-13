@@ -13,6 +13,7 @@ import os
 import numpy as np
 import pandas as pd
 from mofi import configure
+import pandas.core.series
 
 
 def read_massfile(massfile, sort_by=None):
@@ -138,12 +139,11 @@ class Formula:
                    - a string, like "C6 H12 O6".
                    Raises a ValueError if composition is of a different type
         """
-        # noinspection PyUnresolvedReferences
-        if type(composition) == dict:
+        if isinstance(composition, dict):
             self._composition = pd.Series(composition)
-        elif type(composition) == pd.core.series.Series:
+        elif isinstance(composition, pd.core.series.Series):
             self._composition = composition
-        elif type(composition) == str:
+        elif isinstance(composition, str):
             self._composition = formstring_to_composition(composition)
         elif composition is None:
             self._composition = pd.Series()
@@ -151,7 +151,7 @@ class Formula:
             raise ValueError("Could not create formula from "
                              + str(composition))
         self._composition = self._composition.replace(np.nan, 0).astype(int)
-        self._composition = self._composition
+        self._update_masses()
 
     def change_atom_count(self, atom, count):
         """

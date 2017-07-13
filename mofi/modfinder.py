@@ -464,11 +464,14 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         """
 
         if col == 2:
-            formula = mass_tools.Formula(self.tbMonomers.item(row, col).text())
-            if formula.mass == 0:
-                mass = ""
-            else:
-                mass = "{:.2f} Da".format(formula.mass)
+            composition = self.tbMonomers.item(row, col).text().strip()
+            mass = ""
+            if composition:
+                try:
+                    formula = mass_tools.Formula(composition)
+                    mass = "{:.2f} Da".format(formula.mass)
+                except ValueError:
+                    pass
             self.tbMonomers.item(row, col).setToolTip(mass)
 
 
@@ -621,10 +624,12 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                     self.cbTolerance.currentText()))
 
                 f.write("#   Composition:\n")
-                for (name, mass, min_count,
-                     max_count) in self.calculate_mod_mass():
-                    f.write("#     {} ({:.2f} Da), ".format(name, mass))
-                    f.write("min {}, max {}\n".format(min_count, max_count))
+                for (is_checked, name, _, mass,
+                     min_count, max_count) in self.calculate_mod_mass():
+                    if is_checked:
+                        f.write("#     {} ({:.2f} Da), ".format(name, mass))
+                        f.write("min {}, ".format(min_count))
+                        f.write("max {}\n".format(max_count))
 
                 f.write("#   Structures:\n")
                 for name, composition, sites, abundance in self.get_polymers():
@@ -710,7 +715,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         return True
 
 
-    def calculate_mod_mass(self, return_values=""):
+    def calculate_mod_mass(self):
         """
         Calculate the mass of known modifications.
 
@@ -719,10 +724,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             updates the value of self.lbMassProtein, self.lbMassMods
             and self.lbMassTotal
 
-        :param return_values: influences the return value (see below)
-        :return: if return_values is "all": list of (checked, name,
-                 composition, min count, max count) tuples;
-                 otherwise list of (name, mass, min count, max count) tuples
+        :return: list of (checked, name, composition,
+                          mass,min count, max count) tuples
         """
 
         self._known_mods_mass = 0
@@ -735,26 +738,21 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             composition = self.tbMonomers.item(row_id, 2).text()
             min_count = self.tbMonomers.cellWidget(row_id, 3).value()
             max_count = self.tbMonomers.cellWidget(row_id, 4).value()
-            if return_values == "all":
-                result.append((ch.isChecked(), name, composition,
-                               min_count, max_count))
-            else:
-                if ch.isChecked():
-                    mass = 0
-                    try:  # 'composition' could be a mass
-                        mass = float(composition)
-                    except ValueError:  # 'composition' could be a formula
-                        try:
-                            formula = mass_tools.Formula(composition)
-                            mass = formula.mass
-                        except ValueError:  # 'composition' is invalid
-                            QMessageBox.critical(
-                                self,
-                                "Error",
-                                ("Invalid formula in row {:d}: {}"
-                                 .format(row_id + 1, composition)))
-                    self._known_mods_mass += mass * min_count
-                    result.append((name, mass, min_count, max_count))
+            mass = 0
+            try:  # 'composition' could be a mass
+                mass = float(composition)
+            except ValueError:  # 'composition' could be a formula
+                formula = mass_tools.Formula(composition)
+                # if formula is None
+                mass = formula.mass
+                # QMessageBox.critical(
+                #     self,
+                #     "Error",
+                #     ("Invalid formula in row {:d}: {}"
+                #      .format(row_id + 1, composition)))
+            self._known_mods_mass += mass * min_count
+            result.append((ch.isChecked(), name, composition, mass,
+                           min_count, max_count))
 
         self.lbMassProtein.setText("{:,.2f}".format(self._protein_mass))
         self.lbMassMods.setText("{:,.2f}".format(self._known_mods_mass))
@@ -822,7 +820,9 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 self, "Error", "No mass list loaded. Aborting search.")
             return
 
-        monomers = self.calculate_mod_mass()
+        monomers = [(m[1], m[3], m[4], m[5])
+                    for m in self.calculate_mod_mass()
+                    if m[0]]
         modifications = []  # list of modifications for search stage 1
         explained_mass = self._protein_mass + self._known_mods_mass
         unknown_masses = (self._exp_mass_data["Average Mass"]
@@ -843,7 +843,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 mass_tolerance.append(m * self.sbTolerance.value() / 1000000)
 
         # prepare polymer combinations for search stage 2
-        available_monomers = [m[0] for m in monomers]
+        available_monomers = [m[1] for m in monomers]
         polymers = self.get_polymers()
 
         if polymers:  # list contains at least one entry
@@ -1503,7 +1503,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 filename = filename + ".mofi"
 
             # gather settings
-            monomers = self.calculate_mod_mass(return_values="all")
+            monomers = self.calculate_mod_mass()
             polymers = self.get_polymers(return_values="all")
             settings = {"sequence": self.teSequence.toPlainText(),
                         "exp mass data": self._exp_mass_data,
@@ -1559,7 +1559,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self.sbTolerance.setValue(settings["tolerance value"])
 
             self.table_clear(self.tbMonomers)
-            for row_id, (is_used, name, composition, min_count,
+            for row_id, (is_used, name, composition, _, min_count,
                          max_count) in enumerate(settings["monomers"]):
                 self._monomer_table_create_row(
                     row_id, is_used, name, composition, min_count, max_count)
@@ -1589,8 +1589,9 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             if not filename.endswith(".csv"):
                 filename += ".csv"
             df_monomers = pd.DataFrame(
-                self.calculate_mod_mass(return_values="all"),
-                columns=["Checked", "Name", "Composition", "Min", "Max"])
+                self.calculate_mod_mass(),
+                columns=["Checked", "Name", "Composition",
+                         "Mass", "Min", "Max"])
             try:
                 df_monomers.to_csv(filename, index=False)
             except OSError:
