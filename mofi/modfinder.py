@@ -466,12 +466,14 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         if col == 2:
             composition = self.tbMonomers.item(row, col).text().strip()
             mass = ""
-            if composition:
-                try:
-                    formula = mass_tools.Formula(composition)
+            try:
+                formula = mass_tools.Formula(composition)
+            except ValueError:
+                pass
+            else:
+                if formula.mass != 0:
                     mass = "{:.2f} Da".format(formula.mass)
-                except ValueError:
-                    pass
+
             self.tbMonomers.item(row, col).setToolTip(mass)
 
 
@@ -482,12 +484,13 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         :return: nothing
         """
 
-        QMessageBox.about(self,
-                          "About ModFinder",
-                          "ModFinder version: {}\n{}\nContact: {}".format(
-                              configure.version,
-                              configure.rights,
-                              configure.contact))
+        QMessageBox.about(
+            self,
+            "About ModFinder",
+            "ModFinder version: {}\n{}\nContact: {}".format(
+                configure.version,
+                configure.rights,
+                configure.contact))
 
 
     @staticmethod
@@ -735,21 +738,27 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         for row_id in range(self.tbMonomers.rowCount()):
             ch = self.tbMonomers.cellWidget(row_id, 0).findChild(QCheckBox)
             name = self.tbMonomers.item(row_id, 1).text()
-            composition = self.tbMonomers.item(row_id, 2).text()
+            composition = self.tbMonomers.item(row_id, 2).text().strip()
             min_count = self.tbMonomers.cellWidget(row_id, 3).value()
             max_count = self.tbMonomers.cellWidget(row_id, 4).value()
             mass = 0
+            error_in_formula = False
             try:  # 'composition' could be a mass
                 mass = float(composition)
-            except ValueError:  # 'composition' could be a formula
-                formula = mass_tools.Formula(composition)
-                # if formula is None
-                mass = formula.mass
-                # QMessageBox.critical(
-                #     self,
-                #     "Error",
-                #     ("Invalid formula in row {:d}: {}"
-                #      .format(row_id + 1, composition)))
+            except ValueError:  # 'composition' could be a formula  TODO optimize
+                try:
+                    formula = mass_tools.Formula(composition)
+                except ValueError:
+                    error_in_formula = True
+                else:
+                    mass = formula.mass
+            if error_in_formula or mass == 0:
+                QMessageBox.critical(
+                    self,
+                    "Error",
+                    ("Invalid formula in row {:d}: {}"
+                     .format(row_id + 1, composition)))
+
             self._known_mods_mass += mass * min_count
             result.append((ch.isChecked(), name, composition, mass,
                            min_count, max_count))
