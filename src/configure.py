@@ -12,9 +12,12 @@ from collections import OrderedDict
 from configparser import ConfigParser
 import os
 
+config_dir = os.path.join(os.path.dirname(__file__), "config")
+
 # (1) general parameters
 config = ConfigParser()
-config.read("config/config.ini")
+with open(os.path.join(config_dir, "config.ini")) as f:
+    config.read_file(f)
 version = config.get("Version", "Version")
 rights = config.get("Version", "Rights")
 contact = config.get("Version", "Contact")
@@ -27,7 +30,8 @@ path = config.get("Defaults", "path")
 # (2) mass sets
 mass_set_parser = ConfigParser()
 mass_set_parser.optionxform = str  # do not convert keys to lowercase
-mass_set_parser.read("config/mass_sets.ini")
+with open(os.path.join(config_dir, "mass_sets.ini")) as f:
+    mass_set_parser.read_file(f)
 
 mass_sets = OrderedDict()
 for set_name in mass_set_parser.sections():
@@ -68,9 +72,10 @@ def read_default_libraries(subdir):
     :return: a dict containing all found libraries
     """
     result = OrderedDict()
-    for filename in os.listdir("config/" + subdir):
+    for filename in os.listdir(os.path.join(config_dir, subdir)):
         library_parser = ConfigParser()
-        library_parser.read("config/" + subdir + "/" + filename)
+        with open(os.path.join(config_dir, subdir, filename)) as f:
+            library_parser.read_file(f)
         name = os.path.splitext(filename)[0]
         result[name] = OrderedDict()
         for section in library_parser.sections():
