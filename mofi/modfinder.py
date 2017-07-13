@@ -44,11 +44,11 @@ from matplotlib.backends.backend_qt5agg import FigureCanvas
 from matplotlib.widgets import SpanSelector, RectangleSelector
 from matplotlib.figure import Figure
 
-import configure
-import mass_tools
-import modification_search
-import sequence_tools
-from ModFinder_UI import Ui_ModFinder
+from . import configure
+from . import mass_tools
+from . import modification_search
+from . import sequence_tools
+from .modfinder_ui import Ui_ModFinder
 
 pd.set_option('display.max_rows', 5000)
 matplotlib.use("Qt5Agg")
@@ -1792,8 +1792,12 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                     "Error when writing to " + filename + OSError.args)
 
 
-if __name__ == "__main__":
+def main(argv=sys.argv):
     app = QApplication(sys.argv)
     frame = MainWindow()
     frame.show()
     app.exec_()
+
+
+if __name__ == "__main__":
+    main()

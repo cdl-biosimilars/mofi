@@ -9,7 +9,7 @@ Authors: Stefan Senn, Wolfgang Skala
 """
 
 import re
-import mass_tools
+from . import mass_tools
 from collections import Counter
 
 

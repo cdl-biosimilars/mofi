@@ -12,7 +12,7 @@ import re
 import os
 import numpy as np
 import pandas as pd
-import configure
+from . import configure
 
 
 def read_massfile(massfile, sort_by=None):

@@ -1,0 +1,17 @@
+<RCC>
+  <qresource prefix="mofi resource">
+    <file>Label.png</file>
+    <file>SelectMode.png</file>
+    <file>DeltaMassMode.png</file>
+    <file>ResetZoom.png</file>
+    <file>UpArrow.png</file>
+    <file>DownArrow.png</file>
+    <file>Open.png</file>
+    <file>Save.png</file>
+    <file>InsertRowBelow.png</file>
+    <file>InsertRowAbove.png</file>
+    <file>DeleteRow.png</file>
+    <file>DefaultEntries.png</file>
+    <file>ClearTable.png</file>
+  </qresource>
+</RCC>
