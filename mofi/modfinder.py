@@ -1665,6 +1665,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 min_count=int(data["min"]),
                 max_count=int(data["max"]))
             row_id += 1
+        self.calculate_mod_mass()
 
 
     def save_polymers(self):

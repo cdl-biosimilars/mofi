@@ -100,19 +100,26 @@ def combine_formulas(formulas):
 def formstring_to_composition(formstring):
     """
     Converts an elemental composition string to a pandas series.
+    Raises a ValueError if the composition string is invalid.
 
     :param formstring: collection of elements followed by their counts
-                       (example: "C50 H100 N20")
-    :return: pd.Series labelled by the element (example: C: 50, H: 100, N: 20)
+                       (example: "C50 H100 N20 Cl")
+    :return: pd.Series labelled by the element
+             (example: C: 50, H: 100, N: 20, Cl: 1)
     """
 
-    pattern = re.compile(r"([A-Z][a-z]?)(\d*)")
+    pattern = re.compile(r"([A-Z][a-z]?)(\d*)$")
     composition = {}
-    for atom, count in pattern.findall(formstring):
-        if count:
-            composition[atom] = int(count)
+    for formula_part in formstring.split():
+        match = pattern.match(formula_part)
+        if match:
+            atom, count = match.groups()
+            if count:
+                composition[atom] = int(count)
+            else:
+                composition[atom] = 1
         else:
-            composition[atom] = 1
+            raise ValueError("Invalid formula part: {}".format(formula_part))
     return pd.Series(composition)
 
 
