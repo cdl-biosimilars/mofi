@@ -10,7 +10,7 @@ Authors: Stefan Senn, Wolfgang Skala, Gabriel Huber
 
 import numpy as np
 import pandas as pd
-from . import findmods
+from mofi import findmods
 import re
 from itertools import product
 

@@ -44,11 +44,11 @@ from matplotlib.backends.backend_qt5agg import FigureCanvas
 from matplotlib.widgets import SpanSelector, RectangleSelector
 from matplotlib.figure import Figure
 
-from . import configure
-from . import mass_tools
-from . import modification_search
-from . import sequence_tools
-from .modfinder_ui import Ui_ModFinder
+from mofi import configure
+from mofi import mass_tools
+from mofi import modification_search
+from mofi import sequence_tools
+from mofi.modfinder_ui import Ui_ModFinder
 
 pd.set_option('display.max_rows', 5000)
 matplotlib.use("Qt5Agg")
