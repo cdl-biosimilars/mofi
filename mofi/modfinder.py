@@ -180,7 +180,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.sbDeltaValue2.valueChanged.connect(self.show_results)
         self.sbDisulfides.valueChanged.connect(self.calculate_protein_mass)
 
-        self.tbMonomers.cellChanged.connect(self.set_mass_tooltip)
+        self.tbMonomers.cellChanged.connect(self.calculate_mod_mass)
 
         self.teSequence.textChanged.connect(
             lambda: self.teSequence.setStyleSheet(
@@ -320,6 +320,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         :param max_count: maximum number of modifications (int)
         :return: nothing
         """
+
+        self.tbMonomers.blockSignals(True)
         self.tbMonomers.insertRow(row_id)
 
         active_checkbox = QCheckBox()
@@ -354,6 +356,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         max_spinbox.setStyleSheet(configure.spin_box_flat_style)
         self.tbMonomers.setCellWidget(row_id, 4, max_spinbox)
 
+        self.tbMonomers.blockSignals(False)
+
 
     def _polymer_table_create_row(self, row_id, active=True, name="",
                                   composition="", sites="", abundance=0.0):
@@ -373,6 +377,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         :param abundance: relative abundance (float)
         :return: nothing
         """
+
+        self.tbPolymers.blockSignals(True)
         self.tbPolymers.insertRow(row_id)
 
         active_checkbox = QCheckBox()
@@ -399,6 +405,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         abundance_spinbox.setStyleSheet(configure.double_spin_box_flat_style)
         self.tbPolymers.setCellWidget(row_id, 4, abundance_spinbox)
 
+        self.tbPolymers.blockSignals(False)
+
 
     def table_insert_row(self, table_widget, above=True):
         """
@@ -422,6 +430,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 last_row = 0
             else:
                 last_row = table_widget.rowCount()
+
         if table_widget == self.tbMonomers:
             self._monomer_table_create_row(last_row)
         else:
@@ -451,30 +460,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         if table_widget.selectionModel().selectedRows():
             for i in table_widget.selectionModel().selectedRows()[::-1]:
                 table_widget.removeRow(i.row())
-
-
-    def set_mass_tooltip(self, row, col):
-        """
-        Set the tooltip of a cell in column "Formula" of the monomer table
-        to show the mass of the formula it contains.
-
-        :param row: row of the table widget item that triggered the method
-        :param col: column of the table widget item that triggered the method
-        :return: nothing
-        """
-
-        if col == 2:
-            composition = self.tbMonomers.item(row, col).text().strip()
-            mass = ""
-            try:
-                formula = mass_tools.Formula(composition)
-            except ValueError:
-                pass
-            else:
-                if formula.mass != 0:
-                    mass = "{:.2f} Da".format(formula.mass)
-
-            self.tbMonomers.item(row, col).setToolTip(mass)
 
 
     def show_about(self):
@@ -671,9 +656,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self.calculate_protein_mass()
             self.calculate_mod_mass()
 
-        for row_id in range(self.tbMonomers.rowCount()):
-            self.set_mass_tooltip(row_id, 2)  # TODO also for polymer table
-
 
     def calculate_protein_mass(self):
         """
@@ -730,11 +712,10 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         :return: list of (checked, name, composition,
                           mass,min count, max count) tuples
         """
-
         self._known_mods_mass = 0
         result = []
 
-        # add min counts for glycans to the theoretical mass
+        # add min counts for monomers to the theoretical mass
         for row_id in range(self.tbMonomers.rowCount()):
             ch = self.tbMonomers.cellWidget(row_id, 0).findChild(QCheckBox)
             name = self.tbMonomers.item(row_id, 1).text()
@@ -743,9 +724,9 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             max_count = self.tbMonomers.cellWidget(row_id, 4).value()
             mass = 0
             error_in_formula = False
-            try:  # 'composition' could be a mass
+            try:  # composition could be a mass ...
                 mass = float(composition)
-            except ValueError:  # 'composition' could be a formula  TODO optimize
+            except ValueError:  # ... or a formula
                 try:
                     formula = mass_tools.Formula(composition)
                 except ValueError:
@@ -753,13 +734,17 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 else:
                     mass = formula.mass
             if error_in_formula or mass == 0:
-                QMessageBox.critical(
-                    self,
-                    "Error",
-                    ("Invalid formula in row {:d}: {}"
-                     .format(row_id + 1, composition)))
+                self.tbMonomers.item(row_id, 2).setBackground(
+                    QColor(255, 225, 225))
+                self.tbMonomers.item(row_id, 2).setToolTip("")
+            else:  # set the tooltip
+                self.tbMonomers.item(row_id, 2).setBackground(
+                    QColor(255, 255, 255))
+                self.tbMonomers.item(row_id, 2).setToolTip(
+                    "{:.2f} Da".format(mass))
 
-            self._known_mods_mass += mass * min_count
+            if ch.isChecked():
+                self._known_mods_mass += mass * min_count
             result.append((ch.isChecked(), name, composition, mass,
                            min_count, max_count))
 
@@ -852,7 +837,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 mass_tolerance.append(m * self.sbTolerance.value() / 1000000)
 
         # prepare polymer combinations for search stage 2
-        available_monomers = [m[1] for m in monomers]
+        available_monomers = [m[0] for m in monomers]
         polymers = self.get_polymers()
 
         if polymers:  # list contains at least one entry
@@ -1568,7 +1553,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self.sbTolerance.setValue(settings["tolerance value"])
 
             self.table_clear(self.tbMonomers)
-            for row_id, (is_used, name, composition, _, min_count,
+            for row_id, (is_used, name, composition, min_count,  # TODO _
                          max_count) in enumerate(settings["monomers"]):
                 self._monomer_table_create_row(
                     row_id, is_used, name, composition, min_count, max_count)
