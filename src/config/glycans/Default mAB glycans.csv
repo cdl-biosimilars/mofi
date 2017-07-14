@@ -1,0 +1,10 @@
+Name,Composition,Sites
+Man5,"2 Hex, 1 N-core","ch_A, ch_B"
+G0,"2 HexNAc, 1 N-core","ch_A, ch_B"
+G1,"1 Hex, 2 HexNAc, 1 N-core","ch_A, ch_B"
+G2,"2 Hex, 2 HexNAc, 1 N-core","ch_A, ch_B"
+G0F,"2 HexNAc, 1 Fuc, 1 N-core","ch_A, ch_B"
+G1F,"1 Hex, 2 HexNAc, 1 Fuc, 1 N-core","ch_A, ch_B"
+G2F,"2 Hex, 2 HexNAc, 1 Fuc, 1 N-core","ch_A, ch_B"
+G2FSA1,"2 Hex, 2 HexNAc, 1 Fuc, 1 Neu5Ac, 1 N-core","ch_A, ch_B"
+G2FSA2,"2 Hex, 2 HexNAc, 1 Fuc, 2 Neu5Ac, 1 N-core","ch_A, ch_B"

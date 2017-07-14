@@ -53,6 +53,23 @@ from mofi.modfinder_ui import Ui_ModFinder
 pd.set_option('display.max_rows', 5000)
 matplotlib.use("Qt5Agg")
 
+# default values for columns in the monomer/polymer table
+_monomer_table_columns = [
+    ("Checked", False),
+    ("Name", None),
+    ("Composition", None),
+    ("Min", 0),
+    ("Max", -1)
+]
+
+_polymer_table_columns = [
+    ("Checked", True),
+    ("Name", None),
+    ("Composition", None),
+    ("Sites", ""),
+    ("Abundance", 0.0)
+]
+
 
 class CollapsingRectangleSelector(RectangleSelector):
     """
@@ -155,11 +172,27 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.btInsertRowBelowPolymers.clicked.connect(
             lambda: self.table_insert_row(self.tbPolymers, above=False))
         self.btLabelPeaks.clicked.connect(self.show_results)
-        self.btLoadMonomers.clicked.connect(self.load_monomers)
-        self.btLoadPolymers.clicked.connect(self.load_polymers)
+        self.btLoadMonomers.clicked.connect(
+            lambda: self.load_table(
+                default=False,
+                dialog_title="Import modifications",
+                table_widget=self.tbMonomers,
+                cols=_monomer_table_columns
+            )
+        )
+        self.btLoadPolymers.clicked.connect(
+            lambda: self.load_table(
+                default=False,
+                dialog_title="Import glycans",
+                table_widget=self.tbPolymers,
+                cols=_polymer_table_columns
+            )
+        )
         self.btResetZoom.clicked.connect(self.reset_zoom)
-        self.btSaveMonomers.clicked.connect(self.save_monomers)
-        self.btSavePolymers.clicked.connect(self.save_polymers)
+        self.btSaveMonomers.clicked.connect(
+            lambda: self.save_table("Export modifications", "monomers"))
+        self.btSavePolymers.clicked.connect(
+            lambda: self.save_table("Export glycans", "polymers"))
         self.btSaveSpectrum.clicked.connect(self.save_spectrum)
         self.btUpdateMass.clicked.connect(self.calculate_protein_mass)
 
@@ -272,10 +305,20 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.tbMonomers.verticalHeader().setSectionResizeMode(
             QHeaderView.Fixed)
         self.tbMonomers.verticalHeader().setDefaultSectionSize(22)
+        self.tbMonomers.create_row = self._monomer_table_create_row
 
         menu = QMenu()
-        for library in configure.default_monomer_libraries:
-            menu.addAction(library, self.load_default_monomers)
+        for files in os.listdir(os.path.join("config", "modifications")):
+            library = os.path.splitext(files)[0]
+            menu.addAction(
+                library,
+                lambda: self.load_table(
+                    default=True,
+                    subdir="modifications",
+                    table_widget=self.tbMonomers,
+                    cols=_monomer_table_columns
+                )
+            )
         self.btDefaultModsMonomers.setMenu(menu)
 
         # polymer table and associated buttons
@@ -286,10 +329,20 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.tbPolymers.verticalHeader().setSectionResizeMode(
             QHeaderView.Fixed)
         self.tbPolymers.verticalHeader().setDefaultSectionSize(22)
+        self.tbPolymers.create_row = self._polymer_table_create_row
 
         menu = QMenu()
-        for library in configure.default_polymer_libraries:
-            menu.addAction(library, self.load_default_polymers)
+        for files in os.listdir(os.path.join("config", "glycans")):
+            library = os.path.splitext(files)[0]
+            menu.addAction(
+                library,
+                lambda: self.load_table(
+                    default=True,
+                    subdir="glycans",
+                    table_widget=self.tbPolymers,
+                    cols=_polymer_table_columns
+                )
+            )
         self.btDefaultModsPolymers.setMenu(menu)
 
         # private members
@@ -408,7 +461,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.tbPolymers.blockSignals(False)
 
 
-    def table_insert_row(self, table_widget, above=True):
+    @staticmethod
+    def table_insert_row(table_widget, above=True):
         """
         Insert a row into the table of modifications.
         The row will be inserted relative to the current selection
@@ -419,6 +473,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                       above the current selection
         :return: nothing
         """
+
         selected_rows = table_widget.selectionModel().selectedRows()
         if selected_rows:
             if above:
@@ -431,22 +486,20 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             else:
                 last_row = table_widget.rowCount()
 
-        if table_widget == self.tbMonomers:
-            self._monomer_table_create_row(last_row)
-        else:
-            self._polymer_table_create_row(last_row)
+        table_widget.create_row(last_row)
 
 
     @staticmethod
     def table_clear(table_widget):
         """
-        Delete all rows in the table of modifications.
+        Delete all rows in a QTableWidget.
 
         :param table_widget: the QTableWidget to modify
         :return: nothing
         """
-        while table_widget.rowCount() > 0:
-            table_widget.removeRow(0)
+
+        table_widget.clearContents()
+        table_widget.setRowCount(0)
 
 
     @staticmethod
@@ -460,6 +513,144 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         if table_widget.selectionModel().selectedRows():
             for i in table_widget.selectionModel().selectedRows()[::-1]:
                 table_widget.removeRow(i.row())
+
+
+    def table_to_csv(self, buffer, which="monomers"):
+        """
+        Writes the contents of the monomer or polymer table
+        to a file in csv format.
+
+        :param buffer: a file handle or string buffer
+        :param which: table to convert, "monomers" or "polymers"
+        :return: nothing
+        """
+        if which == "monomers":
+            df = pd.DataFrame(
+                self.calculate_mod_mass(),
+                columns=["Checked", "Name", "Composition",
+                         "Mass", "Min", "Max"])
+        elif which == "polymers":
+            df = pd.DataFrame(
+                self.get_polymers(return_values="all"),
+                columns=["Checked", "Name", "Composition",
+                         "Sites", "Abundance"])
+        else:
+            raise ValueError("Invalid value for 'which': {}".format(which))
+        df.to_csv(buffer, index=False)
+
+
+    def save_table(self, dialog_title=None, which="monomers"):
+        """
+        Export the contents of the monomer or polymer table.
+
+        :param dialog_title: title of the QFileDialog
+        :param which: table to export; "monomers" or "polymers"
+        :return: nothing
+        """
+        filename = QFileDialog.getSaveFileName(
+            self,
+            dialog_title,
+            self._path,
+            "Comma-separated value (*.csv)")[0]
+        self._path = os.path.split(filename)[0]
+        if filename:
+            if not filename.endswith(".csv"):
+                filename += ".csv"
+            try:
+                self.table_to_csv(filename, which=which)
+            except OSError:
+                QMessageBox.critical(
+                    self,
+                    "Error",
+                    "Error when writing to " + filename + OSError.args)
+
+
+    def table_from_file(self, buffer, table_widget=None,
+                        file_format="csv", cols=None):
+        """
+        Read monomers/polymers from a xls/csv file or string buffer.
+
+        :param buffer: a file handle or string buffer
+        :param table_widget: QTableWidget to fill with values
+        :param file_format: format of the input
+                            if "csv", buffer may be a string buffe
+        :param cols: list of (column header, default value) tuples,
+                     sorted according to the order of the arguments to
+                     _[monomer/polymer]_table_create_row.
+                     If the default value is None, a column must
+                     exist in the input file; otherwise, it will be filled
+                     with the default value if missing in the input file.
+        :return: nothing
+        """
+
+        if file_format == "csv":
+            df = pd.read_csv(buffer)
+        else:
+            df = pd.read_excel(buffer)
+
+        for label, default in cols:
+            if label not in df.columns:
+                if default is None:
+                    QMessageBox.warning(
+                        self,
+                        "Warning",
+                        "Column '{}' missing in input. ".format(label)
+                        + "No data imported.")
+                    return
+                else:
+                    df[label] = default
+
+        self.table_clear(table_widget)
+        for row_id, data in df.iterrows():
+            table_widget.create_row(row_id, *[data[c[0]] for c in cols])
+        self.calculate_mod_mass()
+
+
+    def load_table(self, default=False, subdir=None, dialog_title=None,
+                   table_widget=None, cols=None):
+        """
+        Import the contents of the monomer/polymer table.
+
+        :param default: true if a default monomer library should be loaded
+                        false if the user should choose a monomer library file
+        :param subdir: directory in config containing the default libraries
+        :param dialog_title: title of the QFileDialog
+        :param table_widget: QTableWidget to fill with values
+        :param cols: see cols in self.table_from_file
+        :return: nothing
+        """
+
+        if default:
+            filename = os.path.join("config", subdir,
+                                    self.sender().text() + ".csv")
+            file_format = "csv"
+        else:
+            filename = QFileDialog.getOpenFileName(
+                self,
+                dialog_title,
+                self._path,
+                "Excel files (*.xlsx *.xls);; CSV files (*.csv *.txt)")[0]
+            self._path = os.path.split(filename)[0]
+            ext = os.path.splitext(filename)[1]
+
+            if ext == "":
+                return
+            elif ext in [".xls", ".xlsx"]:
+                file_format = "xls"
+            elif ext in [".txt", ".csv"]:
+                file_format = "csv"
+            else:
+                QMessageBox.warning(
+                    self,
+                    "Warning",
+                    "Unknown file format: {}.".format(ext))
+                return
+
+        self.table_from_file(
+            filename,
+            table_widget,
+            file_format=file_format,
+            cols=cols)
 
 
     def show_about(self):
@@ -1565,210 +1756,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                     row_id, is_used, name, composition, sites, abundance)
 
             self.calculate_mod_mass()
-
-
-    def save_monomers(self):
-        """
-        Export the contents of the monomer table.
-
-        :return: nothing
-        """
-        filename = QFileDialog.getSaveFileName(
-            self,
-            "Export monomers",
-            self._path,
-            "Comma-separated value (*.csv)")[0]
-        self._path = os.path.split(filename)[0]
-        if filename:
-            if not filename.endswith(".csv"):
-                filename += ".csv"
-            df_monomers = pd.DataFrame(
-                self.calculate_mod_mass(),
-                columns=["Checked", "Name", "Composition",
-                         "Mass", "Min", "Max"])
-            try:
-                df_monomers.to_csv(filename, index=False)
-            except OSError:
-                QMessageBox.critical(
-                    self,
-                    "Error",
-                    "Error when writing to " + filename + OSError.args)
-
-
-    def load_monomers(self):
-        """
-        Import the contents of the monomer table.
-        Columns labelled "Name" and "Composition" must exist in the input file.
-        The following columns are optional and will be filled
-        with the indicated default values if missing:
-        "Checked" (False), "Min" (0) and "Max" (-1, i.e., inf).
-
-        :return: nothing
-        """
-        filename = QFileDialog.getOpenFileName(
-            self,
-            "Import monomers",
-            self._path,
-            "Excel files (*.xlsx *.xls);; CSV files (*.csv *.txt)")[0]
-        self._path = os.path.split(filename)[0]
-        ext = os.path.splitext(filename)[1]
-        if ext in [".xls", ".xlsx"]:
-            df_monomers = pd.read_excel(filename)
-        elif ext in [".txt", ".csv"]:
-            df_monomers = pd.read_csv(filename)
-        else:
-            return
-
-        if "Name" not in df_monomers.columns:
-            QMessageBox.warning(
-                self,
-                "Warning",
-                "Column 'Name' missing in input. No data imported.")
-            return
-        if "Composition" not in df_monomers.columns:
-            QMessageBox.warning(
-                self,
-                "Warning",
-                "Column 'Composition' missing in input. No data imported.")
-            return
-
-        if "Checked" not in df_monomers.columns:
-            df_monomers["Checked"] = False
-        if "Min" not in df_monomers.columns:
-            df_monomers["Min"] = 0
-        if "Max" not in df_monomers.columns:
-            df_monomers["Max"] = -1
-
-        self.table_clear(self.tbMonomers)
-        for row_id, data in df_monomers.iterrows():
-            self._monomer_table_create_row(
-                row_id, data["Checked"], data["Name"], data["Composition"],
-                data["Min"], data["Max"])
-        self.calculate_mod_mass()
-
-
-    def load_default_monomers(self):
-        """
-        Load a default monomer library.
-
-        :return: nothing
-        """
-        self.table_clear(self.tbMonomers)
-        library = self.sender().text()
-        row_id = 0
-
-        for name, data in configure.default_monomer_libraries[library].items():
-            self._monomer_table_create_row(
-                row_id,
-                name=name,
-                composition=data["composition"],
-                min_count=int(data["min"]),
-                max_count=int(data["max"]))
-            row_id += 1
-        self.calculate_mod_mass()
-
-
-    def save_polymers(self):
-        """
-        Export the contents of the polymer table.
-
-        :return: nothing
-        """
-        filename = QFileDialog.getSaveFileName(
-            self,
-            "Export polymers",
-            self._path,
-            "Comma-separated value (*.csv)")[0]
-        self._path = os.path.split(filename)[0]
-        if filename:
-            if not filename.endswith(".csv"):
-                filename += ".csv"
-
-            polymer_data = self.get_polymers(return_values="all")
-            df_polymers = pd.DataFrame(
-                polymer_data,
-                columns=["Checked", "Name", "Composition",
-                         "Sites", "Abundance"])
-            try:
-                df_polymers.to_csv(filename, index=False)
-            except OSError:
-                QMessageBox.critical(
-                    self,
-                    "Error",
-                    "Error when writing to " + filename + OSError.args)
-
-
-    def load_polymers(self):
-        """
-        Import the contents of the polymer table.
-        Columns labelled "Name", "Composition" and "Sites"
-        must exists in the input file.
-        The following columns are optional and will be filled
-        with the indicated default values if missing:
-        "Checked" (False) and "Abundance" (0.0).
-
-        :return: nothing
-        """
-        filename = QFileDialog.getOpenFileName(
-            self,
-            "Import polymers",
-            self._path,
-            "Excel files (*.xlsx *.xls);; CSV files (*.csv *.txt)")[0]
-        self._path = os.path.split(filename)[0]
-        ext = os.path.splitext(filename)[1]
-        if ext in [".xls", ".xlsx"]:
-            df_polymers = pd.read_excel(filename)
-        elif ext in [".txt", ".csv"]:
-            df_polymers = pd.read_csv(filename)
-        else:
-            return
-
-        if "Name" not in df_polymers.columns:
-            QMessageBox.warning(
-                self,
-                "Warning",
-                "Column 'Name' missing in input. No data imported.")
-            return
-        if "Composition" not in df_polymers.columns:
-            QMessageBox.warning(
-                self,
-                "Warning",
-                "Column 'Composition' missing in input. No data imported.")
-            return
-        if "Sites" not in df_polymers.columns:
-            QMessageBox.warning(
-                self,
-                "Warning",
-                "Column 'Sites' missing in input. No data imported.")
-            return
-
-        if "Checked" not in df_polymers.columns:
-            df_polymers["Checked"] = False
-        if "Abundance" not in df_polymers.columns:
-            df_polymers["Abundance"] = 0.0
-
-        self.table_clear(self.tbPolymers)
-        for row_id, data in df_polymers.iterrows():
-            self._polymer_table_create_row(
-                row_id, data["Checked"], data["Name"], data["Composition"],
-                data["Sites"], data["Abundance"])
-
-
-    def load_default_polymers(self):
-        """
-        Load a default polymer library.
-
-        :return: nothing
-        """
-        self.table_clear(self.tbPolymers)
-        library = self.sender().text()
-        row_id = 0
-
-        for name, data in configure.default_polymer_libraries[library].items():
-            self._polymer_table_create_row(
-                row_id, name=name, composition=data["composition"],
-                sites=data["sites"])
-            row_id += 1
 
 
     def save_spectrum(self):

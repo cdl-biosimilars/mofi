@@ -10,7 +10,6 @@ Authors: Stefan Senn, Wolfgang Skala
 
 from collections import OrderedDict
 from configparser import ConfigParser
-import os
 
 config_dir = os.path.join(os.path.dirname(__file__), "config")
 
@@ -57,35 +56,6 @@ def select_mass_set(name):
 current_mass_set = {}
 select_mass_set(mass_set_parser.sections()[0])
 
-
-# (3) default monomer libraries
-def read_default_libraries(subdir):
-    """
-    Generate the default monomer or polymer libraries.
-    Each file in ./config/monomers (or ./config/polymers, respectively)
-    contains the description of a library.
-    The file name is used as the name of a library.
-    Sections indicate names, key/values pairs indicate data
-    for the monomer/polymer table.
-
-    :param subdir: either "monomers" or "polymers"
-    :return: a dict containing all found libraries
-    """
-    result = OrderedDict()
-    for filename in os.listdir(os.path.join(config_dir, subdir)):
-        library_parser = ConfigParser()
-        with open(os.path.join(config_dir, subdir, filename)) as f:
-            library_parser.read_file(f)
-        name = os.path.splitext(filename)[0]
-        result[name] = OrderedDict()
-        for section in library_parser.sections():
-            result[name][section] = OrderedDict()
-            for (k, v) in library_parser.items(section):
-                result[name][section][k] = v
-    return result
-
-default_monomer_libraries = read_default_libraries("monomers")
-default_polymer_libraries = read_default_libraries("polymers")
 
 double_spin_box_flat_style = """
     QDoubleSpinBox::up-button {
