@@ -103,10 +103,6 @@ ENV/
 # IDEA
 /.idea
 
-# Qt compiled files
-*_ui.py
-*_rc.py
-
 /data
 /log
 /unused
