@@ -1,21 +1,32 @@
-import re
 import pandas as pd
+import xml.etree.ElementTree as etree
 
-def formstring_to_composition(formstring):
-    """
-    Converts an elemental composition string to a pandas series.
 
-    :param formstring: collection of elements followed by their counts (example: "C50 H100 N20")
-    :return: pd.Series labelled by the element (example: C: 50, H: 100, N: 20)
-    """
+def indent(elem, level=0):
+    i = "\n" + level * "  "
+    if len(elem):
+        if not elem.text or not elem.text.strip():
+            elem.text = i + "  "
+        if not elem.tail or not elem.tail.strip():
+            elem.tail = i
+        for elem in elem:
+            indent(elem, level + 1)
+        if not elem.tail or not elem.tail.strip():
+            elem.tail = i
+    else:
+        if level and (not elem.tail or not elem.tail.strip()):
+            elem.tail = i
 
-    pattern = re.compile(r"([A-Z][a-z]?)(\d*)")
-    composition = {}
-    for atom, count in pattern.findall(formstring):
-        if count:
-            composition[atom] = int(count)
-        else:
-            composition[atom] = 1
-    return pd.Series(composition)
 
-print(formstring_to_composition("C6 H12 O6 N Na2"))
+df = pd.DataFrame([(1, 2, "foo"), (3, 4, "bar")], columns=["eggs", "spam", "lobster"])
+
+root = etree.Element("dataframe")
+etree.SubElement(root, "test").text = "123"
+for row_id, row in df.iterrows():
+    item = etree.SubElement(root, "row", attrib=dict(id=str(row_id)))
+    for cell_id, cell in row.iteritems():
+        subitem = etree.SubElement(item, "cell", attrib=dict(col=cell_id))
+        subitem.text = str(cell)
+
+indent(root)
+etree.dump(root)

@@ -25,6 +25,7 @@ import re
 import sys
 import time
 import webbrowser
+import xml.etree.ElementTree as ETree
 
 from qtpy.QtWidgets import (QApplication, QMainWindow, QMenu, QActionGroup,
                             QTableWidgetItem, QCheckBox, QMessageBox,
@@ -69,6 +70,29 @@ _polymer_table_columns = [
     ("Sites", ""),
     ("Abundance", 0.0)
 ]
+
+
+def prettify_xml(elem, level=0):
+    """
+    Prettify an XML tree inplace.
+
+    :param elem: a xml.etree.ElementTree Element
+    :param level: which level to prettify; only required for recirsive call
+    :return: nothing (changes the ElementTree inplace)
+    """
+    i = "\n" + level * "  "
+    if len(elem):
+        if not elem.text or not elem.text.strip():
+            elem.text = i + "  "
+        if not elem.tail or not elem.tail.strip():
+            elem.tail = i
+        for elem in elem:
+            prettify_xml(elem, level + 1)
+        if not elem.tail or not elem.tail.strip():
+            elem.tail = i
+    else:
+        if level and (not elem.tail or not elem.tail.strip()):
+            elem.tail = i
 
 
 class CollapsingRectangleSelector(RectangleSelector):
@@ -1671,7 +1695,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self.twResults.setUpdatesEnabled(True)
 
 
-    def save_settings(self):  # TODO don't pickle; unify with mono/poly tables
+    def save_settings(self):
         """
         Dump the current settings via pickle.
 
@@ -1681,26 +1705,63 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self,
             "Save settings",
             self._path,
-            "ModFinder settings (*.mofi)")[0]
+            "ModFinder XML settings (*.xml)")[0]
         self._path = os.path.split(filename)[0]
         if filename:
-            if not filename.endswith(".mofi"):
-                filename = filename + ".mofi"
+            if not filename.endswith(".xml"):
+                filename = filename + ".xml"
 
-            # gather settings
-            monomers = self.calculate_mod_mass()
-            polymers = self.get_polymers(return_values="all")
-            settings = {"sequence": self.teSequence.toPlainText(),
-                        "exp mass data": self._exp_mass_data,
-                        "mass filename": self._mass_filename,
-                        "disulfides": self.sbDisulfides.value(),
-                        "pngase f": self.chPngase.isChecked(),
-                        "tolerance value": self.sbTolerance.value(),
-                        "tolerance flavor": self.cbTolerance.currentIndex(),
-                        "monomers": monomers,
-                        "polymers": polymers}
-            with open(filename, "wb") as f:
-                pickle.dump(settings, f)
+            settings = [("sequence", self.teSequence.toPlainText()),
+                        ("masslist", "self._exp_mass_data"),
+                        ("massfile", self._mass_filename),
+                        ("disulfides", self.sbDisulfides.value()),
+                        ("pngasef", self.chPngase.isChecked()),
+                        ("tolerance-value", self.sbTolerance.value()),
+                        ("tolerance-flavor", self.cbTolerance.currentIndex()),
+                        ("monomers", "monomers"),
+                        ("polymers", "polymers")]
+
+            root = ETree.Element("settings")
+            for child, text in settings:
+                ETree.SubElement(root, child).text = text
+
+            prettify_xml(root)
+            ETree.dump(root)
+            # monomers = self.calculate_mod_mass()
+            # polymers = self.get_polymers(return_values="all")
+            # with open(filename, "wb") as f:
+                # pickle.dump(settings, f)
+
+    # def save_settings(self):
+    #     """
+    #     Dump the current settings via pickle.
+    #
+    #     :return: nothing
+    #     """
+    #     filename = QFileDialog.getSaveFileName(
+    #         self,
+    #         "Save settings",
+    #         self._path,
+    #         "ModFinder settings (*.mofi)")[0]
+    #     self._path = os.path.split(filename)[0]
+    #     if filename:
+    #         if not filename.endswith(".mofi"):
+    #             filename = filename + ".mofi"
+    #
+    #         # gather settings
+    #         monomers = self.calculate_mod_mass()
+    #         polymers = self.get_polymers(return_values="all")
+    #         settings = {"sequence": self.teSequence.toPlainText(),
+    #                     "exp mass data": self._exp_mass_data,
+    #                     "mass filename": self._mass_filename,
+    #                     "disulfides": self.sbDisulfides.value(),
+    #                     "pngase f": self.chPngase.isChecked(),
+    #                     "tolerance value": self.sbTolerance.value(),
+    #                     "tolerance flavor": self.cbTolerance.currentIndex(),
+    #                     "monomers": monomers,
+    #                     "polymers": polymers}
+    #         with open(filename, "wb") as f:
+    #             pickle.dump(settings, f)
 
 
     def load_settings(self):
