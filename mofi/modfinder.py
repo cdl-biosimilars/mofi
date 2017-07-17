@@ -332,7 +332,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.tbMonomers.create_row = self._monomer_table_create_row
 
         menu = QMenu()
-        for files in os.listdir(os.path.join("config", "modifications")):
+        for files in os.listdir(os.path.join(os.path.dirname(__file__),
+                                             "data", "modifications")):
             library = os.path.splitext(files)[0]
             menu.addAction(
                 library,
@@ -356,7 +357,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.tbPolymers.create_row = self._polymer_table_create_row
 
         menu = QMenu()
-        for files in os.listdir(os.path.join("config", "glycans")):
+        for files in os.listdir(os.path.join(os.path.dirname(__file__),
+                                             "data", "glycans")):
             library = os.path.splitext(files)[0]
             menu.addAction(
                 library,
@@ -645,7 +647,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         """
 
         if default:
-            filename = os.path.join("config", subdir,
+            filename = os.path.join(os.path.dirname(__file__), "data", subdir,
                                     self.sender().text() + ".csv")
             file_format = "csv"
         else:
