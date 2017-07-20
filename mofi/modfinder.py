@@ -27,14 +27,14 @@ import time
 import webbrowser
 import xml.etree.ElementTree as ETree
 
-from qtpy.QtWidgets import (QApplication, QMainWindow, QMenu, QActionGroup,
+from PyQt5.QtWidgets import (QApplication, QMainWindow, QMenu, QActionGroup,
                             QTableWidgetItem, QCheckBox, QMessageBox,
                             QFileDialog, QTreeWidgetItem, QHeaderView,
                             QSpinBox, QDoubleSpinBox, QWidget, QHBoxLayout,
                             QAction, QProgressBar, QLabel, QSizePolicy,
                             QButtonGroup)
-from qtpy.QtGui import QColor, QBrush
-from qtpy.QtCore import Qt
+from PyQt5.QtGui import QColor, QBrush
+from PyQt5.QtCore import Qt
 
 import numpy as np
 import pandas as pd
