@@ -20,7 +20,6 @@
 
 import math
 import os
-import pickle
 import re
 import sys
 import time
@@ -28,11 +27,11 @@ import webbrowser
 import xml.etree.ElementTree as ETree
 
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QMenu, QActionGroup,
-                            QTableWidgetItem, QCheckBox, QMessageBox,
-                            QFileDialog, QTreeWidgetItem, QHeaderView,
-                            QSpinBox, QDoubleSpinBox, QWidget, QHBoxLayout,
-                            QAction, QProgressBar, QLabel, QSizePolicy,
-                            QButtonGroup)
+                             QTableWidgetItem, QCheckBox, QMessageBox,
+                             QTreeWidgetItem, QHeaderView, QButtonGroup,
+                             QSpinBox, QDoubleSpinBox, QWidget, QHBoxLayout,
+                             QAction, QProgressBar, QLabel, QSizePolicy,
+                             QFileDialog)
 from PyQt5.QtGui import QColor, QBrush
 from PyQt5.QtCore import Qt
 
@@ -94,6 +93,74 @@ def prettify_xml(elem, level=0):
     else:
         if level and (not elem.tail or not elem.tail.strip()):
             elem.tail = i
+
+
+def dataframe_to_xml(df):
+    """
+    Convert a pandas DataFrame to an XML etree with the following format:
+
+    <dataframe>
+        <columns>
+            <column dtype="[data dype]">[column name]</column>
+            ...
+        </columns>
+        <rows>
+            <row id=[id]>
+                <cell>[value]</cell>
+                ...
+            </row>
+            ...
+        </rows>
+     </dataframe>
+
+    :param df: a dataframe
+    :return: a xml.etree.ElementTree Element
+    """
+
+    root = ETree.Element("dataframe")
+    if df is not None:
+        columns = ETree.SubElement(root, "columns")
+        for i, column in enumerate(df.columns.values):
+            item = ETree.SubElement(columns, "column", dtype=str(df.dtypes[i]))
+            item.text = column
+        rows = ETree.SubElement(root, "rows")
+        for row_id, row in df.iterrows():
+            item = ETree.SubElement(rows, "row", id=str(row_id))
+            for cell_id, cell in row.iteritems():
+                ETree.SubElement(item, "cell").text = str(cell)
+    return root
+
+
+def dataframe_from_xml(root):
+    """
+    Convert an XML etree to a pandas dataframe.
+
+    :param root: an xml.etree.ElementTree Element
+    :return: a dataframe
+    """
+
+    root = root.find("dataframe")
+    columns = root.find("columns")
+    if columns is None:
+        return pd.DataFrame()
+    else:
+        column_names = []
+        dtypes = []
+        for column in columns.findall("column"):
+            column_names.append(column.text)
+            dtypes.append(column.attrib["dtype"])
+
+        rows = root.find("rows")
+        rows_data = []
+        for row in rows.findall("row"):
+            row_data = []
+            for cell in row.findall("cell"):
+                row_data.append(cell.text)
+            rows_data.append(row_data)
+
+        return (pd.DataFrame(rows_data, columns=column_names)
+                .replace({"True": True, "False": False})
+                .astype(dict(zip(column_names, dtypes))))
 
 
 class CollapsingRectangleSelector(RectangleSelector):
@@ -540,28 +607,26 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 table_widget.removeRow(i.row())
 
 
-    def table_to_csv(self, buffer, which="monomers"):
+    def table_to_df(self, which="monomers"):
         """
-        Writes the contents of the monomer or polymer table
-        to a file in csv format.
+        Create a dataframe from the contents of the monomer or polymer table.
 
-        :param buffer: a file handle or string buffer
         :param which: table to convert, "monomers" or "polymers"
-        :return: nothing
+        :return: dataframe
         """
         if which == "monomers":
-            df = pd.DataFrame(
-                self.calculate_mod_mass(),
-                columns=["Checked", "Name", "Composition",
-                         "Mass", "Min", "Max"])
+            columns = ["Checked", "Name", "Composition", "Mass", "Min", "Max"]
+            dtypes = ["bool", "str", "str", "float64", "int64", "int64"]
+            df = pd.DataFrame(self.calculate_mod_mass(), columns=columns)
         elif which == "polymers":
-            df = pd.DataFrame(
-                self.get_polymers(return_values="all"),
-                columns=["Checked", "Name", "Composition",
-                         "Sites", "Abundance"])
+            columns = ["Checked", "Name", "Composition", "Sites", "Abundance"]
+            dtypes = ["bool", "str", "str", "str", "float64"]
+            df = pd.DataFrame(self.get_polymers(), columns=columns)
+
         else:
             raise ValueError("Invalid value for 'which': {}".format(which))
-        df.to_csv(buffer, index=False)
+
+        return df.astype(dict(zip(columns, dtypes)))
 
 
     def save_table(self, dialog_title=None, which="monomers"):
@@ -582,7 +647,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             if not filename.endswith(".csv"):
                 filename += ".csv"
             try:
-                self.table_to_csv(filename, which=which)
+                df = self.table_to_df(which=which)  # type: pd.DataFrame
+                df.to_csv(filename, index=False)
             except OSError:
                 QMessageBox.critical(
                     self,
@@ -590,15 +656,12 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                     "Error when writing to " + filename + OSError.args)
 
 
-    def table_from_file(self, buffer, table_widget=None,
-                        file_format="csv", cols=None):
+    def table_from_df(self, df, table_widget=None, cols=None):
         """
-        Read monomers/polymers from a xls/csv file or string buffer.
+        Read monomers/polymers from a dataframe.
 
-        :param buffer: a file handle or string buffer
+        :param df: a dataframe
         :param table_widget: QTableWidget to fill with values
-        :param file_format: format of the input
-                            if "csv", buffer may be a string buffe
         :param cols: list of (column header, default value) tuples,
                      sorted according to the order of the arguments to
                      _[monomer/polymer]_table_create_row.
@@ -607,11 +670,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                      with the default value if missing in the input file.
         :return: nothing
         """
-
-        if file_format == "csv":
-            df = pd.read_csv(buffer)
-        else:
-            df = pd.read_excel(buffer)
 
         for label, default in cols:
             if label not in df.columns:
@@ -641,7 +699,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         :param subdir: directory in config containing the default libraries
         :param dialog_title: title of the QFileDialog
         :param table_widget: QTableWidget to fill with values
-        :param cols: see cols in self.table_from_file
+        :param cols: see cols in self.table_from_df
         :return: nothing
         """
 
@@ -671,11 +729,11 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                     "Unknown file format: {}.".format(ext))
                 return
 
-        self.table_from_file(
-            filename,
-            table_widget,
-            file_format=file_format,
-            cols=cols)
+        if file_format == "csv":
+            df = pd.read_csv(filename)
+        else:
+            df = pd.read_excel(filename)
+        self.table_from_df(df, table_widget, cols)
 
 
     def show_about(self):
@@ -831,15 +889,19 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 for (is_checked, name, _, mass,
                      min_count, max_count) in self.calculate_mod_mass():
                     if is_checked:
+                        if max_count == -1:
+                            max_count = "inf"
                         f.write("#     {} ({:.2f} Da), ".format(name, mass))
                         f.write("min {}, ".format(min_count))
                         f.write("max {}\n".format(max_count))
 
                 f.write("#   Structures:\n")
-                for name, composition, sites, abundance in self.get_polymers():
-                    f.write("#     {} ({}); ".format(name, composition))
-                    f.write("sites: {}; ".format(sites))
-                    f.write("abundance: {:.2f}\n".format(abundance))
+                for (is_checked, name, composition,
+                     sites, abundance) in self.get_polymers():
+                    if is_checked:
+                        f.write("#     {} ({}); ".format(name, composition))
+                        f.write("sites: {}; ".format(sites))
+                        f.write("abundance: {:.2f}\n".format(abundance))
 
                 if self.chFilterStructureHits.isChecked():
                     f.write("# Results from structure search (stage 2).\n")
@@ -971,15 +1033,11 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         return result
 
 
-    def get_polymers(self, return_values=""):
+    def get_polymers(self):
         """
         Read the current polymer library from the table and return as list.
 
-        :param return_values: If true, return all contents from the table.
-        :return: a list of (is_checked, name, composition, sites, abundance)
-                 tuples if return_values is "all";
-                 a list of (name, composition, sites, abundance) tuples
-                 if return_values is any other string
+        :return: list of (is_checked, name, compos., sites, abundance) tuples
         """
 
         result = []
@@ -991,11 +1049,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             composition = self.tbPolymers.item(row_id, 2).text()
             sites = self.tbPolymers.item(row_id, 3).text()
             abundance = self.tbPolymers.cellWidget(row_id, 4).value()
-            if return_values == "all":
-                result.append((is_checked, name,
-                               composition, sites, abundance))
-            elif is_checked:
-                result.append((name, composition, sites, abundance))
+            result.append((is_checked, name, composition, sites, abundance))
         return result
 
 
@@ -1059,8 +1113,9 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         if polymers:  # list contains at least one entry
             df_polymers = pd.DataFrame.from_records(
                 polymers,
-                columns=["Name", "Composition", "Sites", "Abundance"])
-            df_polymers.set_index("Name", inplace=True, drop=True)
+                columns=["ch", "Name", "Composition", "Sites", "Abundance"])
+            df_polymers = (df_polymers[df_polymers["ch"]]
+                           .set_index("Name", drop=True))
             monomers_in_library = set(
                 modification_search.get_monomers_from_library(df_polymers))
             monomers_for_polymer_search = [m for m in available_monomers
@@ -1698,7 +1753,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
     def save_settings(self):
         """
-        Dump the current settings via pickle.
+        Export the current settings as XML file.
 
         :return: nothing
         """
@@ -1712,85 +1767,71 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             if not filename.endswith(".xml"):
                 filename = filename + ".xml"
 
+            root = ETree.Element("settings")
             settings = [("sequence", self.teSequence.toPlainText()),
-                        ("masslist", "self._exp_mass_data"),
                         ("massfile", self._mass_filename),
                         ("disulfides", self.sbDisulfides.value()),
                         ("pngasef", self.chPngase.isChecked()),
                         ("tolerance-value", self.sbTolerance.value()),
-                        ("tolerance-flavor", self.cbTolerance.currentIndex()),
-                        ("monomers", "monomers"),
-                        ("polymers", "polymers")]
-
-            root = ETree.Element("settings")
+                        ("tolerance-flavor", self.cbTolerance.currentIndex())]
             for child, text in settings:
-                ETree.SubElement(root, child).text = text
+                ETree.SubElement(root, child).text = str(text)
+
+            dataframes = [("masslist", self._exp_mass_data),
+                          ("monomers", self.table_to_df(which="monomers")),
+                          ("polymers", self.table_to_df(which="polymers"))]
+            for child, df in dataframes:
+                ETree.SubElement(root, child).append(dataframe_to_xml(df))
 
             prettify_xml(root)
-            ETree.dump(root)
-            # monomers = self.calculate_mod_mass()
-            # polymers = self.get_polymers(return_values="all")
-            # with open(filename, "wb") as f:
-                # pickle.dump(settings, f)
-
-    # def save_settings(self):
-    #     """
-    #     Dump the current settings via pickle.
-    #
-    #     :return: nothing
-    #     """
-    #     filename = QFileDialog.getSaveFileName(
-    #         self,
-    #         "Save settings",
-    #         self._path,
-    #         "ModFinder settings (*.mofi)")[0]
-    #     self._path = os.path.split(filename)[0]
-    #     if filename:
-    #         if not filename.endswith(".mofi"):
-    #             filename = filename + ".mofi"
-    #
-    #         # gather settings
-    #         monomers = self.calculate_mod_mass()
-    #         polymers = self.get_polymers(return_values="all")
-    #         settings = {"sequence": self.teSequence.toPlainText(),
-    #                     "exp mass data": self._exp_mass_data,
-    #                     "mass filename": self._mass_filename,
-    #                     "disulfides": self.sbDisulfides.value(),
-    #                     "pngase f": self.chPngase.isChecked(),
-    #                     "tolerance value": self.sbTolerance.value(),
-    #                     "tolerance flavor": self.cbTolerance.currentIndex(),
-    #                     "monomers": monomers,
-    #                     "polymers": polymers}
-    #         with open(filename, "wb") as f:
-    #             pickle.dump(settings, f)
+            try:
+                ETree.ElementTree(root).write(
+                    filename,
+                    encoding="utf-8",
+                    xml_declaration=True)
+            except OSError:
+                QMessageBox.critical(
+                    self,
+                    "Error",
+                    "Error when writing to " + filename + OSError.args)
 
 
     def load_settings(self):
-        settings_filename = QFileDialog.getOpenFileName(
+        """
+        Load settings form an XML file.
+
+        :return: nothing
+        """
+
+        filename = QFileDialog.getOpenFileName(
             self,
             "Load settings",
             self._path,
-            "ModFinder settings (*.mofi)")[0]
-        self._path = os.path.split(settings_filename)[0]
-        if settings_filename:
-            with open(settings_filename, "rb") as f:
-                settings = pickle.load(f)
+            "ModFinder XML settings (*.xml)")[0]
+        self._path = os.path.split(filename)[0]
+        if filename:
+            try:
+                root = ETree.ElementTree().parse(filename)
+            except IOError:
+                QMessageBox.critical(
+                    self,
+                    "Error",
+                    "Error loading " + filename + OSError.args)
+                return
 
-            self.teSequence.setText(settings["sequence"])
-            if self.teSequence.toPlainText():
-                self.calculate_protein_mass()
-            self.sbDisulfides.setValue(settings["disulfides"])
-            self.chPngase.setChecked(settings["pngase f"])
+            self.teSequence.setText(root.find("sequence").text)
+            self.sbDisulfides.setValue(bool(root.find("disulfides").text))
+            self.chPngase.setChecked(bool(root.find("pngasef").text))
             self.calculate_protein_mass()
 
-            self._mass_filename = settings["mass filename"]
+            self._mass_filename = root.find("massfile").text
 
             self._monomer_hits = None
             self._polymer_hits = None
             self.chFilterStructureHits.setEnabled(False)
             self.twResults.clear()
-            if settings["exp mass data"] is not None:
-                self._exp_mass_data = settings["exp mass data"]
+            self._exp_mass_data = dataframe_from_xml(root.find("masslist"))
+            if self._exp_mass_data is not None:
                 self.lwPeaks.blockSignals(True)
                 self.lwPeaks.clear()
                 self.lwPeaks.addItems(
@@ -1802,21 +1843,18 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 self.spectrum_picked_peak = 0
                 self.show_results()
 
-            self.cbTolerance.setCurrentIndex(settings["tolerance flavor"])
-            self.sbTolerance.setValue(settings["tolerance value"])
+            self.cbTolerance.setCurrentIndex(
+                int(root.find("tolerance-flavor").text))
+            self.sbTolerance.setValue(float(root.find("tolerance-value").text))
 
-            self.table_clear(self.tbMonomers)
-            for row_id, (is_used, name, composition, min_count,  # TODO _
-                         max_count) in enumerate(settings["monomers"]):
-                self._monomer_table_create_row(
-                    row_id, is_used, name, composition, min_count, max_count)
-
-            self.table_clear(self.tbPolymers)
-            for row_id, (is_used, name, composition, sites,
-                         abundance) in enumerate(settings["polymers"]):
-                self._polymer_table_create_row(
-                    row_id, is_used, name, composition, sites, abundance)
-
+            self.table_from_df(
+                dataframe_from_xml(root.find("monomers")),
+                self.tbMonomers,
+                _monomer_table_columns)
+            self.table_from_df(
+                dataframe_from_xml(root.find("polymers")),
+                self.tbPolymers,
+                _polymer_table_columns)
             self.calculate_mod_mass()
 
 
@@ -1837,7 +1875,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                     "Error when writing to " + filename + OSError.args)
 
 
-def main(argv=sys.argv):
+def main():  # possible argument: argv=sys.argv
     app = QApplication(sys.argv)
     frame = MainWindow()
     frame.show()

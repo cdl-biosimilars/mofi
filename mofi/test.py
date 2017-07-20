@@ -1,5 +1,6 @@
 import pandas as pd
-import xml.etree.ElementTree as etree
+import xml.etree.ElementTree as ETree
+from io import StringIO
 
 
 def indent(elem, level=0):
@@ -20,13 +21,18 @@ def indent(elem, level=0):
 
 df = pd.DataFrame([(1, 2, "foo"), (3, 4, "bar")], columns=["eggs", "spam", "lobster"])
 
-root = etree.Element("dataframe")
-etree.SubElement(root, "test").text = "123"
+root = ETree.Element("dataframe")
+columns = ETree.SubElement(root, "columns")
+for name in df.columns.values:
+    ETree.SubElement(columns, "name").text = name
+rows = ETree.SubElement(root, "rows")
 for row_id, row in df.iterrows():
-    item = etree.SubElement(root, "row", attrib=dict(id=str(row_id)))
+    item = ETree.SubElement(rows, "row", attrib=dict(id=str(row_id)))
     for cell_id, cell in row.iteritems():
-        subitem = etree.SubElement(item, "cell", attrib=dict(col=cell_id))
-        subitem.text = str(cell)
+        ETree.SubElement(item, "cell").text = str(cell)
 
 indent(root)
-etree.dump(root)
+# etree.dump(root)
+
+buf = StringIO(df.to_csv(index=False))
+print(pd.read_csv(buf))
