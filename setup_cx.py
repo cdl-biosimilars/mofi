@@ -1,43 +1,25 @@
+import sys
 from cx_Freeze import setup, Executable
 
-
-buildOptions = dict(
-    includes=[
-    #     "math",
-    #     "os",
-    #     "pickle",
-    #     "re",
-    #     "sys",
-    #     "time",
-    #     "webbrowser",
-    #     "qtpy.QtWidgets",
-    #     "qtpy.QtGui",
-    #     "qtpy.QtCore",
-        "numpy",
-        "pandas",
-        "matplotlib",
-        "numpy.core._methods",
+build_exe_options = {
+    "includes": [
+        "numpy.core._methods" # Fix import error
     ],
-    include_files=[
-        "config/",
-        "findmods_source/"
-    ],
-    excludes=[
-        "pkg_resources",
-        "setuptools"
+    "include_files": [
+        ("mofi/config", "config"),
+        ("mofi/data", "data")
     ]
+}
+
+if sys.platform == "win32":
+    base = "Win32GUI"
+else:
+    base = None
+
+setup(
+    name="mofi",
+    version="1.0",
+    description="finds modifications",
+    options={"build_exe": build_exe_options},
+    executables=[Executable("run.py", base=base)]
 )
-
-import sys
-base = 'Win32GUI' if sys.platform == 'win32' else None
-
-executables = [Executable('ModFinder.py', base=base)]
-
-setup(name='mofi',
-      version='1.0',
-      description='finds modifications',
-      options=dict(build_exe=buildOptions),
-      executables=executables, requires=['numpy', 'matplotlib', 'matplotlib',
-                                         'matplotlib', 'matplotlib',
-                                         'matplotlib', 'pandas', 'qtpy',
-                                         'qtpy', 'qtpy'])

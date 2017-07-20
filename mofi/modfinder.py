@@ -27,14 +27,14 @@ import time
 import webbrowser
 import xml.etree.ElementTree as ETree
 
-from qtpy.QtWidgets import (QApplication, QMainWindow, QMenu, QActionGroup,
+from PyQt5.QtWidgets import (QApplication, QMainWindow, QMenu, QActionGroup,
                             QTableWidgetItem, QCheckBox, QMessageBox,
                             QFileDialog, QTreeWidgetItem, QHeaderView,
                             QSpinBox, QDoubleSpinBox, QWidget, QHBoxLayout,
                             QAction, QProgressBar, QLabel, QSizePolicy,
                             QButtonGroup)
-from qtpy.QtGui import QColor, QBrush
-from qtpy.QtCore import Qt
+from PyQt5.QtGui import QColor, QBrush
+from PyQt5.QtCore import Qt
 
 import numpy as np
 import pandas as pd
@@ -49,6 +49,7 @@ from mofi import configure
 from mofi import mass_tools
 from mofi import modification_search
 from mofi import sequence_tools
+from mofi.paths import data_dir
 from mofi.modfinder_ui import Ui_ModFinder
 
 pd.set_option('display.max_rows', 5000)
@@ -332,8 +333,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.tbMonomers.create_row = self._monomer_table_create_row
 
         menu = QMenu()
-        for files in os.listdir(os.path.join(os.path.dirname(__file__),
-                                             "data", "modifications")):
+        for files in os.listdir(os.path.join(data_dir, "modifications")):
             library = os.path.splitext(files)[0]
             menu.addAction(
                 library,
@@ -357,8 +357,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.tbPolymers.create_row = self._polymer_table_create_row
 
         menu = QMenu()
-        for files in os.listdir(os.path.join(os.path.dirname(__file__),
-                                             "data", "glycans")):
+        for files in os.listdir(os.path.join(data_dir, "glycans")):
             library = os.path.splitext(files)[0]
             menu.addAction(
                 library,
@@ -647,7 +646,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         """
 
         if default:
-            filename = os.path.join(os.path.dirname(__file__), "data", subdir,
+            filename = os.path.join(data_dir, subdir,
                                     self.sender().text() + ".csv")
             file_format = "csv"
         else:

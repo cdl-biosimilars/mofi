@@ -11,8 +11,7 @@ Authors: Stefan Senn, Wolfgang Skala
 from collections import OrderedDict
 from configparser import ConfigParser
 import os.path
-
-config_dir = os.path.join(os.path.dirname(__file__), "config")
+from mofi.paths import config_dir
 
 # (1) general parameters
 config = ConfigParser()
