@@ -263,7 +263,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             lambda: self.table_insert_row(self.tbMonomers, above=False))
         self.btInsertRowBelowPolymers.clicked.connect(
             lambda: self.table_insert_row(self.tbPolymers, above=False))
-        self.btLabelPeaks.clicked.connect(self.show_results)
+        self.btLabelPeaks.clicked.connect(lambda: self.show_results())
         self.btLoadMonomers.clicked.connect(
             lambda: self.load_table(
                 default=False,
@@ -1478,7 +1478,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         # calculate "total" columns describing the results
         # from both delta series searches
-        df_delta_peaks["total"] = df_delta_peaks.sum(axis="columns").astype(int)
+        df_delta_peaks["total"] = df_delta_peaks.sum(axis=1).astype(int)
         df_delta_peaks["total"][self.spectrum_picked_peak] = 4
         if len(df_delta_distances.columns) == 0:
             df_delta_distances["total"] = ""
