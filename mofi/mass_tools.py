@@ -53,50 +53,6 @@ def read_massfile(massfile, sort_by=None):
     return massframe
 
 
-def find_delta_masses(df_masses, mass_difference, tolerance=2.5):
-    """
-    Finds all pairs of peaks in massframe whose masses
-    differ by mass_difference +/- tolerance.
-
-    :param df_masses: A dataframe containing MS peaks and associated
-                      information, as returned by read_massfile.
-    :param mass_difference: The mass difference to search for.
-    :param tolerance: Accept mass differences even if they deviate
-                      from mass_difference by this value.
-    :return: A list of tuples, each of which describes
-             one of the found mass differences:
-             (1) Mass of peak 1
-             (2) Mass of peak 2
-             (3) The larger of the relative abundances of peak 1 or peak 2
-    """
-
-    masses = np.array(df_masses["Average Mass"])
-    hits = []
-    for i in range(1, len(masses)):
-        delta = np.abs(masses[i:] - masses[:-i])
-        indices = np.where((delta >= mass_difference - tolerance)
-                           & (delta <= mass_difference + tolerance))[0]
-        for j in indices:
-            height = min(df_masses.ix[j]["Relative Abundance"],
-                         df_masses.ix[j+i]["Relative Abundance"])
-            hits.append((masses[j], masses[j+i], height))
-    return hits
-
-
-def combine_formulas(formulas):
-    """
-    Calculate a compound Formula from a list of Formulas.
-
-    :param formulas: An iterable containing Formula objects.
-    :return: the combined Formula
-    """
-
-    result = Formula()
-    for f in formulas:
-        result += f
-    return result
-
-
 def formstring_to_composition(formstring):
     """
     Converts an elemental composition string to a pandas series.

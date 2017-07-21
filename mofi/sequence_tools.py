@@ -142,13 +142,13 @@ def apply_pngasef(sequence):
 
 class Protein:
     """
-        A class which represents proteins with a single chain.
+    A class which represents proteins with a single chain.
 
-        Members:
-            n_sites
-            mass
-            amino_acid_composition
-            formula
+    Members:
+        n_sites
+        mass
+        amino_acid_composition
+        formula
     """
 
     def __init__(self, sequence, chains=1, disulfides=0, pngasef=False):
