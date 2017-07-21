@@ -353,11 +353,15 @@ def find_polymers(stage_1_results, polymer_combinations,
         progress_bar.setValue(0)
 
     old_index = stage_1_results.index.names
-    df_found_polymers = stage_1_results \
-        .reset_index(old_index) \
-        .set_index(monomers) \
-        .sort_index() \
-        .join(polymer_combinations, how="inner")
+    try:
+        df_found_polymers = stage_1_results \
+            .reset_index(old_index) \
+            .set_index(monomers) \
+            .sort_index() \
+            .join(polymer_combinations, how="inner")
+    except TypeError:
+        return None
+
     if progress_bar is not None:
         progress_bar.setValue(50)
 
