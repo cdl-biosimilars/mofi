@@ -16,7 +16,7 @@
    version="1.1"
    inkscape:version="0.91 r13725"
    sodipodi:docname="DeltaMassMode.svg"
-   inkscape:export-filename="/home/wolfgang/Desktop/path4144.png"
+   inkscape:export-filename="/home/wolfgang/Projects/mofi/images/DeltaMassMode.png"
    inkscape:export-xdpi="122"
    inkscape:export-ydpi="122">
   <defs
@@ -45,8 +45,8 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="11.313709"
-     inkscape:cx="25.593826"
-     inkscape:cy="16.005607"
+     inkscape:cx="8.623264"
+     inkscape:cy="15.82883"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="true"
@@ -82,7 +82,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>

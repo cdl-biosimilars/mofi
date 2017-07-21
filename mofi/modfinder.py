@@ -764,13 +764,11 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
     def load_fasta_file(self):
         """
-        Opens a FASTA file and displays its contents in the QTextEdit
+        Opens a FASTA file and displays its contents in self.teSequence
 
         Changes:
             self._path to directory of selected file
-            text of self.teSequence to FASTA string
-            contents and maximum value of self.sbDisulfides to half
-            the number of cysteines in the sequence
+            text of self.teSequence to contents of input file
 
         :return: nothing
         """
@@ -781,17 +779,17 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self._path,
             "Sequence files (*.fasta *.txt)")[0]
         self._path = os.path.split(filename)[0]
-        ext = os.path.splitext(filename)[1]
         if filename:
-            if ext in [".fasta", ".txt"]:
+            try:
                 with open(filename) as f:
                     fasta_input = f.read()
-                self.teSequence.setText(fasta_input)
-                self.calculate_protein_mass()
-            else:
-                QMessageBox.warning(self,
-                                    "Error loading sequence",
-                                    "Not a valid file format: {}".format(ext))
+            except OSError:
+                QMessageBox.critical(self,
+                                     "Error",
+                                     "Could not open sequence file.")
+                return
+            self.teSequence.setText(fasta_input)
+            self.calculate_protein_mass()
 
 
     def fill_peak_list(self, masses):
@@ -821,14 +819,12 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self._path,
             "Excel files (*.xlsx *.xls);; CSV files (*.csv *.txt)")[0]
         self._path = os.path.split(filename)[0]
-        ext = os.path.splitext(filename)[1]
         if filename:
-            mass_data = mass_tools.read_massfile(filename,
-                                                 sort_by="Average Mass")
+            mass_data = mass_tools.read_massfile(filename)
             if mass_data is None:
-                QMessageBox.warning(self,
-                                    "Error loading mass file",
-                                    "Not a valid file format: {}".format(ext))
+                QMessageBox.critical(self,
+                                     "Error",
+                                     "Could not load mass file.")
                 return
 
             self._exp_mass_data = mass_data
@@ -927,7 +923,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         Updates the value of self.lbMassProtein, self.lbMassMods
                 and self.lbMassTotal
 
-        :return: True if there was no error, otherwise False
+        :return: nothing
         """
 
         protein_sequence = self.teSequence.toPlainText()
@@ -943,7 +939,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 "Error",
                 "Error when parsing sequence: "
                 + "{} is not a valid symbol".format(e.args[0]))
-            return False
+            return
 
         self.sbDisulfides.setEnabled(True)
         self.chPngase.setEnabled(True)
@@ -956,7 +952,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.lbMassMods.setText("{:,.2f}".format(self._known_mods_mass))
         self.lbMassTotal.setText("{:,.2f}".format(self._protein_mass
                                                   + self._known_mods_mass))
-        return True
 
 
     def calculate_mod_mass(self):
@@ -1419,7 +1414,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         # and the intervall names als values
         df_delta_distances = pd.DataFrame(
             index=self._exp_mass_data.index,
-            dtype=int)
+            dtype=str)
 
         # dataframe with the following values:
         # 0 - peaks not in any delta mass series
@@ -1483,11 +1478,14 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         # calculate "total" columns describing the results
         # from both delta series searches
-        df_delta_peaks["total"] = df_delta_peaks.sum(axis="columns")
+        df_delta_peaks["total"] = df_delta_peaks.sum(axis="columns").astype(int)
         df_delta_peaks["total"][self.spectrum_picked_peak] = 4
-        df_delta_distances["total"] = (
-            df_delta_distances
-            .apply(self.concat_interval_names, axis=1))
+        if len(df_delta_distances.columns) == 0:
+            df_delta_distances["total"] = ""
+        else:
+            df_delta_distances["total"] = (
+                df_delta_distances
+                .apply(self.concat_interval_names, axis=1))
 
         # color the peaks in the delta series and increase their line width
         color_set = np.array(["#b3b3b3",   # light gray
@@ -1506,8 +1504,9 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 matplotlib.text.Annotation):
             annotation.remove()
         for peak_id in np.where(df_delta_peaks["total"] > 0)[0]:
+            label = df_delta_distances["total"][peak_id]
             self.spectrum_axes.annotate(
-                s=df_delta_distances["total"][peak_id],
+                s=label,
                 xy=(self._exp_mass_data.iloc[peak_id]["Average Mass"],
                     self._exp_mass_data.iloc[peak_id]["Relative Abundance"]),
                 xytext=(0, 5),
@@ -1523,14 +1522,14 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         """
         Simple O(n) algorithm to determine whether a value
         falls into a set of intervals.
-        Example: value=12,  intervals=[(1, 6), (9, 14)] -> True
-                 value=8, intervals=[(1, 6), (9, 14)] -> False
+        Example: value=12, intervals={"a": (1, 6), "b": (9, 14)} -> "b"
+                 value=8,  intervals={"a": (1, 6), "b": (9, 14)} -> ""
 
         :param value: Value to search
         :param intervals: {interval name: (lower interval boundary,
                                            upper interval boundary)} dict
         :return: Name of the interval containing the value;
-                 "" if no such interval exists
+                 empty string if no such interval exists
         """
         for name, (lower, upper) in intervals.items():
             if lower <= value <= upper:

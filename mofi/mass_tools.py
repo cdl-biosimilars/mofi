@@ -16,40 +16,51 @@ from mofi import configure
 import pandas.core.series
 
 
-def read_massfile(massfile, sort_by=None):
+def read_massfile(massfile):
     """
-    Reads a list of masses (peaks) from an external file as generated,
-    e.g., by Thermo BioPharma Finder.
-    Supported file types: Excel, CSV.
-    These files should contain at least two columns with labels "Average Mass"
-    and "Relative Abundance", containing the mass and relative abundance
-    of a peak, respectively.
+    Reads a list of masses (peaks) from an external Excel or CSV file.
 
-    :param massfile: Name of the file containing the mass list.
-    :param sort_by: Sort the generated dataframe by this column
-    :return: a pandas dataframe if the import was successful, otherwise None.
+    If the file contains a header row, there must be two columns
+    labeled "Average Mass" and "Relative Abundance", which are imported.
+
+    Otherwise, the contents of the first and second column will be interpreted
+    as average masses and relative abundances, respectively.
+
+    :param massfile: name of the file containing the mass list
+    :return: a dataframe if the import was successful, otherwise None
     """
 
-    filename, filext = os.path.splitext(massfile)
-    if filext in [".xls", ".xlsx"]:
-        massframe = pd.read_excel(massfile)
-    elif filext in [".txt", ".csv"]:
-        massframe = pd.read_table(massfile,
-                                  sep=None,
-                                  header=0,
-                                  engine="python")
-    else:
+    required_cols = ["Average Mass", "Relative Abundance"]
+    filename, ext = os.path.splitext(massfile)
+    try:
+        if ext in [".xls", ".xlsx"]:
+            inputframe = pd.read_excel(massfile, header=None)
+        elif ext in [".txt", ".csv"]:
+            inputframe = pd.read_csv(massfile, sep=None,
+                                     header=None, engine="python")
+        else:
+            return None
+    except (TypeError, OSError):
         return None
 
-    # Only select the two required column and abort if they are missing
-    massframe = massframe[["Average Mass", "Relative Abundance"]]
-    if len(massframe.columns) != 2:
-        return None
+    # only keep the required columns
+    # if column labels are missing, take the first two columns
+    try:
+        massframe = (inputframe
+                     .rename(columns=inputframe.iloc[0])
+                     [1:]
+                     [required_cols])
+    except KeyError:
+        massframe = inputframe
+        massframe.columns = required_cols
+        if len(massframe.columns) != 2:
+            return None
 
-    if sort_by:
-        massframe.sort_values(sort_by, ascending=True, inplace=True)
-        massframe.index = range(len(massframe))
-
+    # massframe.sort_values("Average Mass", ascending=True, inplace=True)
+    massframe = (massframe
+                 .astype(float)
+                 .sort_values("Average Mass", ascending=True))
+    massframe.index = range(len(massframe))
     return massframe
 
 
