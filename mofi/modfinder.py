@@ -313,26 +313,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         self.twResults.itemClicked.connect(self.select_peaks_in_tree)
 
-        # # toolbars
-        # self.menubar.setVisible(False)
-        # self.tlFile = QToolBar(self)
-        # self.tlFile.setObjectName("tlFile")
-        # self.tlFile.addAction(self.acOpenFasta)
-        # self.tlFile.addAction(self.acOpenPeaks)
-        # self.tlFile.addSeparator()
-        # self.tlFile.addAction(self.acLoadSettings)
-        # self.tlFile.addAction(self.acSaveSettings)
-        # self.tlFile.addSeparator()
-        # self.tlFile.addAction(self.acQuit)
-        # self.addToolBar(Qt.TopToolBarArea, self.tlFile)
-        # self.tlMassSet = QToolBar(self)
-        # self.tlMassSet.setObjectName("tlMassSet")
-        # self.addToolBar(Qt.TopToolBarArea, self.tlMassSet)
-        # self.tlHelp = QToolBar(self)
-        # self.tlHelp.setObjectName("tlHelp")
-        # self.tlHelp.addActions([self.acAbout, self.acHelp])
-        # self.addToolBar(Qt.TopToolBarArea, self.tlHelp)
-
         # generate mass set selectors from config file
         self.agSelectMassSet = QActionGroup(self.menuAtomicMasses)
         for set_id, mass_set in enumerate(configure.mass_sets):
@@ -441,10 +421,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self._monomer_hits = None  # results from the monomer search
         self._exp_mass_data = None  # peak list (mass + relative abundance)
         self._known_mods_mass = 0  # mass of known modification
-        self._mass_filename = None  # name of the mass file
         self._path = configure.path  # last path selected in a file dialog
         self._polymer_hits = None  # results from the polymer search
-        self._protein = None  # a Protein representing the input sequence
         self._protein_mass = 0  # mass of the current Protein object
 
 
@@ -845,7 +823,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self._path = os.path.split(filename)[0]
         ext = os.path.splitext(filename)[1]
         if filename:
-            self._mass_filename = os.path.split(filename)[1]
             mass_data = mass_tools.read_massfile(filename,
                                                  sort_by="Average Mass")
             if mass_data is None:
@@ -946,12 +923,9 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         """
         Calculates the mass of the protein from the current data.
 
-        Changes:
-            self._protein to a protein with given sequence, disulfides
-                          and PNGase F modifications
-            self._protein_mass to the mass of self._protein
-            updates the value of self.lbMassProtein, self.lbMassMods
-            and self.lbMassTotal
+        Changes self._protein_mass
+        Updates the value of self.lbMassProtein, self.lbMassMods
+                and self.lbMassTotal
 
         :return: True if there was no error, otherwise False
         """
@@ -959,10 +933,10 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         protein_sequence = self.teSequence.toPlainText()
         chains, sequence = sequence_tools.read_fasta_string(protein_sequence)
         try:
-            self._protein = sequence_tools.Protein(sequence,
-                                                   chains,
-                                                   self.sbDisulfides.value(),
-                                                   self.chPngase.isChecked())
+            protein = sequence_tools.Protein(sequence,
+                                             chains,
+                                             self.sbDisulfides.value(),
+                                             self.chPngase.isChecked())
         except KeyError as e:
             QMessageBox.critical(
                 self,
@@ -974,10 +948,10 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.sbDisulfides.setEnabled(True)
         self.chPngase.setEnabled(True)
         self.sbDisulfides.setMaximum(
-            self._protein.amino_acid_composition["C"] / 2)
+            protein.amino_acid_composition["C"] / 2)
         self.teSequence.setStyleSheet(
             "QTextEdit { background-color: rgb(240, 251, 240) }")
-        self._protein_mass = self._protein.mass
+        self._protein_mass = protein.mass
         self.lbMassProtein.setText("{:,.2f}".format(self._protein_mass))
         self.lbMassMods.setText("{:,.2f}".format(self._known_mods_mass))
         self.lbMassTotal.setText("{:,.2f}".format(self._protein_mass
@@ -1076,8 +1050,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 {"Average Mass": self.sbSingleMass.value(),
                  "Relative Abundance": 100.0},
                 index=[0])
-            self._mass_filename = "Input Mass: {:.2f}".format(
-                self.sbSingleMass.value())
             self.fill_peak_list(self._exp_mass_data["Average Mass"])
             self.draw_spectrum()
 
@@ -1771,7 +1743,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
             root = ETree.Element("settings")
             settings = [("sequence", self.teSequence.toPlainText()),
-                        ("massfile", self._mass_filename),
                         ("disulfides", self.sbDisulfides.value()),
                         ("pngasef", self.chPngase.isChecked()),
                         ("tolerance-value", self.sbTolerance.value()),
@@ -1825,8 +1796,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self.sbDisulfides.setValue(bool(root.find("disulfides").text))
             self.chPngase.setChecked(bool(root.find("pngasef").text))
             self.calculate_protein_mass()
-
-            self._mass_filename = root.find("massfile").text
 
             self._monomer_hits = None
             self._polymer_hits = None
