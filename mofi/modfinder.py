@@ -738,7 +738,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         :return: nothing
         """
 
-        webbrowser.open("../docs/MoFi_manual.pdf")
+        webbrowser.open("docs/MoFi_manual.pdf")
 
 
     def choose_tolerance_units(self):
