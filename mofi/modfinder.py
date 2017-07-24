@@ -1404,6 +1404,9 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         :return: list of peak indices in the delta series
         """
 
+        if self._exp_mass_data is None:  # there's no spectrum
+            return
+
         main_mass = float(self._exp_mass_data
                           .iloc[self.spectrum_picked_peak]["Average Mass"])
         min_mass = float(min(self._exp_mass_data["Average Mass"]))
@@ -1601,6 +1604,9 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         :param selected_peaks: list of selected peaks
         :return: nothing
         """
+
+        if self._exp_mass_data is None:  # there's no spectrum
+            return
 
         if selected_peaks is None:
             selected_peaks = [i.row() for i in self.lwPeaks.selectedIndexes()]
