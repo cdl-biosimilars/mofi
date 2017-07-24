@@ -1798,8 +1798,14 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 return
 
             self.teSequence.setText(root.find("sequence").text)
-            self.sbDisulfides.setValue(bool(root.find("disulfides").text))
-            self.chPngase.setChecked(bool(root.find("pngasef").text))
+            disulfides = int(root.find("disulfides").text)
+            self.sbDisulfides.setMaximum(disulfides)
+            self.sbDisulfides.setValue(disulfides)
+            if root.find("pngasef").text == "True":
+                pngasef = True
+            else:
+                pngasef = False
+            self.chPngase.setChecked(pngasef)
             self.calculate_protein_mass()
 
             self._monomer_hits = None
