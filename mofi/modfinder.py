@@ -1405,7 +1405,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         """
 
         if self._exp_mass_data is None:  # there's no spectrum
-            return
+            return []
 
         main_mass = float(self._exp_mass_data
                           .iloc[self.spectrum_picked_peak]["Average Mass"])
