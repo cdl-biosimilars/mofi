@@ -71,7 +71,6 @@ _polymer_table_columns = [
     ("Abundance", 0.0)
 ]
 
-
 def prettify_xml(elem, level=0):
     """
     Prettify an XML tree inplace.
@@ -161,6 +160,25 @@ def dataframe_from_xml(root):
         return (pd.DataFrame(rows_data, columns=column_names)
                 .replace({"True": True, "False": False})
                 .astype(dict(zip(column_names, dtypes))))
+
+
+def file_extensions(*args):
+    """
+    Create a filter string for QFileDialog
+
+    :param args: list of file extensions
+    :return: a string suitable as argument for the filter argument
+             of QFileDialog.getOpenFileName/getSaveFileName
+    """
+    extensions = {
+        "xls": "Excel files (*.xlsx *.xls)",
+        "csv": "CSV files (*.csv)",
+        "bpf": "BioPharma Finder results (*.xlsx *.xls)",
+        "fasta": "Sequence files (*.fasta)",
+        "mofi": "ModFinder XML settings (*.xml)",
+        "png": "Portable network graphics (*.png)"
+    }
+    return ";;".join([extensions[a] for a in args])
 
 
 class CollapsingRectangleSelector(RectangleSelector):
@@ -268,6 +286,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             lambda: self.load_table(
                 default=False,
                 dialog_title="Import modifications",
+                extensions=["csv", "xls"],
                 table_widget=self.tbMonomers,
                 cols=_monomer_table_columns
             )
@@ -276,6 +295,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             lambda: self.load_table(
                 default=False,
                 dialog_title="Import glycans",
+                extensions=["csv", "xls", "bpf"],
                 table_widget=self.tbPolymers,
                 cols=_polymer_table_columns
             )
@@ -619,7 +639,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self,
             dialog_title,
             self._path,
-            "Comma-separated value (*.csv)")[0]
+            file_extensions("csv"))[0]
         self._path = os.path.split(filename)[0]
         if filename:
             if not filename.endswith(".csv"):
@@ -668,7 +688,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
 
     def load_table(self, default=False, subdir=None, dialog_title=None,
-                   table_widget=None, cols=None):
+                   extensions=None, table_widget=None, cols=None):
         """
         Import the contents of the monomer/polymer table.
 
@@ -676,6 +696,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                         false if the user should choose a monomer library file
         :param subdir: directory in config containing the default libraries
         :param dialog_title: title of the QFileDialog
+        :param extensions: list of file extensions for function file_extensions
         :param table_widget: QTableWidget to fill with values
         :param cols: see cols in self.table_from_df
         :return: nothing
@@ -690,7 +711,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 self,
                 dialog_title,
                 self._path,
-                "Excel files (*.xlsx *.xls);; CSV files (*.csv *.txt)")[0]
+                file_extensions(*extensions))[0]
             self._path = os.path.split(filename)[0]
             ext = os.path.splitext(filename)[1]
 
@@ -777,7 +798,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self,
             "Open FASTA file",
             self._path,
-            "Sequence files (*.fasta *.txt)")[0]
+            file_extensions("fasta"))[0]
         self._path = os.path.split(filename)[0]
         if filename:
             try:
@@ -817,7 +838,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self,
             "Open mass list",
             self._path,
-            "Excel files (*.xlsx *.xls);; CSV files (*.csv *.txt)")[0]
+            file_extensions("xls", "csv"))[0]
         self._path = os.path.split(filename)[0]
         if filename:
             mass_data = mass_tools.read_massfile(filename)
@@ -849,7 +870,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self,
             "Save results",
             self._path,
-            "Comma-separated value (*.csv)")[0]
+            file_extensions("csv"))[0]
         self._path = os.path.split(filename)[0]
 
         if not filename:
@@ -1740,7 +1761,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self,
             "Save settings",
             self._path,
-            "ModFinder XML settings (*.xml)")[0]
+            file_extensions("mofi"))[0]
         self._path = os.path.split(filename)[0]
         if filename:
             if not filename.endswith(".xml"):
@@ -1785,7 +1806,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self,
             "Load settings",
             self._path,
-            "ModFinder XML settings (*.xml)")[0]
+            file_extensions("mofi"))[0]
         self._path = os.path.split(filename)[0]
         if filename:
             try:
@@ -1839,7 +1860,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self,
             "Save spectrum",
             self._path,
-            "Portable network graphics (*.png)")[0]
+            file_extensions("png"))[0]
         self._path = os.path.split(filename)[0]
         if filename:
             try:
