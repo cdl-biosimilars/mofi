@@ -44,10 +44,8 @@ from matplotlib.backends.backend_qt5agg import FigureCanvas
 from matplotlib.widgets import SpanSelector, RectangleSelector
 from matplotlib.figure import Figure
 
-from mofi import configure
-from mofi import mass_tools
-from mofi import modification_search
-from mofi import sequence_tools
+from mofi import (configure, mass_tools, modification_search,
+                  io_tools, sequence_tools)
 from mofi.paths import data_dir
 from mofi.modfinder_ui import Ui_ModFinder
 
@@ -71,95 +69,17 @@ _polymer_table_columns = [
     ("Abundance", 0.0)
 ]
 
-def prettify_xml(elem, level=0):
-    """
-    Prettify an XML tree inplace.
+_file_extensions = {
+    "xls": "Excel files (*.xlsx *.xls)",
+    "csv": "CSV files (*.csv)",
+    "bpf": "BioPharma Finder results (*.xlsx *.xls)",
+    "fasta": "Sequence files (*.fasta)",
+    "mofi": "ModFinder XML settings (*.xml)",
+    "png": "Portable network graphics (*.png)",
+    "": ""
+}
 
-    :param elem: a xml.etree.ElementTree Element
-    :param level: which level to prettify; only required for recirsive call
-    :return: nothing (changes the ElementTree inplace)
-    """
-    i = "\n" + level * "  "
-    if len(elem):
-        if not elem.text or not elem.text.strip():
-            elem.text = i + "  "
-        if not elem.tail or not elem.tail.strip():
-            elem.tail = i
-        for elem in elem:
-            prettify_xml(elem, level + 1)
-        if not elem.tail or not elem.tail.strip():
-            elem.tail = i
-    else:
-        if level and (not elem.tail or not elem.tail.strip()):
-            elem.tail = i
-
-
-def dataframe_to_xml(df):
-    """
-    Convert a pandas DataFrame to an XML etree with the following format:
-
-    <dataframe>
-        <columns>
-            <column dtype="[data dype]">[column name]</column>
-            ...
-        </columns>
-        <rows>
-            <row id=[id]>
-                <cell>[value]</cell>
-                ...
-            </row>
-            ...
-        </rows>
-     </dataframe>
-
-    :param df: a dataframe
-    :return: a xml.etree.ElementTree Element
-    """
-
-    root = ETree.Element("dataframe")
-    if df is not None:
-        columns = ETree.SubElement(root, "columns")
-        for i, column in enumerate(df.columns.values):
-            item = ETree.SubElement(columns, "column", dtype=str(df.dtypes[i]))
-            item.text = column
-        rows = ETree.SubElement(root, "rows")
-        for row_id, row in df.iterrows():
-            item = ETree.SubElement(rows, "row", id=str(row_id))
-            for cell_id, cell in row.iteritems():
-                ETree.SubElement(item, "cell").text = str(cell)
-    return root
-
-
-def dataframe_from_xml(root):
-    """
-    Convert an XML etree to a pandas dataframe.
-
-    :param root: an xml.etree.ElementTree Element
-    :return: a dataframe
-    """
-
-    root = root.find("dataframe")
-    columns = root.find("columns")
-    if columns is None:
-        return pd.DataFrame()
-    else:
-        column_names = []
-        dtypes = []
-        for column in columns.findall("column"):
-            column_names.append(column.text)
-            dtypes.append(column.attrib["dtype"])
-
-        rows = root.find("rows")
-        rows_data = []
-        for row in rows.findall("row"):
-            row_data = []
-            for cell in row.findall("cell"):
-                row_data.append(cell.text)
-            rows_data.append(row_data)
-
-        return (pd.DataFrame(rows_data, columns=column_names)
-                .replace({"True": True, "False": False})
-                .astype(dict(zip(column_names, dtypes))))
+_reverse_extensions = {v: k for k, v in _file_extensions.items()}
 
 
 def file_extensions(*args):
@@ -170,15 +90,7 @@ def file_extensions(*args):
     :return: a string suitable as argument for the filter argument
              of QFileDialog.getOpenFileName/getSaveFileName
     """
-    extensions = {
-        "xls": "Excel files (*.xlsx *.xls)",
-        "csv": "CSV files (*.csv)",
-        "bpf": "BioPharma Finder results (*.xlsx *.xls)",
-        "fasta": "Sequence files (*.fasta)",
-        "mofi": "ModFinder XML settings (*.xml)",
-        "png": "Portable network graphics (*.png)"
-    }
-    return ";;".join([extensions[a] for a in args])
+    return ";;".join([_file_extensions[a] for a in args])
 
 
 class CollapsingRectangleSelector(RectangleSelector):
@@ -635,11 +547,11 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         :param which: table to export; "monomers" or "polymers"
         :return: nothing
         """
-        filename = QFileDialog.getSaveFileName(
+        filename, _ = QFileDialog.getSaveFileName(
             self,
             dialog_title,
             self._path,
-            file_extensions("csv"))[0]
+            file_extensions("csv"))
         self._path = os.path.split(filename)[0]
         if filename:
             if not filename.endswith(".csv"):
@@ -707,32 +619,22 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                                     self.sender().text() + ".csv")
             file_format = "csv"
         else:
-            filename = QFileDialog.getOpenFileName(
+            filename, filefilter = QFileDialog.getOpenFileName(
                 self,
                 dialog_title,
                 self._path,
-                file_extensions(*extensions))[0]
+                file_extensions(*extensions))
             self._path = os.path.split(filename)[0]
-            ext = os.path.splitext(filename)[1]
+            file_format = _reverse_extensions[filefilter]
 
-            if ext == "":
-                return
-            elif ext in [".xls", ".xlsx"]:
-                file_format = "xls"
-            elif ext in [".txt", ".csv"]:
-                file_format = "csv"
+        if filename:
+            if file_format == "csv":
+                df = pd.read_csv(filename)
+            elif file_format == "xls":
+                df = pd.read_excel(filename)
             else:
-                QMessageBox.warning(
-                    self,
-                    "Warning",
-                    "Unknown file format: {}.".format(ext))
-                return
-
-        if file_format == "csv":
-            df = pd.read_csv(filename)
-        else:
-            df = pd.read_excel(filename)
-        self.table_from_df(df, table_widget, cols)
+                df = io_tools.read_bpf_library(filename)
+            self.table_from_df(df, table_widget, cols)
 
 
     def show_about(self):
@@ -794,11 +696,11 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         :return: nothing
         """
 
-        filename = QFileDialog.getOpenFileName(
+        filename, _ = QFileDialog.getOpenFileName(
             self,
             "Open FASTA file",
             self._path,
-            file_extensions("fasta"))[0]
+            file_extensions("fasta"))
         self._path = os.path.split(filename)[0]
         if filename:
             try:
@@ -834,11 +736,11 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         :return: nothing
         """
 
-        filename = QFileDialog.getOpenFileName(
+        filename, _ = QFileDialog.getOpenFileName(
             self,
             "Open mass list",
             self._path,
-            file_extensions("xls", "csv"))[0]
+            file_extensions("xls", "csv"))
         self._path = os.path.split(filename)[0]
         if filename:
             mass_data = mass_tools.read_massfile(filename)
@@ -866,11 +768,11 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         if self._monomer_hits is None:
             return
 
-        filename = QFileDialog.getSaveFileName(
+        filename, _ = QFileDialog.getSaveFileName(
             self,
             "Save results",
             self._path,
-            file_extensions("csv"))[0]
+            file_extensions("csv"))
         self._path = os.path.split(filename)[0]
 
         if not filename:
@@ -1757,11 +1659,11 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         :return: nothing
         """
-        filename = QFileDialog.getSaveFileName(
+        filename, _ = QFileDialog.getSaveFileName(
             self,
             "Save settings",
             self._path,
-            file_extensions("mofi"))[0]
+            file_extensions("mofi"))
         self._path = os.path.split(filename)[0]
         if filename:
             if not filename.endswith(".xml"):
@@ -1780,9 +1682,10 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                           ("monomers", self.table_to_df(which="monomers")),
                           ("polymers", self.table_to_df(which="polymers"))]
             for child, df in dataframes:
-                ETree.SubElement(root, child).append(dataframe_to_xml(df))
+                ETree.SubElement(root, child).append(
+                    io_tools.dataframe_to_xml(df))
 
-            prettify_xml(root)
+            io_tools.prettify_xml(root)
             try:
                 ETree.ElementTree(root).write(
                     filename,
@@ -1802,11 +1705,11 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         :return: nothing
         """
 
-        filename = QFileDialog.getOpenFileName(
+        filename, _ = QFileDialog.getOpenFileName(
             self,
             "Load settings",
             self._path,
-            file_extensions("mofi"))[0]
+            file_extensions("mofi"))
         self._path = os.path.split(filename)[0]
         if filename:
             try:
@@ -1833,7 +1736,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self._polymer_hits = None
             self.chFilterStructureHits.setEnabled(False)
             self.twResults.clear()
-            self._exp_mass_data = dataframe_from_xml(root.find("masslist"))
+            self._exp_mass_data = io_tools.dataframe_from_xml(
+                root.find("masslist"))
             if self._exp_mass_data is not None:
                 self.fill_peak_list(self._exp_mass_data["Average Mass"])
                 self.draw_spectrum()
@@ -1845,22 +1749,22 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self.sbTolerance.setValue(float(root.find("tolerance-value").text))
 
             self.table_from_df(
-                dataframe_from_xml(root.find("monomers")),
+                io_tools.dataframe_from_xml(root.find("monomers")),
                 self.tbMonomers,
                 _monomer_table_columns)
             self.table_from_df(
-                dataframe_from_xml(root.find("polymers")),
+                io_tools.dataframe_from_xml(root.find("polymers")),
                 self.tbPolymers,
                 _polymer_table_columns)
             self.calculate_mod_mass()
 
 
     def save_spectrum(self):
-        filename = QFileDialog.getSaveFileName(
+        filename, _ = QFileDialog.getSaveFileName(
             self,
             "Save spectrum",
             self._path,
-            file_extensions("png"))[0]
+            file_extensions("png"))
         self._path = os.path.split(filename)[0]
         if filename:
             try:
