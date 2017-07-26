@@ -10,15 +10,21 @@ else
     VENV_BIN=venv/bin
 fi
 
+if python3 --version >/dev/null 2>&1; then
+    NATIVE_PYTHON=python3
+else
+    NATIVE_PYTHON=python
+fi
+
 rm -rf venv
-if [[ "$(python3 --version)" =~ "Continuum Analytics, Inc." ]]; then
+if [[ "$($NATIVE_PYTHON --version)" =~ "Continuum Analytics, Inc." ]]; then
     echo "Creating venv with Anaconda"
-    python3 -m venv --without-pip venv
+    $NATIVE_PYTHON -m venv --without-pip venv
     wget https://bootstrap.pypa.io/get-pip.py -O /tmp/get-pip.py
-    $VENV_BIN/python3 /tmp/get-pip.py
+    $VENV_BIN/python /tmp/get-pip.py
 else
     echo "Creating venv"
-    python3 -m venv venv
+    $NATIVE_PYTHON -m venv venv
 fi
 
 $VENV_BIN/pip3 install setuptools wheel cx_Freeze --upgrade
@@ -26,7 +32,7 @@ $VENV_BIN/pip3 install .
 
 if [[ $TARGET == windows ]]; then
     echo "Building for Windows"
-    $VENV_BIN/python3 setup_cx.py build
+    $VENV_BIN/python setup_cx.py build
     BUILD_DIR="$(find build -type d -name "exe.win-*" -print -quit)"
     TARGET_DIR="build/windows"
     echo "Copying build files"
@@ -36,7 +42,7 @@ if [[ $TARGET == windows ]]; then
     cp package-files/win-standalone/* "${TARGET_DIR}"
 else
     echo "Building for Linux"
-    $VENV_BIN/python3 setup_cx.py build
+    $VENV_BIN/python setup_cx.py build
     BUILD_DIR="$(find build -type d -name "exe.linux-*" -print -quit)"
     TARGET_DIR="build/linux"
     echo "Copying build files"
