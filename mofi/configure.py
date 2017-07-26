@@ -17,9 +17,6 @@ from mofi.paths import config_dir
 config = ConfigParser()
 with open(os.path.join(config_dir, "config.ini")) as f:
     config.read_file(f)
-version = config.get("Version", "Version")
-rights = config.get("Version", "Rights")
-contact = config.get("Version", "Contact")
 default_da = float(config.get("Defaults", "da"))
 default_ppm = int(config.get("Defaults", "ppm"))
 maxmods = int(config.get("Defaults", "maxmods"))

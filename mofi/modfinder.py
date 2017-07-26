@@ -1,29 +1,10 @@
 #! python
 
-# Important shell commands:
-# Converting the GUI:    pyuic5 ModFinder_UI.ui > ModFinder_UI.py
-# Converting resources:  pyrcc5 mofi.qrc > mofi_rc.py
-
-# Freezing to .exe:
-# change self._path in config.ini to something useful ('C:/'?).
-# Finalize directory and copy to new freeze directory (versioned)
-# cd Freeze
-# Change Config.ini location in configure.py!!!
-# Make sure to enable/disable logging in ModFinder.py
-# pyinstaller -w ModFinder.py -i mofi.ico
-# custom hook-numpy.py in Lib\site-packages\PyInstaller\hooks for importing mkl
-# binaries. Anaconda installs numpy slightly differently ... *sigh*.
-# Move config directory to the correct path
-# Move docs directory to correct path
-# If I was motivated, I'd write a freeze wrapper that does those things
-# automatically, but I can't be bothered anymore. ;)
-
 import math
 import os
 import re
 import sys
 import time
-import webbrowser
 import xml.etree.ElementTree as ETree
 
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QMenu, QActionGroup,
@@ -52,7 +33,17 @@ from mofi.modfinder_ui import Ui_ModFinder
 pd.set_option('display.max_rows', 5000)
 matplotlib.use("Qt5Agg")
 
-# default values for columns in the monomer/polymer table
+_version_info = """ModFinder v1.0
+
+© 2017 Christian Doppler Laboratory
+for Innovative Tools for Biosimilar Characterization
+
+Contact: Wolfgang.Skala@sbg.ac.at
+
+Python version:
+{}""".format(sys.version)
+
+# default values for columns in the monomer table
 _monomer_table_columns = [
     ("Checked", False),
     ("Name", None),
@@ -61,6 +52,7 @@ _monomer_table_columns = [
     ("Max", -1)
 ]
 
+# default values for columns in the polymer table
 _polymer_table_columns = [
     ("Checked", True),
     ("Name", None),
@@ -69,6 +61,7 @@ _polymer_table_columns = [
     ("Abundance", 0.0)
 ]
 
+# dict for file extensions to be used in a QFileDialog
 _file_extensions = {
     "xls": "Excel files (*.xlsx *.xls)",
     "csv": "CSV files (*.csv)",
@@ -79,6 +72,7 @@ _file_extensions = {
     "": ""
 }
 
+# its reverse
 _reverse_extensions = {v: k for k, v in _file_extensions.items()}
 
 
@@ -168,7 +162,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         # connect signals to slots
         self.acAbout.triggered.connect(self.show_about)
-        self.acHelp.triggered.connect(self.show_help)
         self.acLoadSettings.triggered.connect(self.load_settings)
         self.acOpenFasta.triggered.connect(self.load_fasta_file)
         self.acOpenPeaks.triggered.connect(self.load_mass_file)
@@ -644,24 +637,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         :return: nothing
         """
 
-        QMessageBox.about(
-            self,
-            "About ModFinder",
-            "ModFinder version: {}\n{}\nContact: {}".format(
-                configure.version,
-                configure.rights,
-                configure.contact))
-
-
-    @staticmethod
-    def show_help():
-        """
-        Open the manual in the default webbrowser.
-
-        :return: nothing
-        """
-
-        webbrowser.open("docs/MoFi_manual.pdf")
+        QMessageBox.about(self, "About ModFinder", _version_info)
 
 
     def choose_tolerance_units(self):
@@ -1227,6 +1203,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 sb_repetitions.setEnabled(False)
         self.highlight_delta_series()
 
+
     def filter_structure_hits(self):
         """
         Called when the checkbox "Filter structure hits" is (un)checked.
@@ -1243,7 +1220,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self.show_results([i])
         else:
             self.show_results()
-
 
 
     def select_peaks_in_list(self):

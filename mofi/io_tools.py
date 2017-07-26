@@ -163,8 +163,3 @@ def read_bpf_library(filename):
     df["Name"] = df["Modification"].apply(lambda x: x.split("+")[1])
     df["Composition"] = df["Name"].apply(_parse_bpf_glycan)
     return df
-
-
-
-if __name__ == "__main__":
-    read_bpf_library("../data/kadcyla/Glycan abundances.xls")

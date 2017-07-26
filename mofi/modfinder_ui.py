@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'ModFinder_UI.ui'
 #
-# Created by: PyQt5 UI code generator 5.6
+# Created by: PyQt5 UI code generator 5.9
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -611,8 +611,6 @@ class Ui_ModFinder(object):
         self.statusbar = QtWidgets.QStatusBar(ModFinder)
         self.statusbar.setObjectName("statusbar")
         ModFinder.setStatusBar(self.statusbar)
-        self.acHelp = QtWidgets.QAction(ModFinder)
-        self.acHelp.setObjectName("acHelp")
         self.acAbout = QtWidgets.QAction(ModFinder)
         self.acAbout.setObjectName("acAbout")
         self.acLoadSettings = QtWidgets.QAction(ModFinder)
@@ -633,7 +631,6 @@ class Ui_ModFinder(object):
         self.menuFile.addSeparator()
         self.menuFile.addAction(self.acQuit)
         self.menuOptions.addAction(self.menuAtomicMasses.menuAction())
-        self.menuHelp.addAction(self.acHelp)
         self.menuHelp.addAction(self.acAbout)
         self.menubar.addAction(self.menuFile.menuAction())
         self.menubar.addAction(self.menuOptions.menuAction())
@@ -717,9 +714,8 @@ class Ui_ModFinder(object):
         self.menuOptions.setTitle(_translate("ModFinder", "Options"))
         self.menuAtomicMasses.setTitle(_translate("ModFinder", "Atomic masses"))
         self.menuHelp.setTitle(_translate("ModFinder", "Help"))
-        self.acHelp.setText(_translate("ModFinder", "Help"))
-        self.acHelp.setShortcut(_translate("ModFinder", "Ctrl+H"))
         self.acAbout.setText(_translate("ModFinder", "About"))
+        self.acAbout.setShortcut(_translate("ModFinder", "F1"))
         self.acLoadSettings.setText(_translate("ModFinder", "Load settings ..."))
         self.acLoadSettings.setShortcut(_translate("ModFinder", "Ctrl+O"))
         self.acSaveSettings.setText(_translate("ModFinder", "Save settings ..."))
