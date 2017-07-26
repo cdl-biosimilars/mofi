@@ -33,7 +33,7 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QMenu, QActionGroup,
                              QAction, QProgressBar, QLabel, QSizePolicy,
                              QFileDialog)
 from PyQt5.QtGui import QColor, QBrush
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QLocale
 
 import numpy as np
 import pandas as pd
@@ -1778,6 +1778,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
 def main():  # possible argument: argv=sys.argv
     app = QApplication(sys.argv)
+    QLocale.setDefault(QLocale.c())
     frame = MainWindow()
     frame.show()
     app.exec_()
