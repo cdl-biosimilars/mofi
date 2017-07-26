@@ -871,10 +871,10 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.teSequence.setStyleSheet(
             "QTextEdit { background-color: rgb(240, 251, 240) }")
         self._protein_mass = protein.mass
-        self.lbMassProtein.setText("{:,.2f}".format(self._protein_mass))
-        self.lbMassMods.setText("{:,.2f}".format(self._known_mods_mass))
-        self.lbMassTotal.setText("{:,.2f}".format(self._protein_mass
-                                                  + self._known_mods_mass))
+        self.lbMassProtein.setText("{:.2f}".format(self._protein_mass))
+        self.lbMassMods.setText("{:.2f}".format(self._known_mods_mass))
+        self.lbMassTotal.setText("{:.2f}".format(self._protein_mass
+                                                 + self._known_mods_mass))
 
 
     def calculate_mod_mass(self):
@@ -925,10 +925,10 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             result.append((ch.isChecked(), name, composition, mass,
                            min_count, max_count))
 
-        self.lbMassProtein.setText("{:,.2f}".format(self._protein_mass))
-        self.lbMassMods.setText("{:,.2f}".format(self._known_mods_mass))
-        self.lbMassTotal.setText("{:,.2f}".format(self._protein_mass
-                                                  + self._known_mods_mass))
+        self.lbMassProtein.setText("{:.2f}".format(self._protein_mass))
+        self.lbMassMods.setText("{:.2f}".format(self._known_mods_mass))
+        self.lbMassTotal.setText("{:.2f}".format(self._protein_mass
+                                                 + self._known_mods_mass))
         return result
 
 
@@ -1277,9 +1277,9 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         :param event: PickEvent from the canvas
         :return: nothing
         """
-
-        self.spectrum_picked_peak = event.ind[0]
-        self.show_results(event.ind)
+        if event.mouseevent.button == 1:
+            self.spectrum_picked_peak = event.ind[0]
+            self.show_results(event.ind)
 
 
     def select_peaks_by_span(self, min_mass, max_mass):
@@ -1430,14 +1430,21 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 matplotlib.text.Annotation):
             annotation.remove()
         for peak_id in np.where(df_delta_peaks["total"] > 0)[0]:
-            label = df_delta_distances["total"][peak_id]
+            if self.btLabelPeaks.isChecked():
+                label = "{} ({:.2f})".format(
+                    df_delta_distances["total"][peak_id],
+                    self._exp_mass_data["Average Mass"][peak_id])
+            else:
+                label = df_delta_distances["total"][peak_id]
             self.spectrum_axes.annotate(
                 s=label,
                 xy=(self._exp_mass_data.iloc[peak_id]["Average Mass"],
                     self._exp_mass_data.iloc[peak_id]["Relative Abundance"]),
                 xytext=(0, 5),
                 textcoords="offset pixels",
-                horizontalalignment="center")
+                horizontalalignment="center",
+                bbox=dict(facecolor="white", alpha=.75,
+                          linewidth=0, pad=0))
         self.spectrum_canvas.draw()
 
         return list(np.where(df_delta_peaks["total"] > 0)[0])
@@ -1481,7 +1488,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             except AttributeError:
                 pass
 
-
         selected_peaks = np.zeros(self.lwPeaks.count(), dtype=int)
         selected_peaks[peak_indices] = 1
 
@@ -1514,7 +1520,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                     xytext=(0, 5),
                     textcoords="offset pixels",
                     horizontalalignment="center",
-                    bbox=dict(facecolor="white", alpha=.75, linewidth=0))
+                    bbox=dict(facecolor="white", alpha=.75,
+                              linewidth=0, pad=0))
         self.spectrum_canvas.draw()
 
 
