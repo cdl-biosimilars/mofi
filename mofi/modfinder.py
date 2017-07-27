@@ -1721,7 +1721,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self.twResults.clear()
             self._exp_mass_data = io_tools.dataframe_from_xml(
                 root.find("masslist"))
-            if self._exp_mass_data is not None:
+            if not self._exp_mass_data.empty:
                 self.fill_peak_list(self._exp_mass_data["Average Mass"])
                 self.draw_spectrum()
                 self.spectrum_picked_peak = 0
