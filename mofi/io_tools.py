@@ -153,9 +153,12 @@ def dataframe_from_xml(root):
 
 def read_bpf_library(filename):
     """
+    Read an N-glycan library as returned by Thermo BioPharma finder.
+    A column labeled "Modification" is required; sites and composition
+    will be deduced from this column.
 
-    :param filename:
-    :return:
+    :param filename: name of the library file (Excel format)
+    :return: a dataframe as required by ModFinder.table_from df()
     """
 
     df = pd.read_excel(filename)
