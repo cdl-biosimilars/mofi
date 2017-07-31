@@ -247,6 +247,9 @@ def calc_polymer_combinations(glycan_library, monomers, progress_bar=None):
                            4          M5  A2G2F     A2G0F     A2G0F        0.0
     """
 
+    if not monomers:  # we need a nonempty list of monomers to continue
+        return
+
     if progress_bar is not None:
         progress_bar.setValue(0)
 
