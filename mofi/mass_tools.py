@@ -70,12 +70,12 @@ def formstring_to_composition(formstring):
     Raises a ValueError if the composition string is invalid.
 
     :param formstring: collection of elements followed by their counts
-                       (example: "C50 H100 N20 Cl")
+                       (example: "C50 H100 N-3 Cl")
     :return: pd.Series labelled by the element
-             (example: C: 50, H: 100, N: 20, Cl: 1)
+             (example: C: 50, H: 100, N: -3, Cl: 1)
     """
 
-    pattern = re.compile(r"([A-Z][a-z]?)(\d*)$")
+    pattern = re.compile(r"([A-Z][a-z]?)(-?\d*)$")
     composition = {}
     for formula_part in formstring.split():
         match = pattern.match(formula_part)
