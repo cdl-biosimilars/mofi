@@ -2,8 +2,7 @@ from setuptools import setup, Extension
 import glob
 
 require = [
-    "qtpy",
-    "pyqt5",
+    "PyQt5",
     "numpy",
     "pandas",
     "matplotlib",
@@ -24,12 +23,12 @@ setup(
     install_requires=require,
     ext_modules=[c_ext],
     entry_points = {
-        'console_scripts': [
-            "modfinder = mofi.modfinder:main"
+        'gui_scripts': [
+            "mofi = mofi.modfinder:main"
         ]
     },
     include_package_data=True,
     package_data={
-        "": ["config/*", "config/monomers/*", "config/polymers/*"]
+        "": ["config/*", "data/glycans/*", "data/modifications/*"]
     }
 )
