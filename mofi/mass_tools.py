@@ -27,7 +27,8 @@ def read_massfile(massfile):
     as average masses and relative abundances, respectively.
 
     :param massfile: name of the file containing the mass list
-    :return: a dataframe if the import was successful, otherwise None
+    :return: a dataframe if the import was successful,
+             otherwise None
     """
 
     required_cols = ["Average Mass", "Relative Abundance"]
@@ -43,23 +44,27 @@ def read_massfile(massfile):
     except (TypeError, OSError):
         return None
 
-    # only keep the required columns
-    # if column labels are missing, take the first two columns
+    # case 1: table has (correct) headers, so only keep those columns
     try:
         massframe = (inputframe
                      .rename(columns=inputframe.iloc[0])
                      [1:]
                      [required_cols])
     except KeyError:
-        massframe = inputframe
-        massframe.columns = required_cols
-        if len(massframe.columns) != 2:
+        # case 2: assume that column labels are missing,
+        # so take the first two columns
+        massframe = inputframe.iloc[:, 0:2]
+        try:
+            massframe.columns = required_cols
+        except ValueError:  # there was only one column
             return None
 
-    # massframe.sort_values("Average Mass", ascending=True, inplace=True)
-    massframe = (massframe
-                 .astype(float)
-                 .sort_values("Average Mass", ascending=True))
+    try:
+        massframe = (massframe
+                     .astype(float)
+                     .sort_values("Average Mass", ascending=True))
+    except ValueError:  # there were column headers with wrong labels
+        return None
     massframe.index = range(len(massframe))
     return massframe
 
