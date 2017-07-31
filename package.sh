@@ -33,7 +33,11 @@ $VENV_BIN/pip3 install .
 if [[ $TARGET == windows ]]; then
     echo "Building for Windows"
     $VENV_BIN/python setup_cx.py build
-    BUILD_DIR="$(find build -type d -name "exe.win-*" -print -quit)"
+    BUILD_DIR="$(find build -type d -name "exe.win*" -print -quit)"
+    if [[ -z "BUILD_DIR" ]]; then
+        echo "Could not determine build directory"
+        exit 1
+    fi
     TARGET_DIR="build/windows"
     echo "Copying build files"
     rm -rf "$TARGET_DIR"
@@ -43,7 +47,11 @@ if [[ $TARGET == windows ]]; then
 else
     echo "Building for Linux"
     $VENV_BIN/python setup_cx.py build
-    BUILD_DIR="$(find build -type d -name "exe.linux-*" -print -quit)"
+    BUILD_DIR="$(find build -type d -name "exe.linux*" -print -quit)"
+    if [[ -z "BUILD_DIR" ]]; then
+        echo "Could not determine build directory"
+        exit 1
+    fi
     TARGET_DIR="build/linux"
     echo "Copying build files"
     rm -rf "$TARGET_DIR"
