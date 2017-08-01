@@ -45,9 +45,7 @@ if [[ $TARGET == windows ]]; then
     mkdir -p "${TARGET_DIR}/bin"
     cp -r "${BUILD_DIR}"/* "${TARGET_DIR}/bin"
     cp ../package-files/win-standalone/* "${TARGET_DIR}"
-    rm -f mofi-windows.zip
-    echo "Creating archive"
-    zip mofi-windows.zip "${TARGET_DIR}"/*
+    echo "Please zip build/mofi-windows now."
 else
     echo "Building for Linux"
     $VENV_BIN/python setup_cx.py build
