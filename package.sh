@@ -33,32 +33,40 @@ $VENV_BIN/pip3 install .
 if [[ $TARGET == windows ]]; then
     echo "Building for Windows"
     $VENV_BIN/python setup_cx.py build
-    BUILD_DIR="$(find build -type d -name "exe.win*" -print -quit)"
+    cd build
+    BUILD_DIR="$(find . -type d -name "exe.win*" -print -quit)"
     if [[ -z "BUILD_DIR" ]]; then
         echo "Could not determine build directory"
         exit 1
     fi
-    TARGET_DIR="build/windows"
+    TARGET_DIR="mofi-windows"
     echo "Copying build files"
     rm -rf "$TARGET_DIR"
     mkdir -p "${TARGET_DIR}/bin"
     cp -r "${BUILD_DIR}"/* "${TARGET_DIR}/bin"
-    cp package-files/win-standalone/* "${TARGET_DIR}"
+    cp ../package-files/win-standalone/* "${TARGET_DIR}"
+    rm -f mofi-windows.zip
+    echo "Creating archive"
+    zip mofi-windows.zip "${TARGET_DIR}"/*
 else
     echo "Building for Linux"
     $VENV_BIN/python setup_cx.py build
-    BUILD_DIR="$(find build -type d -name "exe.linux*" -print -quit)"
+    cd build
+    BUILD_DIR="$(find . -type d -name "exe.linux*" -print -quit)"
     if [[ -z "BUILD_DIR" ]]; then
         echo "Could not determine build directory"
         exit 1
     fi
-    TARGET_DIR="build/linux"
+    TARGET_DIR="mofi-linux"
     echo "Copying build files"
     rm -rf "$TARGET_DIR"
     mkdir -p "${TARGET_DIR}/bin"
     cp -r "${BUILD_DIR}"/* "${TARGET_DIR}/bin"
-    cp package-files/lin-standalone/* "${TARGET_DIR}"
+    cp ../package-files/lin-standalone/* "${TARGET_DIR}"
     ln -s bin/data "${TARGET_DIR}/data"
     ln -s bin/config "${TARGET_DIR}/config"
+    rm -f mofi-linux.tar.gz
+    echo "Creating archive"
+    tar -czf mofi-linux.tar.gz "${TARGET_DIR}"/*
 fi
 
