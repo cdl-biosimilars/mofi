@@ -17,7 +17,8 @@ else
 fi
 
 rm -rf venv
-if [[ "$($NATIVE_PYTHON --version)" =~ "Continuum Analytics, Inc." ]]; then
+PYTHON_VERSION="$($NATIVE_PYTHON --version 2>&1)"
+if [[ $PYTHON_VERSION =~ "Continuum Analytics, Inc." ]] && [[ $TARGET = linux ]]; then
     echo "Creating venv with Anaconda"
     $NATIVE_PYTHON -m venv --without-pip venv
     wget https://bootstrap.pypa.io/get-pip.py -O /tmp/get-pip.py
@@ -65,6 +66,6 @@ else
     ln -s bin/config "${TARGET_DIR}/config"
     rm -f mofi-linux.tar.gz
     echo "Creating archive"
-    tar -czf mofi-linux.tar.gz "${TARGET_DIR}"/*
+    tar -cJf mofi-linux.tar.xz "${TARGET_DIR}"/*
 fi
 
