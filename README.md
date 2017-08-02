@@ -19,7 +19,7 @@ For building the C++ extension:
 
 ## Installing
 
-    python3 setup.py install
+    pip3 install .
 
 ## Running in source
 
