@@ -341,9 +341,10 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.btDefaultModsPolymers.setMenu(menu)
 
         # private members
-        self._monomer_hits = None  # results from the monomer search
+        self._disulfide_mass = 0  # mass of the current number of disulfides
         self._exp_mass_data = None  # peak list (mass + relative abundance)
         self._known_mods_mass = 0  # mass of known modification
+        self._monomer_hits = None  # results from the monomer search
         self._path = configure.path  # last path selected in a file dialog
         self._polymer_hits = None  # results from the polymer search
         self._protein_mass = 0  # mass of the current Protein object
@@ -816,15 +817,15 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         """
         Calculates the mass of the protein from the current data.
 
-        Changes self._protein_mass
+        Changes self._protein_mass and self._disulfide_mass
         Updates the value of self.lbMassProtein, self.lbMassMods
                 and self.lbMassTotal
 
         :return: nothing
         """
 
-        protein_sequence = self.teSequence.toPlainText()
-        chains, sequence = sequence_tools.read_fasta_string(protein_sequence)
+        chains, sequence = sequence_tools.read_fasta_string(
+            self.teSequence.toPlainText())
         try:
             protein = sequence_tools.Protein(sequence,
                                              chains,
@@ -844,10 +845,14 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             protein.amino_acid_composition["C"] / 2)
         self.teSequence.setStyleSheet(
             "QTextEdit { background-color: rgb(240, 251, 240) }")
-        self._protein_mass = protein.mass
+        self._protein_mass = protein.mass_without_disulfides
+        self._disulfide_mass = (mass_tools.Formula("H-2").mass
+                                * self.sbDisulfides.value())
         self.lbMassProtein.setText("{:.2f}".format(self._protein_mass))
-        self.lbMassMods.setText("{:.2f}".format(self._known_mods_mass))
+        self.lbMassMods.setText("{:.2f}".format(self._known_mods_mass
+                                                + self._disulfide_mass))
         self.lbMassTotal.setText("{:.2f}".format(self._protein_mass
+                                                 + self._disulfide_mass
                                                  + self._known_mods_mass))
 
 
@@ -900,8 +905,10 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                            min_count, max_count))
 
         self.lbMassProtein.setText("{:.2f}".format(self._protein_mass))
-        self.lbMassMods.setText("{:.2f}".format(self._known_mods_mass))
+        self.lbMassMods.setText("{:.2f}".format(self._known_mods_mass
+                                                + self._disulfide_mass))
         self.lbMassTotal.setText("{:.2f}".format(self._protein_mass
+                                                 + self._disulfide_mass
                                                  + self._known_mods_mass))
         return result
 
@@ -954,7 +961,9 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                     for m in self.calculate_mod_mass()
                     if m[0]]
         modifications = []  # list of modifications for search stage 1
-        explained_mass = self._protein_mass + self._known_mods_mass
+        explained_mass = (self._protein_mass
+                          + self._disulfide_mass
+                          + self._known_mods_mass)
         unknown_masses = (self._exp_mass_data["Average Mass"]
                           - explained_mass)  # type: pd.DataFrame
 
@@ -1004,7 +1013,10 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                     max_count = max(polymer_combs.index.get_level_values(name))
                 else:  # only search stage 1
                     max_count = min(
-                        int((max_tol_mass - self._protein_mass) / mass),
+                        int((max_tol_mass
+                             - self._protein_mass
+                             - self._disulfide_mass)
+                            / mass),
                         configure.maxmods)
             modifications.append((name, mass, max_count - min_count))
 

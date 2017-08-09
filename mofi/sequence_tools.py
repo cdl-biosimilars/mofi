@@ -153,19 +153,22 @@ class Protein:
 
     def __init__(self, sequence, chains=1, disulfides=0, pngasef=False):
         """
-        Returns a new Protein
+        Create a new protein instance.
+
         :param sequence: sequence of the protein
         :param chains: number of chains
         :param disulfides: number of disulfide bonds
         :param pngasef: true if the protein was treated with PNGase F
         """
+
+        digested_sequence, self.n_sites = apply_pngasef(sequence)
         if pngasef:
-            sequence, self.n_sites = apply_pngasef(sequence)
-        else:
-            self.n_sites = find_glycosylation_sites(sequence)[0]
+            sequence = digested_sequence
+
+        self.amino_acid_composition = {a: sequence.count(a)
+                                       for a in amino_acid_names}
         self.formula = mass_tools.Formula(
             get_sequence_atoms(sequence, chains, disulfides))
         self.mass = self.formula.mass
-        self.amino_acid_composition = {}
-        for a in amino_acid_names:
-            self.amino_acid_composition[a] = sequence.count(a)
+        self.mass_without_disulfides = mass_tools.Formula(
+            get_sequence_atoms(sequence, chains, 0)).mass
