@@ -1741,13 +1741,15 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
 
     def save_spectrum(self):
-        filename, _ = QFileDialog.getSaveFileName(
+        filename, filefilter = QFileDialog.getSaveFileName(
             self,
             "Save spectrum",
             self._path,
             file_extensions("png", "svg"))
         self._path = os.path.split(filename)[0]
         if filename:
+            if not filename.endswith(_reverse_extensions[filefilter]):
+                filename += "." + _reverse_extensions[filefilter]
             try:
                 self.spectrum_fig.savefig(filename, dpi=200)
             except OSError:
