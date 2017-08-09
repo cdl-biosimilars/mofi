@@ -20,52 +20,51 @@ def read_massfile(massfile):
     """
     Reads a list of masses (peaks) from an external Excel or CSV file.
 
-    If the file contains a header row, there must be two columns
-    labeled "Average Mass" and "Relative Abundance", which are imported.
-
-    Otherwise, the contents of the first and second column will be interpreted
-    as average masses and relative abundances, respectively.
+    The file must contain at least one column labeled "Average Mass"
+    or "Average mass (mean)". If there is a column labeled
+    "Relative Abundance", its values will be used for the peak heights.
+    Otherwise, all peaks will have the same height.
 
     :param massfile: name of the file containing the mass list
     :return: a dataframe if the import was successful,
              otherwise None
     """
 
-    required_cols = ["Average Mass", "Relative Abundance"]
     filename, ext = os.path.splitext(massfile)
     try:
         if ext in [".xls", ".xlsx"]:
-            inputframe = pd.read_excel(massfile, header=None)
+            inputframe = pd.read_excel(massfile)
         elif ext in [".txt", ".csv"]:
-            inputframe = pd.read_csv(massfile, sep=None,
-                                     header=None, engine="python")
+            inputframe = pd.read_csv(massfile, sep=None, engine="python")
         else:
             return None
     except (TypeError, OSError):
         return None
 
-    # case 1: table has (correct) headers, so only keep those columns
+    # find column with average masses
     try:
-        massframe = (inputframe
-                     .rename(columns=inputframe.iloc[0])
-                     [1:]
-                     [required_cols])
+        massframe = pd.DataFrame(inputframe["Average Mass"])
     except KeyError:
-        # case 2: assume that column labels are missing,
-        # so take the first two columns
-        massframe = inputframe.iloc[:, 0:2]
         try:
-            massframe.columns = required_cols
-        except ValueError:  # there was only one column
+            massframe = pd.DataFrame(inputframe["Average Mass (mean)"])
+        except KeyError:
             return None
 
+    # find column with relative intensities; if absent provide default values
+    try:
+        massframe["Relative Abundance"] = inputframe["Relative Abundance"]
+    except KeyError:
+        massframe["Relative Abundance"] = 100
+
+    # convert to float
     try:
         massframe = (massframe
                      .astype(float)
                      .sort_values("Average Mass", ascending=True))
-    except ValueError:  # there were column headers with wrong labels
+    except ValueError:
         return None
-    massframe.index = range(len(massframe))
+
+    massframe.reset_index(drop=True, inplace=True)
     return massframe
 
 
