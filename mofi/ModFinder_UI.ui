@@ -826,7 +826,7 @@
              </sizepolicy>
             </property>
             <property name="text">
-             <string>Tolerance:</string>
+             <string>Tolerance: ±</string>
             </property>
            </widget>
           </item>

@@ -30,9 +30,6 @@ from mofi import (configure, mass_tools, modification_search,
 from mofi.paths import data_dir
 from mofi.modfinder_ui import Ui_ModFinder
 
-pd.set_option('display.max_rows', 5000)
-matplotlib.use("Qt5Agg")
-
 _version_info = """ModFinder v1.0
 
 © 2017 Christian Doppler Laboratory
@@ -69,6 +66,7 @@ _file_extensions = {
     "fasta": "Sequence files (*.fasta)",
     "mofi": "ModFinder XML settings (*.xml)",
     "png": "Portable network graphics (*.png)",
+    "svg": "Scalable vector graphics (*.svg)",
     "": ""
 }
 
@@ -1747,7 +1745,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self,
             "Save spectrum",
             self._path,
-            file_extensions("png"))
+            file_extensions("png", "svg"))
         self._path = os.path.split(filename)[0]
         if filename:
             try:

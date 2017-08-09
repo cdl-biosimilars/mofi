@@ -691,7 +691,7 @@ class Ui_ModFinder(object):
         self.btFindModifications.setText(_translate("ModFinder", "Find modifications"))
         self.rbAllPeaks.setText(_translate("ModFinder", "for all peaks"))
         self.rbSingleMass.setText(_translate("ModFinder", "for a single mass:"))
-        self.label_10.setText(_translate("ModFinder", "Tolerance:"))
+        self.label_10.setText(_translate("ModFinder", "Tolerance: ±"))
         self.cbTolerance.setItemText(0, _translate("ModFinder", "Da"))
         self.cbTolerance.setItemText(1, _translate("ModFinder", "ppm"))
         self.btLabelPeaks.setText(_translate("ModFinder", "Label peaks"))
