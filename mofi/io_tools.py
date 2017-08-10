@@ -18,10 +18,11 @@ _re_bpf_glycan = re.compile(r"""
         ^(?:(A)(\d)+)?  # g[1]:  antennas
         (?:(Sg)(\d)+)?  # g[3]:  Neu5Gc
         (?:(S)(\d)+)?   # g[5]:  Neu5Ac
-        (?:(G)(\d)+)?   # g[7]:  Gal
-        (?:(M)(\d)+)?   # g[9]:  Man
-        (F)?            # g[10]: Fuc
-        (B)?            # g[11]: GlcNAc
+        (?:(Ga)(\d)+)?  # g[7]:  Ga
+        (?:(G)(\d)+)?   # g[9]:  Gal
+        (?:(M)(\d)+)?   # g[11]: Man
+        (F)?            # g[12]: Fuc
+        (B)?            # g[13]: GlcNAc
         """, re.VERBOSE)
 
 
@@ -38,26 +39,32 @@ def _parse_bpf_glycan(glycan):
 
     g = list(_re_bpf_glycan.findall(glycan)[0])
     if not "".join(g):
-        return ""  # glycan abbreviation unknown
+        # deal with two non-standard abbreviations
+        if glycan == "Gn":
+            counts = [0, 1, 0, 0, 0]
+        elif glycan == "GnF":
+            counts = [0, 1, 0, 0, 1]
+        else:
+            counts = [0, 0, 0, 0, 0]
+    else:
+        if g[11] == "":
+            g[11] = 3
+        for i in range(1, 13, 2):
+            try:
+                g[i] = int(g[i])
+            except ValueError:
+                g[i] = 0
+        counts = [
+            g[3] + g[5] + 2 * g[7] + g[9] + g[11],  # Hex
+            g[1] + 2 + (1 if g[13] else 0),  # HexNAc
+            g[5],  # Neu5Ac
+            g[3],  # Neu5Gc
+            1 if g[12] else 0]  # Fuc
 
-    for i in range(1, 11, 2):
-        try:
-            g[i] = int(g[i])
-        except ValueError:
-            g[i] = 0
-    counts = pd.Series(
-        [g[3] + g[5] + g[7] + max(g[9] - 3, 0),  # Hex
-         g[1] + (1 if g[11] else 0),  # HexNAc
-         g[5],  # Neu5Ac
-         g[3],  # Neu5Gc
-         1 if g[10] else 0,  # Fuc
-         1],  # N-core
-        index=["Hex", "HexNAc", "Neu5Ac",
-               "Neu5Gc", "Fuc", "N-core"])
-
-    return ", ".join("{} {}".format(v, k)
-                     for k, v in counts.iteritems()
-                     if v > 0)
+    monosaccharides = ["Hex", "HexNAc", "Neu5Ac", "Neu5Gc", "Fuc"]
+    return ", ".join("{} {}".format(c, m)
+                     for m, c in zip(monosaccharides, counts)
+                     if c > 0)
 
 
 def prettify_xml(elem, level=0):
