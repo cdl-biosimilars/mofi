@@ -213,6 +213,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         self.cbTolerance.activated.connect(self.choose_tolerance_units)
 
+        self.chCombineDelta.clicked.connect(self.show_results)
         self.chDelta1.clicked.connect(self.toggle_delta_series)
         self.chDelta2.clicked.connect(self.toggle_delta_series)
         self.chFilterStructureHits.clicked.connect(self.filter_structure_hits)
@@ -1213,9 +1214,9 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 sb_repetitions.setEnabled(False)
 
         if self.chDelta1.isChecked() and self.chDelta2.isChecked():
-            self.chCombineDeltaSeries.setEnabled(True)
+            self.chCombineDelta.setEnabled(True)
         else:
-            self.chCombineDeltaSeries.setEnabled(False)
+            self.chCombineDelta.setEnabled(False)
 
         self.highlight_delta_series()
 
@@ -1381,6 +1382,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             index=self._exp_mass_data.index,
             dtype=str)
 
+        # column "1" is straight forward
         if self.chDelta1.isChecked():
             df_counts["1"] = self.find_delta_peaks(
                 self.spectrum_picked_peak,
@@ -1390,12 +1392,29 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         else:
             df_counts["1"] = ""
 
+        # column "2" has to take into account whether the second delta series
+        # should start at each peak of the first one
         if self.chDelta2.isChecked():
-            df_counts["2"] = self.find_delta_peaks(
-                self.spectrum_picked_peak,
-                self.sbDeltaValue2.value(),
-                self.sbDeltaTolerance2.value(),
-                self.sbDeltaRepetition2.value())
+            if self.chDelta1.isChecked() and self.chCombineDelta.isChecked():
+                delta_series = []
+                for peak_id in np.flatnonzero(df_counts["1"]):
+                    subseries = self.find_delta_peaks(
+                        peak_id,
+                        self.sbDeltaValue2.value(),
+                        self.sbDeltaTolerance2.value(),
+                        self.sbDeltaRepetition2.value())
+                    df_counts.loc[np.where(subseries)[0], "1"] = \
+                        df_counts.loc[peak_id, "1"]  # correct labels
+                    delta_series.append(subseries)
+                df_counts["2"] = (pd.concat(delta_series, axis=1)
+                                  .apply(lambda x: ", ".join(filter(None, x)),
+                                         axis=1))
+            else:
+                df_counts["2"] = self.find_delta_peaks(
+                    self.spectrum_picked_peak,
+                    self.sbDeltaValue2.value(),
+                    self.sbDeltaTolerance2.value(),
+                    self.sbDeltaRepetition2.value())
         else:
             df_counts["2"] = ""
 
@@ -1407,8 +1426,24 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         # 4 - selected (central) peak
         df_counts["label"] = df_counts.apply(
             lambda x: "/".join(filter(None, x)), axis=1)
-        df_counts["color"] = ((df_counts["1"] != "") * 1
-                              + (df_counts["2"] != "") * 2)
+        if (self.chDelta1.isChecked()
+                and self.chDelta2.isChecked()
+                and self.chCombineDelta.isChecked()):
+            # calculate colors for main and sub delta series
+            df_counts["color"] = (
+                (
+                    (df_counts["1"] != "")
+                    & (df_counts["2"] == "0")
+                ) * 1
+                + (
+                    (df_counts["1"] != "")
+                    & (df_counts["2"] != "0")
+                ) * 2
+            )
+        else:
+            # calculate colors for both primary delat series
+            df_counts["color"] = ((df_counts["1"] != "") * 1
+                                  + (df_counts["2"] != "") * 2)
         df_counts.loc[self.spectrum_picked_peak, "color"] = 4
 
         # color the peaks in the delta series and increase their line width
@@ -1762,7 +1797,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                     "Error when writing to " + filename + OSError.args)
 
 
-def main():  # possible argument: argv=sys.argv
+def main():
     app = QApplication(sys.argv)
     QLocale.setDefault(QLocale.c())
     frame = MainWindow()

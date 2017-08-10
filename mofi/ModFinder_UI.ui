@@ -1081,7 +1081,7 @@
               </spacer>
              </item>
              <item>
-              <widget class="QCheckBox" name="chCombineDeltaSeries">
+              <widget class="QCheckBox" name="chCombineDelta">
                <property name="text">
                 <string>Combine</string>
                </property>
