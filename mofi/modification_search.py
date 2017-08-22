@@ -51,6 +51,8 @@ def find_monomers(mods, unexplained_masses, mass_tolerance=5.0,
     combinations = {}
     any_combination_found = False  # true as soon as a combination is found
 
+    print("mass index\tsearch space size")
+
     # run the search on each peak
     for mass_index, unexplained_mass in enumerate(unexplained_masses):
         try:
@@ -61,9 +63,11 @@ def find_monomers(mods, unexplained_masses, mass_tolerance=5.0,
         if progress_bar is not None:
             progress_bar.setValue(int((mass_index + 1)
                                   / len(unexplained_masses) * 100))
+        print(mass_index, end="\t", flush=True)
         result = findmods.examine_modifications(sorted_mods,
                                                 unexplained_mass,
                                                 current_tolerance)
+        print()
 
         # (a) transform result to combs_per_mass.
         # combs_per_mass will be a list of dicts with the following keys:

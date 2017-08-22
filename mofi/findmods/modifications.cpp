@@ -31,10 +31,12 @@ void next_mod(
     std::vector<mod_state_t>& solutions,
     mod_state_t& used,
     const double massrange,
+    unsigned long long int& search_space,
     const size_t index=0,
     double usedmass=0)
 {
     long mod_max = mods[index].max;
+    search_space += 1;
     size_t next_index = index + 1;
     for (long x = 0; x <= mod_max; x++) {
         used[index] = x;
@@ -45,7 +47,7 @@ void next_mod(
         } else if (next_index < mods.size() && remaining >= massrange) {
             next_mod(
                 target_mass, mods, solutions, used, massrange,
-                next_index, usedmass);
+                search_space, next_index, usedmass);
         }
         // Add current modification to total mass
         usedmass += mods[index].mass;
@@ -60,7 +62,10 @@ std::vector<mod_state_t> find_modifications(
 {
     std::vector<mod_state_t> solutions;
     mod_state_t used(mods.size(), 0);
+    unsigned long long int search_space;
+    search_space = 0;
     massrange += TOLERANCE;
-    next_mod(target_mass, mods, solutions, used, massrange);
+    next_mod(target_mass, mods, solutions, used, massrange, search_space);
+    std::cout << search_space;
     return solutions;
 }
