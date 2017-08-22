@@ -924,7 +924,7 @@
           <number>0</number>
          </property>
          <item>
-          <layout class="QVBoxLayout" name="spectrumViewLayout"/>
+          <layout class="QVBoxLayout" name="vlSpectrumView"/>
          </item>
         </layout>
        </widget>
@@ -1415,6 +1415,22 @@
      </widget>
     </item>
     <item>
+     <widget class="QWidget" name="wdFilters" native="true">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>0</width>
+        <height>20</height>
+       </size>
+      </property>
+     </widget>
+    </item>
+    <item>
      <widget class="QTreeWidget" name="twResults">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
@@ -1462,6 +1478,7 @@
    <zorder>line_2</zorder>
    <zorder>line_3</zorder>
    <zorder>twResults</zorder>
+   <zorder>wdFilters</zorder>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="enabled">

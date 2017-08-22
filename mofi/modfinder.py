@@ -12,7 +12,7 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QMenu, QActionGroup,
                              QTreeWidgetItem, QHeaderView, QButtonGroup,
                              QSpinBox, QDoubleSpinBox, QWidget, QHBoxLayout,
                              QAction, QProgressBar, QLabel, QSizePolicy,
-                             QFileDialog)
+                             QFileDialog, QLineEdit, QPushButton)
 from PyQt5.QtGui import QColor, QBrush
 from PyQt5.QtCore import Qt, QLocale
 
@@ -272,7 +272,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.spectrum_fig = Figure(dpi=100, frameon=False,
                                    tight_layout={"pad": 0}, edgecolor="white")
         self.spectrum_canvas = FigureCanvas(self.spectrum_fig)
-        self.spectrumViewLayout.addWidget(self.spectrum_canvas)
+        self.vlSpectrumView.addWidget(self.spectrum_canvas)
         # single Axes of the figure
         self.spectrum_axes = None
         # LineCollection representing the peaks in the spectrum
@@ -1089,6 +1089,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self.statusbar.showMessage("Structure search done!", 5000)
         self.chFilterStructureHits.setEnabled(True)
         self.show_results()
+        self.create_filter_widgets()
 
 
     def draw_spectrum(self):
@@ -1588,89 +1589,135 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self.chFilterStructureHits.blockSignals(False)
 
         # update the results tree if available
-        if self._monomer_hits is not None:
-            self.twResults.clear()
-            self.twResults.setUpdatesEnabled(False)
+        if self._monomer_hits is None:
+            return
+        self.twResults.clear()
+        self.twResults.setUpdatesEnabled(False)
 
-            missing_color = QColor(255, 185, 200)
+        missing_color = QColor(255, 185, 200)
 
-            if (self.chFilterStructureHits.isChecked()
-                    and self._polymer_hits is not None):
-                df_hit = self._polymer_hits
+        if (self.chFilterStructureHits.isChecked()
+                and self._polymer_hits is not None):
+            df_hit = self._polymer_hits
+        else:
+            df_hit = self._monomer_hits
+
+        # set column headers
+        header_labels = ["Exp. Mass", "%"]
+        header_labels.extend(df_hit.columns)
+        self.twResults.setColumnCount(len(header_labels))
+        self.twResults.setHeaderLabels(header_labels)
+
+        for mass_index in selected_peaks:
+            # generate root item (experimental mass, relative abundance)
+            root_item = SortableTreeWidgetItem(self.twResults)
+            root_item.setText(
+                0, "{:.2f}".format(self._exp_mass_data
+                                   .loc[mass_index]["Average Mass"]))
+            root_item.setTextAlignment(0, Qt.AlignRight)
+            root_item.setText(
+                1, "{:.1f}".format(self._exp_mass_data
+                                   .loc[mass_index]["Relative Abundance"]))
+            root_item.setTextAlignment(1, Qt.AlignRight)
+            root_item.mass_index = mass_index
+
+            if mass_index not in df_hit.index.levels[0]:
+                root_item.setBackground(0, QBrush(missing_color))
+                root_item.setBackground(1, QBrush(missing_color))
             else:
-                df_hit = self._monomer_hits
+                # generate one child item per possible combination
+                for _, hit in df_hit.loc[mass_index].iterrows():
+                    child_item = SortableTreeWidgetItem(root_item)
+                    monomers = (hit[:df_hit.columns.get_loc("Exp. Mass")]
+                                .index)
 
-            # set column headers
-            header_labels = ["Exp. Mass", "%"]
-            header_labels.extend(df_hit.columns)
-            self.twResults.setColumnCount(len(header_labels))
-            self.twResults.setHeaderLabels(header_labels)
+                    # monomer counts
+                    for j, monomer in enumerate(monomers):
+                        child_item.setText(
+                            2 + j, "{:.0f}".format(hit[monomer]))
+                        child_item.setTextAlignment(2 + j, Qt.AlignHCenter)
 
-            for mass_index in selected_peaks:
-                # generate root item (experimental mass, relative abundance)
-                root_item = SortableTreeWidgetItem(self.twResults)
-                root_item.setText(
-                    0, "{:.2f}".format(self._exp_mass_data
-                                       .loc[mass_index]["Average Mass"]))
-                root_item.setTextAlignment(0, Qt.AlignRight)
-                root_item.setText(
-                    1, "{:.1f}".format(self._exp_mass_data
-                                       .loc[mass_index]["Relative Abundance"]))
-                root_item.setTextAlignment(1, Qt.AlignRight)
-                root_item.mass_index = mass_index
+                    # hit properties
+                    for j, label in enumerate(["Exp. Mass", "Theo. Mass",
+                                               "Da.", "ppm"]):
+                        child_item.setText(
+                            len(monomers) + 2 + j,
+                            "{:.2f}".format(hit[label]))
+                        child_item.setTextAlignment(
+                            len(monomers) + 2 + j,
+                            Qt.AlignRight)
 
-                if mass_index not in df_hit.index.levels[0]:
-                    root_item.setBackground(0, QBrush(missing_color))
-                    root_item.setBackground(1, QBrush(missing_color))
-                else:
-                    # generate one child item per possible combination
-                    for _, hit in df_hit.loc[mass_index].iterrows():
-                        child_item = SortableTreeWidgetItem(root_item)
-                        monomers = (hit[:df_hit.columns.get_loc("Exp. Mass")]
-                                    .index)
-
-                        # monomer counts
-                        for j, monomer in enumerate(monomers):
+                    if (self.chFilterStructureHits.isChecked()
+                            and self._polymer_hits is not None):
+                        # polymer composition
+                        sites = (hit[df_hit.columns.get_loc("ppm") + 1: -1]
+                                 .index)
+                        for j, site in enumerate(sites):
                             child_item.setText(
-                                2 + j, "{:.0f}".format(hit[monomer]))
-                            child_item.setTextAlignment(2 + j, Qt.AlignHCenter)
-
-                        # hit properties
-                        for j, label in enumerate(["Exp. Mass", "Theo. Mass",
-                                                   "Da.", "ppm"]):
-                            child_item.setText(
-                                len(monomers) + 2 + j,
-                                "{:.2f}".format(hit[label]))
+                                len(monomers) + 6 + j,
+                                "{}".format(hit[site]))
                             child_item.setTextAlignment(
-                                len(monomers) + 2 + j,
-                                Qt.AlignRight)
-
-                        if (self.chFilterStructureHits.isChecked()
-                                and self._polymer_hits is not None):
-                            # polymer composition
-                            sites = (hit[df_hit.columns.get_loc("ppm") + 1: -1]
-                                     .index)
-                            for j, site in enumerate(sites):
-                                child_item.setText(
-                                    len(monomers) + 6 + j,
-                                    "{}".format(hit[site]))
-                                child_item.setTextAlignment(
-                                    len(monomers) + 6 + j,
-                                    Qt.AlignHCenter)
-
-                            # polymer abundance
-                            child_item.setText(
-                                len(monomers) + 7 + j,
-                                "{:.2f}".format(hit["Abundance"]))
-                            child_item.setTextAlignment(
-                                len(monomers) + 7 + j,
+                                len(monomers) + 6 + j,
                                 Qt.AlignHCenter)
 
-            self.twResults.expandAll()
-            self.twResults.header().setSectionResizeMode(
-                QHeaderView.ResizeToContents)
-            self.twResults.header().setStretchLastSection(False)
-            self.twResults.setUpdatesEnabled(True)
+                        # polymer abundance
+                        child_item.setText(
+                            len(monomers) + 7 + j,
+                            "{:.2f}".format(hit["Abundance"]))
+                        child_item.setTextAlignment(
+                            len(monomers) + 7 + j,
+                            Qt.AlignHCenter)
+
+        self.twResults.expandAll()
+        self.twResults.header().setSectionResizeMode(
+            QHeaderView.ResizeToContents)
+        self.twResults.header().setStretchLastSection(False)
+        self.twResults.setUpdatesEnabled(True)
+
+
+    def create_filter_widgets(self):
+        """
+        Create the filter widgets above the results tree.
+
+        :return: nothing
+        """
+        if self._monomer_hits is None:
+            return
+
+        for child in self.wdFilters.children():
+            child.setParent(None)
+
+        # create label
+        lb_filters = QLabel(self.wdFilters)
+        lb_filters.setText("Filters:")
+        lb_filters.move(0, 0)
+        lb_filters.resize(50, 20)
+        lb_filters.show()
+
+        # create line edits
+        x_start = 0
+        width = 0
+        for i in range(2, self._monomer_hits.columns.get_loc("Exp. Mass") + 2):
+            x_start = self.twResults.header().sectionPosition(i)
+            width = self.twResults.header().sectionPosition(i + 1) - x_start
+
+            le_test = QLineEdit(self.wdFilters)
+            le_test.setObjectName("le_filter_"
+                                  + self._monomer_hits.columns[i-2])
+            # noinspection PyUnresolvedReferences
+            le_test.returnPressed.connect(lambda: self.show_results())
+            le_test.resize(width, 20)
+            le_test.move(x_start, 0)
+            le_test.show()
+
+        # create button
+        bt_filters = QPushButton(self.wdFilters)
+        bt_filters.setText("Apply")
+        # noinspection PyUnresolvedReferences
+        bt_filters.clicked.connect(lambda: self.show_results())
+        bt_filters.move(x_start + width, 0)
+        bt_filters.resize(50, 20)
+        bt_filters.show()
 
 
     def save_settings(self):
@@ -1763,6 +1810,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 self.draw_spectrum()
                 self.spectrum_picked_peak = 0
                 self.show_results()
+                self.create_filter_widgets()
 
             self.cbTolerance.setCurrentIndex(
                 int(root.find("tolerance-flavor").text))
