@@ -1596,11 +1596,30 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         missing_color = QColor(255, 185, 200)
 
+        # generate query string
+        re_filter = re.compile("(\d*)(-?)(\d*)")
+        query = []
+        for child in self.wdFilters.findChildren(QLineEdit):
+            f = re_filter.match(child.text()).groups()
+            mod = child.objectName()
+            if "".join(f):
+                if f[0] and not f[1] and not f[2]:
+                    query.append("({} == {})".format(mod, f[0]))
+                elif f[0] and f[1] and not f[2]:
+                    query.append("({} >= {})".format(mod, f[0]))
+                elif f[0] and f[1] and f[2]:
+                    query.append("({} <= {} <= {})".format(f[0], mod, f[2]))
+                else:
+                    query.append("({} <= {})".format(mod, f[2]))
+        query = " and ".join(query)
+
         if (self.chFilterStructureHits.isChecked()
                 and self._polymer_hits is not None):
             df_hit = self._polymer_hits
         else:
             df_hit = self._monomer_hits
+        if query:
+            df_hit = df_hit.query(query)
 
         # set column headers
         header_labels = ["Exp. Mass", "%"]
@@ -1702,8 +1721,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             width = self.twResults.header().sectionPosition(i + 1) - x_start
 
             le_test = QLineEdit(self.wdFilters)
-            le_test.setObjectName("le_filter_"
-                                  + self._monomer_hits.columns[i-2])
+            le_test.setObjectName(self._monomer_hits.columns[i-2])
             # noinspection PyUnresolvedReferences
             le_test.returnPressed.connect(lambda: self.show_results())
             le_test.resize(width, 20)
