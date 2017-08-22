@@ -1023,14 +1023,15 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         if not modifications:
             QMessageBox.critical(
-                self, "Error", "List of monomers is empty. Aborting search.")
+                self, "Error", "List of modifications is empty. "
+                               "Aborting search.")
             return
 
         # check whether all monomers required in search stage 2 are available
         missing_monomers = monomers_in_library - set(available_monomers)
         if missing_monomers:
             error_message = [
-                "The following monosaccharides appear in the library ",
+                "The following modifications appear in the library ",
                 "but do not appear in the composition list: "]
             error_message += " ".join(sorted(missing_monomers))
             error_message.append(".\n")
@@ -1039,7 +1040,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                                  "".join(error_message))
             return
 
-        self.statusbar.showMessage("Starting monomer search (stage 1) ...")
+        self.statusbar.showMessage("Starting composition search (stage 1) ...")
         print("Experimental Masses:",
               self._exp_mass_data["Average Mass"].head(),
               sep="\n")
@@ -1050,11 +1051,11 @@ class MainWindow(QMainWindow, Ui_ModFinder):
               sep="\n")
         print("Mass tolerance: {:f} {}".format(self.sbTolerance.value(),
                                                self.cbTolerance.currentText()))
-        print("Modifications used in search state 1:\nName\tMass\tmax")
+        print("Modifications used in search stage 1:\nName\tMass\tmax")
         for m in modifications:
             print("{}\t{:.2f}\t{:d}".format(*m))
         if monomers_for_polymer_search:
-            print("Modifications used in search stage 2:")
+            print("Structures used in search stage 2:")
             print(", ".join(monomers_for_polymer_search))
 
         # stage 1: monomer search
@@ -1066,12 +1067,12 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             progress_bar=self.pbSearchProgress)
 
         self.statusbar.showMessage(
-            "Monomer search done! Starting polymer search (stage 2) ...")
+            "Composition search done! Starting structure search (stage 2) ...")
 
         if self._monomer_hits is None:
             # the modification search was not successful
             QMessageBox.critical(
-                self, "Error", "Combinatorial search was unsuccessful.")
+                self, "Error", "Composition search was unsuccessful.")
             return
 
         # add the minimum monomer counts to the result data frame
@@ -1085,7 +1086,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 polymer_combinations=polymer_combs,
                 monomers=monomers_for_polymer_search,
                 progress_bar=self.pbSearchProgress)
-            self.statusbar.showMessage("Polymer search DONE!", 5000)
+            self.statusbar.showMessage("Structure search done!", 5000)
         self.chFilterStructureHits.setEnabled(True)
         self.show_results()
 
