@@ -3,7 +3,7 @@
 A tool to find molecular modifications (like glycans) in mass spectra of intact proteins.
 
 
-aa
+
 ## Requirements
 
 * Python 3.5

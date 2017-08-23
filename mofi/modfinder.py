@@ -142,13 +142,10 @@ class SortableTreeWidgetItem(QTreeWidgetItem):
         column = self.treeWidget().sortColumn()
         key1 = self.text(column)
         key2 = other.text(column)
-        return self.natural_sort_key(key1) < self.natural_sort_key(key2)
-
-    @staticmethod
-    def natural_sort_key(key):
-        regex = "(\d*\.\d+|\d+)"
-        parts = re.split(regex, key)
-        return ((e if i % 2 == 0 else float(e)) for i, e in enumerate(parts))
+        try:
+            return float(key1) < float(key2)
+        except ValueError:
+            return key1 < key2
 
 
 class MainWindow(QMainWindow, Ui_ModFinder):
