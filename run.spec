@@ -4,13 +4,11 @@ block_cipher = None
 
 
 a = Analysis(['run.py'],
-             pathex=['/home/wolfgang/Desktop/mofi_test/mofi'],
-             binaries=[],
-             datas=[
-                      ('mofi/config', 'config'),
-                      ('mofi/data', 'data')
-             ],
-             hiddenimports=[],
+             pathex=[],
+             binaries=[('mofi/*.so', '.')],
+             datas=[('mofi/config', 'config'),
+                    ('mofi/data', 'data')],
+             hiddenimports=['mofi.findmods'],
              hookspath=[],
              runtime_hooks=[],
              excludes=[],
