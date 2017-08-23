@@ -27,7 +27,7 @@ For freezing:
 
 ## Installation
 
-You may either run ModFinder directly from source or create a frozen version for stand-alone distribution.
+You may either run ModFinder directly from source or execute the frozen version from a stand-alone distribution.
 
 
 ### Running in source (Unix/Windows)
@@ -35,6 +35,16 @@ You may either run ModFinder directly from source or create a frozen version for
 * Run `python3 setup.py build`
 * Copy the library (`findmods[...].so` on Unix, `findmods[...].pyd` on Windows) from `build/lib[...]/mofi/` to `mofi/`
 * Start ModFinder via `run.py`
+
+
+### Running from frozen distribution
+
+* Extract the contents of the archive
+* Start ModFinder by executing `ModFinder` (on Windows) or `run` (on Unix).
+
+
+
+## Creating frozen distributions and Debian packages
 
 
 ### Freezing (Windows)
@@ -51,3 +61,11 @@ You may either run ModFinder directly from source or create a frozen version for
 * Run `pyinstaller run.spec`
 * The folder `dist/run/` is now a self-contained ModFinder installation, which can be compressed (if desired) and distributed.
 * Start the program by double-clicking `run`.
+
+
+### Debian package
+
+* Add new message in `debian/changelog`. Ensure that a key with the appropriate user ID exists.
+* Tag that version using `git tag v1.0`
+* Commit the changes
+* Run `gpb buildpackage`
