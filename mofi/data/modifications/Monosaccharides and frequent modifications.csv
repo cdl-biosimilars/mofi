@@ -5,9 +5,9 @@ False,Neu5Ac,C11 H17 O8 N1,291.25506,0,-1
 False,Neu5Gc,C11 H17 O9 N1,307.25446,0,-1
 False,Fuc,C6 H10 O4,146.14144,0,-1
 False,Pent,C5 H8 O4,132.11482,0,-1
-False,N-core,C34 H56 O25 N2,892.80828,0,-1
-False,O-core,C14 H23 O10 N1,365.33372,0,-1
-False,C-terminal Lys,C6 H12 N2 O,128.1726,0,2
+False,NCore,C34 H56 O25 N2,892.80828,0,-1
+False,OCore,C14 H23 O10 N1,365.33372,0,-1
+False,C_terminal_Lys,C6 H12 N2 O,128.1726,0,2
 False,Oxidation,O,15.9994,0,0
 False,Phosphorylation,P O3 H,79.98,0,0
 False,Succinimide,N-1 H-3,-17.03,0,0
