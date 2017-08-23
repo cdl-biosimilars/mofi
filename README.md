@@ -1,8 +1,9 @@
 # ModFinder
 
-A tool to find molecular modifications (like glycans)
-in mass spectra of intact proteins.
+A tool to find molecular modifications (like glycans) in mass spectra of intact proteins.
 
+
+aa
 ## Requirements
 
 * Python 3.5
@@ -17,12 +18,36 @@ For building the C++ extension:
 * Unix: gcc / clang
 * Windows: Visual C++ 2015 Build Tools with Windows SDK 8.1
 
-## Installing
+For freezing:
 
-    pip3 install .
+* pyinstaller
+* cx_freeze
 
-## Running in source
 
-Build the extension using `python3 setup.py build` and copy the library from
-`build/lib.linux-x86_64-3.5/findmods.cpython-35m-x86_64-linux-gnu.so` (adjust
-the path as necessary) to `mofi/`. Then run `run.py`.
+
+## Installation
+
+You may either run ModFinder directly from source or create a frozen version for stand-alone distribution.
+
+
+### Running in source (Unix/Windows)
+
+* Run `python3 setup.py build`
+* Copy the library (`findmods[...].so` on Unix, `findmods[...].pyd` on Windows) from `build/lib[...]/mofi/` to `mofi/`
+* Start ModFinder via `run.py`
+
+
+### Freezing (Windows)
+
+* First create and copy the library as described above
+* Run `./package.sh`
+* The folder `build/mofi-windows/` is now a self-contained ModFinder installation, which can be compressed (if desired) and distributed.
+* Start the program by double-clicking `ModFinder`.
+
+
+### Freezing (Unix)
+
+* First create and copy the library as described above
+* Run `pyinstaller run.spec`
+* The folder `dist/run/` is now a self-contained ModFinder installation, which can be compressed (if desired) and distributed.
+* Start the program by double-clicking `run`.
