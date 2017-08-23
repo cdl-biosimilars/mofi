@@ -1728,14 +1728,33 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             le_test.move(x_start, 0)
             le_test.show()
 
-        # create button
-        bt_filters = QPushButton(self.wdFilters)
-        bt_filters.setText("Apply")
+        # create buttons
+        bt_apply_filters = QPushButton(self.wdFilters)
+        bt_apply_filters.setText("Apply")
         # noinspection PyUnresolvedReferences
-        bt_filters.clicked.connect(lambda: self.show_results())
-        bt_filters.move(x_start + width, 0)
-        bt_filters.resize(50, 20)
-        bt_filters.show()
+        bt_apply_filters.clicked.connect(lambda: self.show_results())
+        bt_apply_filters.move(x_start + width, 0)
+        bt_apply_filters.resize(50, 20)
+        bt_apply_filters.show()
+
+        bt_clear_filters = QPushButton(self.wdFilters)
+        bt_clear_filters.setText("Clear")
+        # noinspection PyUnresolvedReferences
+        bt_clear_filters.clicked.connect(self.clear_filters)
+        bt_clear_filters.move(x_start + width + 50, 0)
+        bt_clear_filters.resize(50, 20)
+        bt_clear_filters.show()
+
+
+    def clear_filters(self):
+        """
+        Clear the contents of the filter line edits.
+
+        :return: nothing
+        """
+        for child in self.wdFilters.findChildren(QLineEdit):
+            child.setText("")
+        self.show_results()
 
 
     def save_settings(self):
