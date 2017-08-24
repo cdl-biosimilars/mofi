@@ -1,17 +1,10 @@
 """
-sequence_tools.py
-
-Helper functions/classes for protein sequences.
-
-Authors: Stefan Senn, Wolfgang Skala
-
-(c) 2017 Christian Doppler Laboratory for Biosimilar Characterization
+Functions/classes to handle protein sequences.
 """
 
 import re
 from mofi import mass_tools
 from collections import Counter
-
 
 amino_acid_names = {
     "A": ("Alanine", "Ala"),
@@ -73,7 +66,8 @@ def read_fasta_string(fasta_string):
     The sequences of all chains are merged.
 
     :param fasta_string: String in FASTA format
-    :return: (1) number of chains, (2) string containing the raw sequence
+    :return: (1) number of chains,
+             (2) string containing the raw sequence
     """
     seqences = []
     chains = 0
@@ -94,7 +88,7 @@ def get_sequence_atoms(sequence, chains=1, disulfide_bonds=0):
                water molecule must be added to the total weight.
     :param disulfide_bonds: number of disulfide bonds
     :return: the elemental composition of the chains, represented as a dict
-             (example: {"C": 100; "H": 50; "N": 20})
+             (example: ``{"C": 100; "H": 50; "N": 20}``)
     """
     composition = {a: 0 for a in "CHNOPS"}
     sequence_aa_composition = Counter(sequence)
@@ -110,6 +104,7 @@ def get_sequence_atoms(sequence, chains=1, disulfide_bonds=0):
 def find_glycosylation_sites(sequence):
     """
     Searches a sequence for N or O-linked glycosylation sites.
+
     :param sequence: String containing an amino acid sequence
     :return: Two lists of N- and O-glycosylation sites, respectively.
              Each site is a tuple (site, (start, end)).
@@ -145,10 +140,12 @@ class Protein:
     A class which represents proteins with a single chain.
 
     Members:
-        n_sites
-        mass
-        amino_acid_composition
-        formula
+        ``n_sites``
+        ``mass``
+        ``amino_acid_composition``
+        ``formula``
+
+    .. automethod:: __init__
     """
 
     def __init__(self, sequence, chains=1, disulfides=0, pngasef=False):

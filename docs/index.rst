@@ -3,17 +3,27 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to ModFinder's documentation!
-=====================================
+.. |br| raw:: html
+
+   <br />
+
+
+ModFinder -- A software for the annotation of glycoprotein mass spectra
+=======================================================================
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: Contents
 
+   introduction
+   workflow
+   results
+   appendix
+   code
 
 
 Indices and tables
-==================
+------------------
 
 * :ref:`genindex`
 * :ref:`modindex`

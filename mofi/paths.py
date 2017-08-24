@@ -1,3 +1,7 @@
+"""
+Set the correct system path for frozen versions.
+"""
+
 import sys
 import os.path
 

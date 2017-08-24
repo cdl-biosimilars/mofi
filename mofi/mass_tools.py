@@ -1,11 +1,5 @@
 """
-mass_tools.py
-
-Helper functions/classes for atomic masses.
-
-Authors: Stefan Senn, Wolfgang Skala
-
-(c) 2017 Christian Doppler Laboratory for Biosimilar Characterization
+Functions/classes for handling atomic masses.
 """
 
 import re
@@ -70,13 +64,13 @@ def read_massfile(massfile):
 
 def formstring_to_composition(formstring):
     """
-    Converts an elemental composition string to a pandas series.
-    Raises a ValueError if the composition string is invalid.
+    Converts an elemental composition string to a Series.
 
-    :param formstring: collection of elements followed by their counts
-                       (example: "C50 H100 N-3 Cl")
-    :return: pd.Series labelled by the element
+    :param str formstring: collection of elements followed by their counts
+                           (example: "C50 H100 N-3 Cl")
+    :return: :class:`pandas.Series` labeled by the element
              (example: C: 50, H: 100, N: -3, Cl: 1)
+    :raises ValueError: if the composition string is invalid
     """
 
     pattern = re.compile(r"([A-Z][a-z]?)(-?\d*)$")
@@ -98,13 +92,7 @@ class Formula:
     """
     A molecular formula comprising the elements C, H, N, O, P and S.
 
-    Properties:
-        mass: calculated when the Formula is generated or the atom count is
-              changed using the current settings from the configure module.
-
-    Protected members:
-        self._composition: A pandas.Series
-        self._mass
+    .. automethod:: __init__
     """
 
     def __init__(self, composition=None):
@@ -112,10 +100,11 @@ class Formula:
         Create a new Formula.
 
         :param composition: one of the following:
-                   - a pandas Series, like pd.Series(dict(C=6, H=12, O=6))
-                   - a dict, like {"C": 6; "H": 12; "O": 6}
-                   - a string, like "C6 H12 O6".
-                   Raises a ValueError if composition is of a different type
+
+               * a pandas Series, like ``pd.Series(dict(C=6, H=12, O=6))``
+               * a dict, like ``{"C": 6; "H": 12; "O": 6}``
+               * a string, like ``"C6 H12 O6".``
+        :raises ValueError: if composition is of a different type
         """
         if isinstance(composition, dict):
             self._composition = pd.Series(composition)
@@ -145,12 +134,10 @@ class Formula:
     def _update_masses(self):
         """
         Update the mass from the composition.
-        Raises a ValueError if an unknown atom symbol is found.
-
-        Changes:
-            self._mass
+        Changes ``self._mass``.
 
         :return: nothing
+        :raises ValueError: if an unknown atom symbol is found.
         """
 
         self._mass = 0
@@ -163,11 +150,23 @@ class Formula:
 
     @property
     def mass(self):
+        """
+        Property, calculated when the Formula is generated or the atom count
+        is changed using the current settings from the configure module.
+
+        :return: the mass of the Formula
+        """
         self._update_masses()
         return self._mass
 
     @property
     def composition(self):
+        """
+        Property, calculated when the Formula is generated or the atom count
+        is changed.
+
+        :return: the composition of the Formula
+        """
         return self._composition
 
     def __add__(self, other):

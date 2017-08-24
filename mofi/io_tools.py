@@ -1,11 +1,5 @@
 """
-io_tools.py
-
-Helper functions for input and output.
-
-Author: Wolfgang Skala
-
-(c) 2017 Christian Doppler Laboratory for Biosimilar Characterization
+Input/output functions.
 """
 
 import re
@@ -71,9 +65,9 @@ def prettify_xml(elem, level=0):
     """
     Prettify an XML tree inplace.
 
-    :param elem: a xml.etree.ElementTree Element
-    :param level: which level to prettify; only required for recirsive call
-    :return: nothing (changes the ElementTree inplace)
+    :param elem: an :class:`xml.etree.ElementTree.Element`Element`
+    :param level: which level to prettify; only required for recursive call
+    :return: nothing (changes the :class:`~xml.etree.ElementTree` inplace)
     """
     i = "\n" + level * "  "
     if len(elem):
@@ -92,24 +86,24 @@ def prettify_xml(elem, level=0):
 
 def dataframe_to_xml(df):
     """
-    Convert a pandas DataFrame to an XML etree with the following format:
+    Convert a pandas DataFrame to an XML etree with the following format::
 
-    <dataframe>
-        <columns>
-            <column dtype="[data dype]">[column name]</column>
-            ...
-        </columns>
-        <rows>
-            <row id=[id]>
-                <cell>[value]</cell>
+        <dataframe>
+            <columns>
+                <column dtype="[data dype]">[column name]</column>
                 ...
-            </row>
-            ...
-        </rows>
-     </dataframe>
+            </columns>
+            <rows>
+                <row id=[id]>
+                    <cell>[value]</cell>
+                    ...
+                </row>
+                ...
+            </rows>
+         </dataframe>
 
     :param df: a dataframe
-    :return: a xml.etree.ElementTree Element
+    :return: an :class:`xml.etree.ElementTree.Element`
     """
 
     root = ETree.Element("dataframe")
@@ -130,7 +124,7 @@ def dataframe_from_xml(root):
     """
     Convert an XML etree to a pandas dataframe.
 
-    :param root: an xml.etree.ElementTree Element
+    :param root: an :class:`xml.etree.ElementTree.Element`
     :return: a dataframe
     """
 
@@ -165,7 +159,7 @@ def read_bpf_library(filename):
     will be deduced from this column.
 
     :param filename: name of the library file (Excel format)
-    :return: a dataframe as required by ModFinder.table_from df()
+    :return: a dataframe as required by :meth:`~mofi.modfinder.MainWindow.table_from_df()`
     """
 
     df = pd.read_excel(filename)

@@ -18,7 +18,7 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 import os
 import sys
-sys.path.insert(0, os.path.abspath('../mofi'))
+sys.path.insert(0, os.path.abspath('..'))
 
 
 # -- General configuration ------------------------------------------------
@@ -30,7 +30,8 @@ sys.path.insert(0, os.path.abspath('../mofi'))
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ['sphinx.ext.autodoc']
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.mathjax']
+autodoc_default_flags = ['members', 'undoc-members', 'private-members']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -46,8 +47,9 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'ModFinder'
-copyright = '2017, Wolfgang Skala'
+copyright = '2017 Christian Doppler Laboratory for Innovative Tools for Biosimilar Characterization'
 author = 'Wolfgang Skala'
+date = 'Preliminary version, 24.08.2017'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -167,5 +169,4 @@ texinfo_documents = [
      'Miscellaneous'),
 ]
 
-
-
+show_authors = False

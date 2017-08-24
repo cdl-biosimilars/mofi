@@ -1,4 +1,6 @@
-#! python
+"""
+The main module, which includes GUI definitions and major functions.
+"""
 
 import math
 import os
@@ -76,11 +78,12 @@ _reverse_extensions = {v: k for k, v in _file_extensions.items()}
 
 def file_extensions(*args):
     """
-    Create a filter string for QFileDialog
+    Create a filter string for :class:`QFileDialog`.
 
     :param args: list of file extensions
     :return: a string suitable as argument for the filter argument
-             of QFileDialog.getOpenFileName/getSaveFileName
+             of :class:`QFileDialog.getOpenFileName` or
+             :class:`~QFileDialog.getSaveFileName`
     """
     return ";;".join([_file_extensions[a] for a in args])
 
@@ -90,11 +93,13 @@ class CollapsingRectangleSelector(RectangleSelector):
     Select a rectangular region of an axes.
     The rectangle collapses to a line if a dimension
     is less than minspanx and minspany.
+
+    .. automethod:: __init__
     """
 
     def __init__(self, *args, collapsex=0, collapsey=0, **kwargs):
         """
-        Introduces the keys "collapsex" and "collapsey".
+        Introduces the keys ``collapsex`` and ``collapsey``.
 
         :param args: Positional arguments passed to the superclass.
         :param collapsex: Minimum height of the rectangle (in data space).
@@ -357,12 +362,12 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         Private function, to be called by general row insertion functions and
         loaders for modification libraries.
 
-        :param row_id: Row index passed to QTableWidget.insertRow()
+        :param row_id: Row index passed to :meth:`QTableWidget.insertRow()`
         :param active: true if the monomer should be used in search stage 1
-        :param name: name of the modification (str)
-        :param composition: composition or mass of the modification (str)
-        :param min_count: minimum number of modifications (int)
-        :param max_count: maximum number of modifications (int)
+        :param str name: name of the modification
+        :param str composition: composition or mass of the modification
+        :param int min_count: minimum number of modifications
+        :param int max_count: maximum number of modifications
         :return: nothing
         """
 
@@ -413,13 +418,13 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         Private function, to be called by general row insertion functions and
         loaders for modification libraries.
 
-        :param row_id: Row index passed to QTableWidget.insertRow()
+        :param row_id: Row index passed to :meth:`QTableWidget.insertRow()`
         :param active: true if the polymer should be used in ssearch stage 1
-        :param name: name of the modification (str)
-        :param composition: composition or mass of the modification (str)
-        :param sites: identifier for the modification site;
-                      empty means any site (str)
-        :param abundance: relative abundance (float)
+        :param str name: name of the modification
+        :param str composition: composition or mass of the modification
+        :param str sites: identifier for the modification site;
+                          empty means any site
+        :param float abundance: relative abundance
         :return: nothing
         """
 
@@ -460,7 +465,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         The row will be inserted relative to the current selection
         (if one exists) or to all rows otherwise.
 
-        :param table_widget: the QTableWidget to modify
+        :param table_widget: the :class:`QTableWidget` to modify
         :param above: True if the row should be inserted
                       above the current selection
         :return: nothing
@@ -484,9 +489,9 @@ class MainWindow(QMainWindow, Ui_ModFinder):
     @staticmethod
     def table_clear(table_widget):
         """
-        Delete all rows in a QTableWidget.
+        Delete all rows in a :class:`QTableWidget`.
 
-        :param table_widget: the QTableWidget to modify
+        :param table_widget: the :class:`QTableWidget` to modify
         :return: nothing
         """
 
@@ -497,9 +502,9 @@ class MainWindow(QMainWindow, Ui_ModFinder):
     @staticmethod
     def table_delete_row(table_widget):
         """
-        Delete selected rows in the table of modifications.
+        Delete selected rows in a :class:`QTableWidget`.
 
-        :param table_widget: the QTableWidget to modify
+        :param table_widget: the :class:`QTableWidget` to modify
         :return: nothing
         """
         if table_widget.selectionModel().selectedRows():
@@ -533,7 +538,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         """
         Export the contents of the monomer or polymer table.
 
-        :param dialog_title: title of the QFileDialog
+        :param dialog_title: title of the :class:`QFileDialog`
         :param which: table to export; "monomers" or "polymers"
         :return: nothing
         """
@@ -560,12 +565,12 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         """
         Read monomers/polymers from a dataframe.
 
-        :param df: a dataframe
-        :param table_widget: QTableWidget to fill with values
+        :param df: a :class:`pandas.DataFrame`
+        :param table_widget: :class:`QTableWidget` to fill with values
         :param cols: list of (column header, default value) tuples,
                      sorted according to the order of the arguments to
                      _[monomer/polymer]_table_create_row.
-                     If the default value is None, a column must
+                     If the default value is :class:`None`, a column must
                      exist in the input file; otherwise, it will be filled
                      with the default value if missing in the input file.
         :return: nothing
@@ -597,10 +602,12 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         :param default: true if a default monomer library should be loaded
                         false if the user should choose a monomer library file
         :param subdir: directory in config containing the default libraries
-        :param dialog_title: title of the QFileDialog
-        :param extensions: list of file extensions for function file_extensions
-        :param table_widget: QTableWidget to fill with values
-        :param cols: see cols in self.table_from_df
+        :param dialog_title: title of the :class:`QFileDialog`
+        :param extensions: list of file extensions
+                           for :func:`file_extensions()`
+        :param table_widget: :class:`QTableWidget` to fill with values
+        :param cols: see parameter ``cols``
+                     in :meth:`~MainWindow.table_from_df`
         :return: nothing
         """
 
@@ -660,11 +667,10 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
     def load_fasta_file(self):
         """
-        Opens a FASTA file and displays its contents in self.teSequence
+        Opens a FASTA file and displays its contents in ``self.teSequence``.
 
-        Changes:
-            self._path to directory of selected file
-            text of self.teSequence to contents of input file
+        Changes ``self._path`` to directory of selected file
+        and text of ``self.teSequence`` to contents of input file.
 
         :return: nothing
         """
@@ -690,7 +696,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
     def fill_peak_list(self, masses):
         """
-        Fill the peak list (self.lwPeaks).
+        Fill the peak list (``self.lwPeaks``).
 
         :param masses: an iterable of numbers representing masses
         :return: nothing
@@ -815,9 +821,9 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         """
         Calculates the mass of the protein from the current data.
 
-        Changes self._protein_mass and self._disulfide_mass
-        Updates the value of self.lbMassProtein, self.lbMassMods
-                and self.lbMassTotal
+        Changes ``self._protein_mass`` and ``self._disulfide_mass``.
+        Updates the value of ``self.lbMassProtein``, ``self.lbMassMods``
+        and ``self.lbMassTotal``.
 
         :return: nothing
         """
@@ -858,10 +864,9 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         """
         Calculate the mass of known modifications.
 
-        Changes:
-            self._known_mods_mass to the mass of known modifications
-            updates the value of self.lbMassProtein, self.lbMassMods
-            and self.lbMassTotal
+        Changes ``self._known_mods_mass`` to the mass of known modifications.
+        Updates the value of ``self.lbMassProtein``, ``self.lbMassMods``
+        and ``self.lbMassTotal``.
 
         :return: list of (checked, name, composition,
                           mass,min count, max count) tuples
@@ -1266,7 +1271,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         """
         Select a peak picked by a mouseclick on the spectrum.
 
-        :param event: PickEvent from the canvas
+        :param event: :class:`PickEvent` from the canvas
         :return: nothing
         """
         if event.mouseevent.button == 1:
@@ -1297,10 +1302,12 @@ class MainWindow(QMainWindow, Ui_ModFinder):
     @staticmethod
     def find_in_intervals(value, intervals):
         """
-        Simple O(n) algorithm to determine whether a value
+        Simple :math:`O(n)` algorithm to determine whether a value
         falls into a set of intervals.
-        Example: value=12, intervals={"a": (1, 6), "b": (9, 14)} -> "b"
-                 value=8,  intervals={"a": (1, 6), "b": (9, 14)} -> ""
+
+        Examples:
+        ``value=12, intervals={"a": (1, 6), "b": (9, 14)}`` -> ``"b"``
+        ``value=8,  intervals={"a": (1, 6), "b": (9, 14)}`` -> ``""``
 
         :param value: Value to search
         :param intervals: {interval name: (lower interval boundary,
@@ -1324,7 +1331,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         :param tolerance: tolerance for finding peaks in the series
         :param iterations: maximum number of peaks to find at each
                            side of the main peak
-        :return:
+        :return: a Series with information where a peak was found
         """
 
         if iterations == -1:
@@ -1862,6 +1869,11 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
 
     def save_spectrum(self):
+        """
+        Save the spectrum as graphics file.
+
+        :return: nothing
+        """
         filename, filefilter = QFileDialog.getSaveFileName(
             self,
             "Save spectrum",
@@ -1881,6 +1893,11 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
 
 def main():
+    """
+    Execute the main application loop.
+
+    :return: nothing
+    """
     app = QApplication(sys.argv)
     QLocale.setDefault(QLocale.c())
     frame = MainWindow()

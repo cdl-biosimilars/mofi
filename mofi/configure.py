@@ -1,11 +1,5 @@
 """
-configure.py
-
-Helper functions/classes for global configurations.
-
-Authors: Stefan Senn, Wolfgang Skala
-
-(c) 2017 Christian Doppler Laboratory for Biosimilar Characterization
+Manage the global configuration.
 """
 
 from collections import OrderedDict
@@ -42,8 +36,8 @@ def select_mass_set(name):
     Change mass set (e.g., average, monoisotopic)
     to be used for mass calculations.
 
-    :param name: section name in config/mass_sets.ini
-    :return: nothing, but sets the global variable current_mass_set
+    :param name: section name in ``config/mass_sets.ini``
+    :return: nothing, but sets the global variable :data:`current_mass_set`
     """
     global current_mass_set
     current_mass_set = mass_sets[name]
