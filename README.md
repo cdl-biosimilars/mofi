@@ -12,6 +12,8 @@ A tool to find molecular modifications (like glycans) in mass spectra of intact 
 * matplotlib
 * PyQt5
 * xlrd
+* Sphinx (for creating the documentation)
+* sphinx_rtd_theme (for creating the documentation)
 
 For building the C++ extension:
 
@@ -20,8 +22,8 @@ For building the C++ extension:
 
 For freezing:
 
-* pyinstaller
-* cx_freeze
+* pyinstaller (Unix)
+* cx_freeze (Windows)
 
 
 
@@ -36,6 +38,8 @@ You may either run ModFinder directly from source or execute the frozen version 
 * Copy the library (`findmods[...].so` on Unix, `findmods[...].pyd` on Windows) from `build/lib[...]/mofi/` to `mofi/`
 * Start ModFinder via `run.py`
 
+The documentation can be created via running `make html` (Unix) or `make.bat html` (Windows) in the `docs/` directory.
+
 
 ### Running from frozen distribution
 
@@ -46,10 +50,15 @@ You may either run ModFinder directly from source or execute the frozen version 
 
 ## Creating frozen distributions and Debian packages
 
+First:
+
+* Create and copy the library as described above
+* Create the html documentation as described above
+
 
 ### Freezing (Windows)
 
-* First create and copy the library as described above
+
 * Run `./package.sh`
 * The folder `build/mofi-windows/` is now a self-contained ModFinder installation, which can be compressed (if desired) and distributed.
 * Start the program by double-clicking `ModFinder`.
