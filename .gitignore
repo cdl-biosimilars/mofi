@@ -102,8 +102,5 @@ ENV/
 # IDEA
 /.idea
 
-/data
-/log
-/unused
-/csv
+/sample_data
 tempform.ui
