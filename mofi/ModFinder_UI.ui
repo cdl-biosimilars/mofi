@@ -1523,6 +1523,7 @@
      <string>Help</string>
     </property>
     <addaction name="acAbout"/>
+    <addaction name="acManual"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuOptions"/>
@@ -1532,9 +1533,6 @@
   <action name="acAbout">
    <property name="text">
     <string>About</string>
-   </property>
-   <property name="shortcut">
-    <string>F1</string>
    </property>
   </action>
   <action name="acLoadSettings">
@@ -1575,6 +1573,14 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+P</string>
+   </property>
+  </action>
+  <action name="acManual">
+   <property name="text">
+    <string>Manual</string>
+   </property>
+   <property name="shortcut">
+    <string>F1</string>
    </property>
   </action>
  </widget>

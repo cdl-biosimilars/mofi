@@ -12,3 +12,4 @@ else:
 
 config_dir = os.path.join(module_dir, "config")
 data_dir = os.path.join(module_dir, "data")
+docs_dir = os.path.join(module_dir, "docs")

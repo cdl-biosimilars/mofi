@@ -8,6 +8,7 @@ import re
 import sys
 import time
 import xml.etree.ElementTree as ETree
+import webbrowser
 
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QMenu, QActionGroup,
                              QTableWidgetItem, QCheckBox, QMessageBox,
@@ -29,7 +30,7 @@ from matplotlib.figure import Figure
 
 from mofi import (configure, mass_tools, modification_search,
                   io_tools, sequence_tools)
-from mofi.paths import data_dir
+from mofi.paths import data_dir, docs_dir
 from mofi.modfinder_ui import Ui_ModFinder
 
 _version_info = """ModFinder v1.0
@@ -163,6 +164,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         # connect signals to slots
         self.acAbout.triggered.connect(self.show_about)
         self.acLoadSettings.triggered.connect(self.load_settings)
+        self.acManual.triggered.connect(self.show_manual)
         self.acOpenFasta.triggered.connect(self.load_fasta_file)
         self.acOpenPeaks.triggered.connect(self.load_mass_file)
         self.acQuit.triggered.connect(QApplication.instance().quit)
@@ -642,6 +644,17 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         """
 
         QMessageBox.about(self, "About ModFinder", _version_info)
+
+
+    @staticmethod
+    def show_manual():
+        """
+        Open the manual.
+
+        :return: nothing
+        """
+
+        webbrowser.open("file://" + os.path.join(docs_dir, "index.html"))
 
 
     def choose_tolerance_units(self):

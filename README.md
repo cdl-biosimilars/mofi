@@ -34,11 +34,13 @@ You may either run ModFinder directly from source or execute the frozen version 
 
 ### Running in source (Unix/Windows)
 
-* Run `python3 setup.py build`
+* Run `python3 setup.py build` to create the `findmods` library
 * Copy the library (`findmods[...].so` on Unix, `findmods[...].pyd` on Windows) from `build/lib[...]/mofi/` to `mofi/`
+* Run `make html` (Unix) or `make.bat html` (Windows) in the `docs/` directory to create the documentation
+* Copy the documentation from `docs/_build/html/` to `mofi/docs/` (or create an appropriate symlink)
 * Start ModFinder via `run.py`
 
-The documentation can be created via running `make html` (Unix) or `make.bat html` (Windows) in the `docs/` directory.
+
 
 
 ### Running from frozen distribution
@@ -50,23 +52,23 @@ The documentation can be created via running `make html` (Unix) or `make.bat htm
 
 ## Creating frozen distributions and Debian packages
 
-First:
+### Freezing
+
+#### General
 
 * Create and copy the library as described above
 * Create the html documentation as described above
 
 
-### Freezing (Windows)
-
+#### Windows)
 
 * Run `./package.sh`
 * The folder `build/mofi-windows/` is now a self-contained ModFinder installation, which can be compressed (if desired) and distributed.
 * Start the program by double-clicking `ModFinder`.
 
 
-### Freezing (Unix)
+#### Unix
 
-* First create and copy the library as described above
 * Run `pyinstaller run.spec`
 * The folder `dist/run/` is now a self-contained ModFinder installation, which can be compressed (if desired) and distributed.
 * Start the program by double-clicking `run`.

@@ -645,6 +645,8 @@ class Ui_ModFinder(object):
         self.acOpenFasta.setObjectName("acOpenFasta")
         self.acOpenPeaks = QtWidgets.QAction(ModFinder)
         self.acOpenPeaks.setObjectName("acOpenPeaks")
+        self.acManual = QtWidgets.QAction(ModFinder)
+        self.acManual.setObjectName("acManual")
         self.menuFile.addAction(self.acOpenFasta)
         self.menuFile.addAction(self.acOpenPeaks)
         self.menuFile.addSeparator()
@@ -654,6 +656,7 @@ class Ui_ModFinder(object):
         self.menuFile.addAction(self.acQuit)
         self.menuOptions.addAction(self.menuAtomicMasses.menuAction())
         self.menuHelp.addAction(self.acAbout)
+        self.menuHelp.addAction(self.acManual)
         self.menubar.addAction(self.menuFile.menuAction())
         self.menubar.addAction(self.menuOptions.menuAction())
         self.menubar.addAction(self.menuHelp.menuAction())
@@ -742,7 +745,6 @@ class Ui_ModFinder(object):
         self.menuAtomicMasses.setTitle(_translate("ModFinder", "Atomic masses"))
         self.menuHelp.setTitle(_translate("ModFinder", "Help"))
         self.acAbout.setText(_translate("ModFinder", "About"))
-        self.acAbout.setShortcut(_translate("ModFinder", "F1"))
         self.acLoadSettings.setText(_translate("ModFinder", "Load settings ..."))
         self.acLoadSettings.setShortcut(_translate("ModFinder", "Ctrl+O"))
         self.acSaveSettings.setText(_translate("ModFinder", "Save settings ..."))
@@ -753,5 +755,7 @@ class Ui_ModFinder(object):
         self.acOpenFasta.setShortcut(_translate("ModFinder", "Ctrl+F"))
         self.acOpenPeaks.setText(_translate("ModFinder", "Open peak file"))
         self.acOpenPeaks.setShortcut(_translate("ModFinder", "Ctrl+P"))
+        self.acManual.setText(_translate("ModFinder", "Manual"))
+        self.acManual.setShortcut(_translate("ModFinder", "F1"))
 
 from mofi import mofi_rc
