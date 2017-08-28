@@ -1635,8 +1635,37 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             df_hit = self._polymer_hits
         else:
             df_hit = self._monomer_hits
+
+        # filter the dataframe
         if query:
             df_hit = df_hit.query(query)
+        cb_filter_permutations = self.wdFilters.findChild(QCheckBox)
+        if cb_filter_permutations and cb_filter_permutations.isChecked():
+            try:
+                df_hit.drop("Counts", axis=1, inplace=True)
+            except ValueError:
+                pass
+            df_hit["Glycan hash"] = (
+                df_hit
+                .iloc[:, df_hit.columns.get_loc("ppm") + 1: -1]
+                .apply(lambda x: hash(frozenset(x)), axis=1))
+            df_hit = (df_hit
+                      .reset_index()
+                      .join(df_hit
+                            .reset_index()
+                            .groupby(["Mass_ID", "Isobar", "Glycan hash"])
+                            .size()
+                            .rename("Counts"),
+                            on=["Mass_ID", "Isobar", "Glycan hash"])
+                      .drop_duplicates(["Mass_ID", "Isobar", "Glycan hash"])
+                      .set_index(["Mass_ID", "Isobar",
+                                  "Stage1_hit", "Stage2_hit"]))
+        else:
+            df_hit["Counts"] = 1
+        try:
+            df_hit.drop("Glycan hash", axis=1, inplace=True)
+        except ValueError:
+            pass
 
         # set column headers
         header_labels = ["Exp. Mass", "%"]
@@ -1686,8 +1715,9 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                     if (self.chFilterStructureHits.isChecked()
                             and self._polymer_hits is not None):
                         # polymer composition
-                        sites = (hit[df_hit.columns.get_loc("ppm") + 1: -1]
+                        sites = (hit[df_hit.columns.get_loc("ppm") + 1: -2]
                                  .index)
+
                         for j, site in enumerate(sites):
                             child_item.setText(
                                 len(monomers) + 6 + j,
@@ -1703,6 +1733,14 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                         child_item.setTextAlignment(
                             len(monomers) + 7 + j,
                             Qt.AlignHCenter)
+
+                        # permutation counts
+                        child_item.setText(
+                            len(monomers) + 8 + j,
+                            "{}".format(hit["Counts"]))
+                        child_item.setTextAlignment(
+                            len(monomers) + 8 + j,
+                            Qt.AlignRight)
 
         self.twResults.expandAll()
         self.twResults.header().setSectionResizeMode(
@@ -1761,6 +1799,15 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         bt_clear_filters.move(x_start + width + 50, 0)
         bt_clear_filters.resize(50, 20)
         bt_clear_filters.show()
+
+        # create checkbutton
+        ch_filter_permutations = QCheckBox(self.wdFilters)
+        ch_filter_permutations.setText("Filter permutations")
+        # noinspection PyUnresolvedReferences
+        ch_filter_permutations.clicked.connect(lambda: self.show_results())
+        ch_filter_permutations.move(x_start + width + 150, 0)
+        ch_filter_permutations.resize(150, 20)
+        ch_filter_permutations.show()
 
 
     def clear_filters(self):
