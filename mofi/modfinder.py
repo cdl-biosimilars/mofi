@@ -794,6 +794,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         try:
             with open(filename, "w") as f:
+                # write information about the parameters used
                 f.write("# Combinatorial search results by ModFinder\n")
                 f.write("# Date: " + time.strftime("%c") + "\n")
                 f.write("#   Tolerance: {:.2f} {}\n".format(
@@ -818,6 +819,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                         f.write("sites: {}; ".format(sites))
                         f.write("abundance: {:.2f}\n".format(abundance))
 
+                # choose the appropriate data source
                 if mode == "stage1":
                     f.write("# Results from composition search (stage 1).\n")
                     df_hits = self._monomer_hits
@@ -826,17 +828,20 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                     df_hits = self._polymer_hits
                 elif mode == "stage2_filter":
                     f.write("# Results from structure search (stage 2),"
-                            "permutations filtered.\n")
-                    df_hits = self._polymer_hits  # TODO implement
+                            "filters applied.\n")
+                    query = self.apply_result_filters()
+
+                    df_hits = self._polymer_hits.query(query)
                 else:
                     f.write("# Results as displayed in results table.\n")
                     df_hits = self.show_results()
 
-                # add a column "Relative abundance" to the hits dataframe
+                # add a column "Relative abundance" to the data source
                 df_relative_abundance = (
                     self._exp_mass_data["Relative Abundance"].to_frame())
                 df_relative_abundance.index.names = ["Mass_ID"]
                 df_hits = df_relative_abundance.join(df_hits, how="inner")
+
                 df_hits.to_csv(f)
         except OSError:
             QMessageBox.critical(
@@ -1642,34 +1647,11 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         if (self.chFilterStructureHits.isChecked()
                 and self._polymer_hits is not None):
-            df_hit = self._polymer_hits
+            df_hit = self.apply_filters(
+                self._polymer_hits)  # type: pd.DataFrame
         else:
-            df_hit = self._monomer_hits
-
-        # filter the dataframe
-        query = self.make_query_string()
-        if query:
-            df_hit = df_hit.query(query)
-        else:
-            df_hit = df_hit.copy()
-        cb_filter_permutations = self.wdFilters.findChild(QCheckBox)
-        if cb_filter_permutations and cb_filter_permutations.isChecked():
-            df_hit["Glycan hash"] = (
-                df_hit
-                .iloc[:, df_hit.columns.get_loc("ppm") + 1: -1]
-                .apply(lambda x: hash(frozenset(x)), axis=1))
-            df_hit = (df_hit
-                      .reset_index()
-                      .join(df_hit
-                            .reset_index()
-                            .groupby(["Mass_ID", "Isobar", "Glycan hash"])
-                            .size()
-                            .rename("Permutations"),
-                            on=["Mass_ID", "Isobar", "Glycan hash"])
-                      .drop_duplicates(["Mass_ID", "Isobar", "Glycan hash"])
-                      .set_index(["Mass_ID", "Isobar",
-                                  "Stage1_hit", "Stage2_hit"])
-                      .drop("Glycan hash", axis=1))
+            df_hit = self.apply_filters(
+                self._monomer_hits)  # type: pd.DataFrame
 
         # set column headers
         header_labels = ["Exp. Mass", "%"]
@@ -1828,14 +1810,16 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.show_results()
 
 
-    def make_query_string(self):
+    def apply_filters(self, df):
         """
-        Generate a query string suitable for :meth:`pd.DataFrame.query()`
-        from the results table filter.
+        Filter the search results according to the filters
+        next to the results table.
 
-        :return string: The query string
+        :param pd.DataFrame df: dataframe to be be filtered
+        :return pd.DataFrame: the filtered dataframe
         """
 
+        # prepare the query string
         re_filter = re.compile("(\d*)(-?)(\d*)")
         query = []
         for child in self.wdFilters.findChildren(QLineEdit):
@@ -1850,7 +1834,35 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                     query.append("({} <= {} <= {})".format(f[0], mod, f[2]))
                 else:
                     query.append("({} <= {})".format(mod, f[2]))
-        return " and ".join(query)
+
+        # filter the dataframe
+        query = " and ".join(query)
+        if query:
+            df = df.query(query)  # type: pd.DataFrame
+        else:
+            df = df.copy()  # type: pd.DataFrame
+
+        # drop permutations
+        cb_filter_permutations = self.wdFilters.findChild(QCheckBox)
+        if (cb_filter_permutations
+                and cb_filter_permutations.isChecked()
+                and "Stage2_hit" in df.index.names):
+            # create a column that hashes the set of glycans
+            df["Hash"] = (df.iloc[:, df.columns.get_loc("ppm") + 1: -1]
+                            .apply(lambda x: hash(frozenset(x)), axis=1))
+            # calculate counts per hash/peak/isobar and drop duplicates
+            df = (df.reset_index()
+                    .join(df
+                          .reset_index()
+                          .groupby(["Mass_ID", "Isobar", "Hash"])
+                          .size()
+                          .rename("Permutations"),
+                          on=["Mass_ID", "Isobar", "Hash"])
+                    .drop_duplicates(["Mass_ID", "Isobar", "Hash"])
+                    .set_index(["Mass_ID", "Isobar",
+                                "Stage1_hit", "Stage2_hit"])
+                    .drop("Hash", axis=1))
+        return df
 
 
     def save_settings(self):
