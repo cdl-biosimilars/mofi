@@ -830,7 +830,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                     df_hits = self._polymer_hits  # TODO implement
                 else:
                     f.write("# Results as displayed in results table.\n")
-                    df_hits = self._polymer_hits  # TODO implement
+                    df_hits = self.show_results()
 
                 # add a column "Relative abundance" to the hits dataframe
                 df_relative_abundance = (
@@ -1590,7 +1590,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         have changed.
 
         :param selected_peaks: list of selected peaks
-        :return: nothing
+        :return: the DataFrame whose contents are shown in the results table
         """
 
         if self._exp_mass_data is None:  # there's no spectrum
@@ -1666,12 +1666,10 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         # filter the dataframe
         if query:
             df_hit = df_hit.query(query)
+        else:
+            df_hit = df_hit.copy()
         cb_filter_permutations = self.wdFilters.findChild(QCheckBox)
         if cb_filter_permutations and cb_filter_permutations.isChecked():
-            try:
-                df_hit.drop("Counts", axis=1, inplace=True)
-            except ValueError:
-                pass
             df_hit["Glycan hash"] = (
                 df_hit
                 .iloc[:, df_hit.columns.get_loc("ppm") + 1: -1]
@@ -1682,17 +1680,12 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                             .reset_index()
                             .groupby(["Mass_ID", "Isobar", "Glycan hash"])
                             .size()
-                            .rename("Counts"),
+                            .rename("Permutations"),
                             on=["Mass_ID", "Isobar", "Glycan hash"])
                       .drop_duplicates(["Mass_ID", "Isobar", "Glycan hash"])
                       .set_index(["Mass_ID", "Isobar",
-                                  "Stage1_hit", "Stage2_hit"]))
-        else:
-            df_hit["Counts"] = 1
-        try:
-            df_hit.drop("Glycan hash", axis=1, inplace=True)
-        except ValueError:
-            pass
+                                  "Stage1_hit", "Stage2_hit"])
+                      .drop("Glycan hash", axis=1))
 
         # set column headers
         header_labels = ["Exp. Mass", "%"]
@@ -1705,11 +1698,11 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             root_item = SortableTreeWidgetItem(self.twResults)
             root_item.setText(
                 0, "{:.2f}".format(self._exp_mass_data
-                                   .loc[mass_index]["Average Mass"]))
+                                   .loc[mass_index, "Average Mass"]))
             root_item.setTextAlignment(0, Qt.AlignRight)
             root_item.setText(
                 1, "{:.1f}".format(self._exp_mass_data
-                                   .loc[mass_index]["Relative Abundance"]))
+                                   .loc[mass_index, "Relative Abundance"]))
             root_item.setTextAlignment(1, Qt.AlignRight)
             root_item.mass_index = mass_index
 
@@ -1762,18 +1755,21 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                             Qt.AlignHCenter)
 
                         # permutation counts
-                        child_item.setText(
-                            len(monomers) + 8 + j,
-                            "{}".format(hit["Counts"]))
-                        child_item.setTextAlignment(
-                            len(monomers) + 8 + j,
-                            Qt.AlignRight)
+                        if "Permutations" in hit.index:
+                            child_item.setText(
+                                len(monomers) + 8 + j,
+                                "{}".format(hit["Permutations"]))
+                            child_item.setTextAlignment(
+                                len(monomers) + 8 + j,
+                                Qt.AlignRight)
 
         self.twResults.expandAll()
         self.twResults.header().setSectionResizeMode(
             QHeaderView.ResizeToContents)
         self.twResults.header().setStretchLastSection(False)
         self.twResults.setUpdatesEnabled(True)
+
+        return df_hit
 
 
     def create_filter_widgets(self):
