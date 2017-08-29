@@ -1640,23 +1640,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         missing_color = QColor(255, 185, 200)
 
-        # generate query string
-        re_filter = re.compile("(\d*)(-?)(\d*)")
-        query = []
-        for child in self.wdFilters.findChildren(QLineEdit):
-            f = re_filter.match(child.text()).groups()
-            mod = child.objectName()
-            if "".join(f):
-                if f[0] and not f[1] and not f[2]:
-                    query.append("({} == {})".format(mod, f[0]))
-                elif f[0] and f[1] and not f[2]:
-                    query.append("({} >= {})".format(mod, f[0]))
-                elif f[0] and f[1] and f[2]:
-                    query.append("({} <= {} <= {})".format(f[0], mod, f[2]))
-                else:
-                    query.append("({} <= {})".format(mod, f[2]))
-        query = " and ".join(query)
-
         if (self.chFilterStructureHits.isChecked()
                 and self._polymer_hits is not None):
             df_hit = self._polymer_hits
@@ -1664,6 +1647,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             df_hit = self._monomer_hits
 
         # filter the dataframe
+        query = self.make_query_string()
         if query:
             df_hit = df_hit.query(query)
         else:
@@ -1842,6 +1826,31 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         for child in self.wdFilters.findChildren(QLineEdit):
             child.setText("")
         self.show_results()
+
+
+    def make_query_string(self):
+        """
+        Generate a query string suitable for :meth:`pd.DataFrame.query()`
+        from the results table filter.
+
+        :return string: The query string
+        """
+
+        re_filter = re.compile("(\d*)(-?)(\d*)")
+        query = []
+        for child in self.wdFilters.findChildren(QLineEdit):
+            f = re_filter.match(child.text()).groups()
+            mod = child.objectName()
+            if "".join(f):
+                if f[0] and not f[1] and not f[2]:
+                    query.append("({} == {})".format(mod, f[0]))
+                elif f[0] and f[1] and not f[2]:
+                    query.append("({} >= {})".format(mod, f[0]))
+                elif f[0] and f[1] and f[2]:
+                    query.append("({} <= {} <= {})".format(f[0], mod, f[2]))
+                else:
+                    query.append("({} <= {})".format(mod, f[2]))
+        return " and ".join(query)
 
 
     def save_settings(self):
