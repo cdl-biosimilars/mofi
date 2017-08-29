@@ -347,13 +347,13 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         # add menu to save results button
         menu = QMenu()
         menu.addAction("from composition search (stage 1) ...",
-                       self.save_search_results)
+                       lambda: self.save_search_results("stage1"))
         menu.addAction("from structure search (stage 2) ...",
-                       self.save_search_results)
+                       lambda: self.save_search_results("stage2"))
         menu.addAction("from structure search (filtered permutations) ...",
-                       self.save_search_results)
+                       lambda: self.save_search_results("stage2_filter"))
         menu.addAction("as shown in table ...",
-                       self.save_search_results)
+                       lambda: self.save_search_results("table"))
         self.btSaveResults.setMenu(menu)
 
         # private members
@@ -762,14 +762,23 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self.draw_spectrum()
 
 
-    def save_search_results(self):
+    def save_search_results(self, mode):
         """
         Write the dearch results to a CSV file.
 
+        :param str mode: Specifies which results should be exported.
+                         Possible choices: stage1, stage2, stage2_filter
+                         and table.
         :return: nothing
         """
-        if self._monomer_hits is None:
-            return
+
+        # check whether appropriate results are available
+        if mode == "stage1" or mode == "table":
+            if self._monomer_hits is None:
+                return
+        else:
+            if self._polymer_hits is None:
+                return
 
         filename, filefilter = QFileDialog.getSaveFileName(
             self,
@@ -809,12 +818,19 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                         f.write("sites: {}; ".format(sites))
                         f.write("abundance: {:.2f}\n".format(abundance))
 
-                if self.chFilterStructureHits.isChecked():
-                    f.write("# Results from structure search (stage 2).\n")
-                    df_hits = self._polymer_hits
-                else:
+                if mode == "stage1":
                     f.write("# Results from composition search (stage 1).\n")
                     df_hits = self._monomer_hits
+                elif mode == "stage2":
+                    f.write("# Results from structure search (stage 2).\n")
+                    df_hits = self._polymer_hits
+                elif mode == "stage2_filter":
+                    f.write("# Results from structure search (stage 2),"
+                            "permutations filtered.\n")
+                    df_hits = self._polymer_hits  # TODO implement
+                else:
+                    f.write("# Results as displayed in results table.\n")
+                    df_hits = self._polymer_hits  # TODO implement
 
                 # add a column "Relative abundance" to the hits dataframe
                 df_relative_abundance = (
