@@ -178,7 +178,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             lambda: self.table_delete_row(self.tbMonomers))
         self.btDeleteRowPolymers.clicked.connect(
             lambda: self.table_delete_row(self.tbPolymers))
-        self.btSaveResults.clicked.connect(self.save_search_results)
         self.btFindModifications.clicked.connect(self.sample_modifications)
         self.btInsertRowAboveMonomers.clicked.connect(
             lambda: self.table_insert_row(self.tbMonomers, above=True))
@@ -344,6 +343,18 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 )
             )
         self.btDefaultModsPolymers.setMenu(menu)
+
+        # add menu to save results button
+        menu = QMenu()
+        menu.addAction("from composition search (stage 1) ...",
+                       self.save_search_results)
+        menu.addAction("from structure search (stage 2) ...",
+                       self.save_search_results)
+        menu.addAction("from structure search (filtered permutations) ...",
+                       self.save_search_results)
+        menu.addAction("as shown in table ...",
+                       self.save_search_results)
+        self.btSaveResults.setMenu(menu)
 
         # private members
         self._disulfide_mass = 0  # mass of the current number of disulfides

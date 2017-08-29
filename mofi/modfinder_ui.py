@@ -738,7 +738,7 @@ class Ui_ModFinder(object):
         self.label_9.setText(_translate("ModFinder", "Mass list"))
         self.chFilterStructureHits.setText(_translate("ModFinder", "Filter structure hits"))
         self.btSaveSpectrum.setText(_translate("ModFinder", "Save spectrum ..."))
-        self.btSaveResults.setText(_translate("ModFinder", "Save results ..."))
+        self.btSaveResults.setText(_translate("ModFinder", "Save results"))
         self.twResults.setSortingEnabled(True)
         self.menuFile.setTitle(_translate("ModFinder", "File"))
         self.menuOptions.setTitle(_translate("ModFinder", "Options"))
