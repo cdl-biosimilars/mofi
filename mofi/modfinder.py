@@ -350,7 +350,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                        lambda: self.save_search_results("stage1"))
         menu.addAction("from structure search (stage 2) ...",
                        lambda: self.save_search_results("stage2"))
-        menu.addAction("from structure search (filtered permutations) ...",
+        menu.addAction("from structure search (permutations removed) ...",
                        lambda: self.save_search_results("stage2_filter"))
         menu.addAction("as shown in table ...",
                        lambda: self.save_search_results("table"))
