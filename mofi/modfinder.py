@@ -555,15 +555,15 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         :param which: table to export; "monomers" or "polymers"
         :return: nothing
         """
-        filename, _ = QFileDialog.getSaveFileName(
+        filename, filefilter = QFileDialog.getSaveFileName(
             self,
             dialog_title,
             self._path,
             file_extensions("csv"))
         self._path = os.path.split(filename)[0]
         if filename:
-            if not filename.endswith(".csv"):
-                filename += ".csv"
+            if not filename.endswith(_reverse_extensions[filefilter]):
+                filename += "." + _reverse_extensions[filefilter]
             try:
                 df = self.table_to_df(which=which)  # type: pd.DataFrame
                 df.to_csv(filename, index=False)
@@ -771,7 +771,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         if self._monomer_hits is None:
             return
 
-        filename, _ = QFileDialog.getSaveFileName(
+        filename, filefilter = QFileDialog.getSaveFileName(
             self,
             "Save results",
             self._path,
@@ -780,8 +780,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         if not filename:
             return
-        if not filename.endswith(".csv"):
-            filename += ".csv"
+        if not filename.endswith(_reverse_extensions[filefilter]):
+            filename += "." + _reverse_extensions[filefilter]
 
         try:
             with open(filename, "w") as f:
@@ -1838,15 +1838,15 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         :return: nothing
         """
-        filename, _ = QFileDialog.getSaveFileName(
+        filename, filefilter = QFileDialog.getSaveFileName(
             self,
             "Save settings",
             self._path,
             file_extensions("mofi"))
         self._path = os.path.split(filename)[0]
         if filename:
-            if not filename.endswith(".xml"):
-                filename = filename + ".xml"
+            if not filename.endswith(_reverse_extensions[filefilter]):
+                filename += "." + _reverse_extensions[filefilter]
 
             root = ETree.Element("settings")
             settings = [("sequence", self.teSequence.toPlainText()),
