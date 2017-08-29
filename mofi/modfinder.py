@@ -829,9 +829,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 elif mode == "stage2_filter":
                     f.write("# Results from structure search (stage 2),"
                             "filters applied.\n")
-                    query = self.apply_result_filters()
-
-                    df_hits = self._polymer_hits.query(query)
+                    df_hits = self.drop_glycan_permutations(self._polymer_hits)
                 else:
                     f.write("# Results as displayed in results table.\n")
                     df_hits = self.show_results()
@@ -1647,11 +1645,21 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         if (self.chFilterStructureHits.isChecked()
                 and self._polymer_hits is not None):
-            df_hit = self.apply_filters(
-                self._polymer_hits)  # type: pd.DataFrame
+            df_hit = self._polymer_hits
         else:
-            df_hit = self.apply_filters(
-                self._monomer_hits)  # type: pd.DataFrame
+            df_hit = self._monomer_hits
+
+        # apply filters and drop permutations
+        query = self.make_query_string()
+        if query:
+            df_hit = df_hit.query(query)
+        else:
+            df_hit = df_hit.copy()
+        cb_filter_permutations = self.wdFilters.findChild(QCheckBox)
+        if (cb_filter_permutations
+                and cb_filter_permutations.isChecked()
+                and "Stage2_hit" in df_hit.index.names):
+            df_hit = self.drop_glycan_permutations(df_hit)
 
         # set column headers
         header_labels = ["Exp. Mass", "%"]
@@ -1810,16 +1818,14 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.show_results()
 
 
-    def apply_filters(self, df):
+    def make_query_string(self):
         """
-        Filter the search results according to the filters
-        next to the results table.
+        Generate a string suitable for :meth:`pd.DataFrame.query()`
+        from the results table filter.
 
-        :param pd.DataFrame df: dataframe to be be filtered
-        :return pd.DataFrame: the filtered dataframe
+        :return str: the query string
         """
 
-        # prepare the query string
         re_filter = re.compile("(\d*)(-?)(\d*)")
         query = []
         for child in self.wdFilters.findChildren(QLineEdit):
@@ -1835,34 +1841,37 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 else:
                     query.append("({} <= {})".format(mod, f[2]))
 
-        # filter the dataframe
-        query = " and ".join(query)
-        if query:
-            df = df.query(query)  # type: pd.DataFrame
-        else:
-            df = df.copy()  # type: pd.DataFrame
+        return " and ".join(query)
 
-        # drop permutations
-        cb_filter_permutations = self.wdFilters.findChild(QCheckBox)
-        if (cb_filter_permutations
-                and cb_filter_permutations.isChecked()
-                and "Stage2_hit" in df.index.names):
-            # create a column that hashes the set of glycans
-            df["Hash"] = (df.iloc[:, df.columns.get_loc("ppm") + 1: -1]
-                            .apply(lambda x: hash(frozenset(x)), axis=1))
-            # calculate counts per hash/peak/isobar and drop duplicates
-            df = (df.reset_index()
-                    .join(df
-                          .reset_index()
-                          .groupby(["Mass_ID", "Isobar", "Hash"])
-                          .size()
-                          .rename("Permutations"),
-                          on=["Mass_ID", "Isobar", "Hash"])
-                    .drop_duplicates(["Mass_ID", "Isobar", "Hash"])
-                    .set_index(["Mass_ID", "Isobar",
-                                "Stage1_hit", "Stage2_hit"])
-                    .drop("Hash", axis=1))
-        return df
+
+    @staticmethod
+    def drop_glycan_permutations(df):
+        """
+        Drop duplicate permutations of glycans
+        at different glycosylation sites.
+        In addition, add a column "Permutations" that contains
+        the number of each permutation.
+
+        :param pd.DataFrame df: dataframe possibly containing duplicates
+        :return pd.DataFrame: the deduplicated dataframe
+        """
+
+        # create a column that hashes the set of glycans
+        df["Hash"] = (df.iloc[:, df.columns.get_loc("ppm") + 1: -1]
+                        .apply(lambda x: hash(frozenset(x)), axis=1))
+
+        # calculate counts per hash/peak/isobar and drop duplicates
+        return (df.reset_index()
+                .join(df
+                      .reset_index()
+                      .groupby(["Mass_ID", "Isobar", "Hash"])
+                      .size()
+                      .rename("Permutations"),
+                      on=["Mass_ID", "Isobar", "Hash"])
+                .drop_duplicates(["Mass_ID", "Isobar", "Hash"])
+                .set_index(["Mass_ID", "Isobar",
+                            "Stage1_hit", "Stage2_hit"])
+                .drop("Hash", axis=1))
 
 
     def save_settings(self):
