@@ -29,13 +29,13 @@ def find_monomers(mods, unexplained_masses, mass_tolerance=5.0,
                  (1) Mass_ID (corresponds to index of experimental mass
                      in input list of peaks),
                  (2) Isobar (0-based consecutive numbering of found masses) and
-                 (3) Stage1_hit (0-based numbering of hits per Mass_ID
+                 (3) Stage1_hit (0-based numbering of hits per Mass_ID)
+                 (4) Stage2_hit (0-based numbering of hits per Stage1_hit)
              columns: one column for each modification
                       Exp. Mass
                       Theo. Mass
-                      Da.
+                      Da
                       ppm
-                      Modstring
     """
 
     sorted_mods = sorted(mods, key=lambda t: t[1], reverse=True)
@@ -68,7 +68,7 @@ def find_monomers(mods, unexplained_masses, mass_tolerance=5.0,
         # [mod_name]: number of occurrences ... for each type of modification
         # Exp. Mass: mass measured in the experiment
         # Theo. Mass: mass of protein and found modifications
-        # Da.: remaining unexplained mass difference
+        # Da: remaining unexplained mass difference
         # abs(Delta): absolute remaining mass difference
         # ppm: mass difference in ppm
         combs_per_mass = []
@@ -81,8 +81,8 @@ def find_monomers(mods, unexplained_masses, mass_tolerance=5.0,
                 r = dict(zip(mod_names, r))
                 r["Theo. Mass"] = theoretical_mass
                 r["Exp. Mass"] = experimental_mass
-                r["Da."] = experimental_mass - theoretical_mass
-                r["abs(Delta)"] = abs(r["Da."])
+                r["Da"] = experimental_mass - theoretical_mass
+                r["abs(Delta)"] = abs(r["Da"])
                 r["ppm"] = ((experimental_mass - theoretical_mass)
                             / theoretical_mass * 1000000)
                 combs_per_mass.append(r)
@@ -119,7 +119,7 @@ def find_monomers(mods, unexplained_masses, mass_tolerance=5.0,
         return
 
     # sort columns so that they have the original order from the monomer table
-    sortlist = [m[0] for m in mods] + ["Exp. Mass", "Theo. Mass", "Da.", "ppm"]
+    sortlist = [m[0] for m in mods] + ["Exp. Mass", "Theo. Mass", "Da", "ppm"]
     combinations = combinations.reindex_axis(sortlist, axis="columns")
     combinations.index.names = ["Mass_ID", "Isobar", "Stage1_hit"]
 
@@ -153,7 +153,7 @@ def find_monomers(mods, unexplained_masses, mass_tolerance=5.0,
     #   number of each modification
     # - Exp. Mass: peak mass
     # - Theo. Mass: mass of found combination
-    # - Da.: Theo. Mass - Exp. Mass
+    # - Da: Theo. Mass - Exp. Mass
     # - ppm: relative difference wrt Theo. Mass
     # - Modstring: string representation of modifications
     return combinations
@@ -333,7 +333,7 @@ def find_polymers(stage_1_results, polymer_combinations,
     4       288    0          0             2       4       0    2       2    0
                               1             2       4       0    2       2    0
 
-                                              Exp. Mass    Theo. Mass       Da.
+                                              Exp. Mass    Theo. Mass        Da
     Mass_ID Isobar Stage1_hit Stage2_hit
     0       6      2          0           148057.122228  148056.20272  0.919508
     2       137    1          0           148220.112210  148218.34356  1.768650

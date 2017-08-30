@@ -67,7 +67,7 @@ _file_extensions = {
     "csv": "CSV files (*.csv)",
     "bpf": "BioPharma Finder results (*.xlsx *.xls)",
     "fasta": "Sequence files (*.fasta)",
-    "mofi": "ModFinder XML settings (*.xml)",
+    "xml": "ModFinder XML settings (*.xml)",
     "png": "Portable network graphics (*.png)",
     "svg": "Scalable vector graphics (*.svg)",
     "": ""
@@ -675,7 +675,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         :return: nothing
         """
-        if self.cbTolerance.currentIndex() == 0:  # that is, Da.
+        if self.cbTolerance.currentIndex() == 0:  # that is, Da
             self.sbTolerance.setDecimals(2)
             self.sbTolerance.setMinimum(0.0)
             self.sbTolerance.setMaximum(50.0)
@@ -1013,7 +1013,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         unknown_masses = (self._exp_mass_data["Average Mass"]
                           - explained_mass)  # type: pd.DataFrame
 
-        if self.cbTolerance.currentIndex() == 0:  # that is, "Da."
+        if self.cbTolerance.currentIndex() == 0:  # that is, "Da"
             # calculate largest mass plus tolerance
             max_tol_mass = (max(self._exp_mass_data["Average Mass"])
                             + self.sbTolerance.value())
@@ -1698,7 +1698,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
                     # hit properties
                     for j, label in enumerate(["Exp. Mass", "Theo. Mass",
-                                               "Da.", "ppm"]):
+                                               "Da", "ppm"]):
                         child_item.setText(
                             len(monomers) + 2 + j,
                             "{:.2f}".format(hit[label]))
@@ -1709,7 +1709,11 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                     if (self.chFilterStructureHits.isChecked()
                             and self._polymer_hits is not None):
                         # polymer composition
-                        sites = (hit[df_hit.columns.get_loc("ppm") + 1: -2]
+                        if "Permutations" in hit.index:
+                            stop = -2
+                        else:
+                            stop = -1
+                        sites = (hit[df_hit.columns.get_loc("ppm") + 1: stop]
                                  .index)
 
                         for j, site in enumerate(sites):
@@ -1884,7 +1888,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self,
             "Save settings",
             self._path,
-            file_extensions("mofi"))
+            file_extensions("xml"))
         self._path = os.path.split(filename)[0]
         if filename:
             if not filename.endswith(_reverse_extensions[filefilter]):
@@ -1930,7 +1934,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self,
             "Load settings",
             self._path,
-            file_extensions("mofi"))
+            file_extensions("xml"))
         self._path = os.path.split(filename)[0]
         if filename:
             try:
