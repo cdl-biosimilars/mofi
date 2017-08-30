@@ -1377,12 +1377,15 @@
          </widget>
         </item>
         <item>
-         <widget class="QCheckBox" name="chFilterStructureHits">
+         <widget class="QPushButton" name="btFilterStructureHits">
           <property name="enabled">
            <bool>false</bool>
           </property>
           <property name="text">
-           <string>Filter structure hits</string>
+           <string>Show stage 2 results</string>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
           </property>
           <property name="checked">
            <bool>true</bool>

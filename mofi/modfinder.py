@@ -212,6 +212,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.btSavePolymers.clicked.connect(
             lambda: self.save_table("Export glycans", "polymers"))
         self.btSaveSpectrum.clicked.connect(self.save_spectrum)
+        self.btFilterStructureHits.clicked.connect(self.filter_structure_hits)
         self.btUpdateMass.clicked.connect(self.calculate_protein_mass)
 
         self.cbTolerance.activated.connect(self.choose_tolerance_units)
@@ -219,7 +220,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.chCombineDelta.clicked.connect(self.show_results)
         self.chDelta1.clicked.connect(self.toggle_delta_series)
         self.chDelta2.clicked.connect(self.toggle_delta_series)
-        self.chFilterStructureHits.clicked.connect(self.filter_structure_hits)
         self.chPngase.clicked.connect(self.calculate_protein_mass)
 
         self.lwPeaks.itemSelectionChanged.connect(self.select_peaks_in_list)
@@ -757,7 +757,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self.twResults.clear()
             self._monomer_hits = None
             self._polymer_hits = None
-            self.chFilterStructureHits.setEnabled(False)
+            self.btFilterStructureHits.setEnabled(False)
             self.fill_peak_list(self._exp_mass_data["Average Mass"])
             self.draw_spectrum()
 
@@ -1132,7 +1132,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 monomers=monomers_for_polymer_search,
                 progress_bar=self.pbSearchProgress)
             self.statusbar.showMessage("Structure search done!", 5000)
-        self.chFilterStructureHits.setEnabled(True)
+        self.btFilterStructureHits.setEnabled(True)
         self.show_results()
         self.create_filter_widgets()
 
@@ -1270,19 +1270,21 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
     def filter_structure_hits(self):
         """
-        Called when the checkbox "Filter structure hits" is (un)checked.
+        Called when the checkable button "Filter structure hits" is pressed.
         Ensure that only a single mass is displayed in the result tree
-        if this box is unchecked.
+        if this button is unchecked.
 
         :return: nothing
         """
-        if not self.chFilterStructureHits.isChecked():
+        if not self.btFilterStructureHits.isChecked():
+            self.btFilterStructureHits.setText("Show stage 1 results")
             i = 0
             for i in range(self.lwPeaks.count()):
                 if self.lwPeaks.item(i).isSelected():
                     break
             self.show_results([i])
         else:
+            self.btFilterStructureHits.setText("Show stage 2 results")
             self.show_results()
 
 
@@ -1335,9 +1337,10 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         for i in range(self.lwPeaks.count()):
             if min_mass <= float(self.lwPeaks.item(i).text()) <= max_mass:
                 peak_indices.append(i)
-        self.chFilterStructureHits.blockSignals(True)
-        self.chFilterStructureHits.setChecked(True)
-        self.chFilterStructureHits.blockSignals(False)
+        self.btFilterStructureHits.blockSignals(True)
+        self.btFilterStructureHits.setChecked(True)
+        self.btFilterStructureHits.setText("Show stage 2 results")
+        self.btFilterStructureHits.blockSignals(False)
         self.spectrum_picked_peak = peak_indices[0]
         self.show_results(peak_indices)
 
@@ -1631,9 +1634,10 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         # activate the polymer hit filter if more than one peak is selected
         if len(selected_peaks) > 1:
-            self.chFilterStructureHits.blockSignals(True)
-            self.chFilterStructureHits.setChecked(True)
-            self.chFilterStructureHits.blockSignals(False)
+            self.btFilterStructureHits.blockSignals(True)
+            self.btFilterStructureHits.setChecked(True)
+            self.btFilterStructureHits.setText("Show stage 2 results")
+            self.btFilterStructureHits.blockSignals(False)
 
         # update the results tree if available
         if self._monomer_hits is None:
@@ -1643,7 +1647,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         missing_color = QColor(255, 185, 200)
 
-        if (self.chFilterStructureHits.isChecked()
+        if (self.btFilterStructureHits.isChecked()
                 and self._polymer_hits is not None):
             df_hit = self._polymer_hits
         else:
@@ -1706,7 +1710,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                             len(monomers) + 2 + j,
                             Qt.AlignRight)
 
-                    if (self.chFilterStructureHits.isChecked()
+                    if (self.btFilterStructureHits.isChecked()
                             and self._polymer_hits is not None):
                         # polymer composition
                         if "Permutations" in hit.index:
@@ -1959,7 +1963,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
             self._monomer_hits = None
             self._polymer_hits = None
-            self.chFilterStructureHits.setEnabled(False)
+            self.btFilterStructureHits.setEnabled(False)
             self.twResults.clear()
             self._exp_mass_data = io_tools.dataframe_from_xml(
                 root.find("masslist"))
