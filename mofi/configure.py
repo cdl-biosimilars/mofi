@@ -15,6 +15,7 @@ default_da = float(config.get("Defaults", "da"))
 default_ppm = int(config.get("Defaults", "ppm"))
 maxmods = int(config.get("Defaults", "maxmods"))
 path = config.get("Defaults", "path")
+colors = dict(config.items("Colors"))
 
 
 # (2) mass sets

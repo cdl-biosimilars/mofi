@@ -1499,11 +1499,11 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         df_counts.loc[self.spectrum_picked_peak, "color"] = 4
 
         # color the peaks in the delta series and increase their line width
-        color_set = np.array(["#b3b3b3",   # light gray
-                              "#aa0088",   # violet
-                              "#2ca05a",   # greenish
-                              "#6b5071",   # mixture of the prevoius two
-                              "#ff0000"])  # red
+        color_set = np.array([configure.colors["delta_other"],
+                              configure.colors["delta_1"],
+                              configure.colors["delta_2"],
+                              configure.colors["delta_both"],
+                              configure.colors["delta_main"]])
 
         lw_set = np.array([1, 2, 2, 2, 3])
         self.spectrum_peak_lines.set_color(color_set[df_counts["color"]])
@@ -1561,10 +1561,10 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         # alternative colors: orange [1, .49, .16, 1.0],
         #                     light red [1, .66, .66, 1.0]
         peak_colors = selected_peaks + peaks_with_result
-        color_set = np.array(["#000000",   # black: unsel. peaks, no glycans
-                              "#ffcc00",   # yellow: selected peaks, no glycans
-                              "#00c000",   # green: unsel. peaks, glycans
-                              "#ff0000"])  # red: selected peaks, glycans
+        color_set = np.array([configure.colors["unselect_no_annotation"],
+                              configure.colors["select_no_annotation"],
+                              configure.colors["unselect_annotation"],
+                              configure.colors["select_annotation"]])
         self.spectrum_peak_lines.set_color(color_set[peak_colors])
         self.spectrum_peak_lines.set_linewidth(1)
 
