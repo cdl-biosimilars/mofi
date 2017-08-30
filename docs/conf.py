@@ -47,7 +47,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'ModFinder'
-copyright = '2017 Christian Doppler Laboratory for Innovative Tools for Biosimilar Characterization'
+copyright = '2017 Christian Doppler Laboratory for Innovative Tools for Biosimilar Characterization. This work is licensed under the BSD 3-Clause License'
 author = 'Wolfgang Skala'
 date = 'Preliminary version, 24.08.2017'
 
