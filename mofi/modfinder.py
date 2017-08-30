@@ -1152,6 +1152,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             ymin=0,
             ymax=self._exp_mass_data["Relative Abundance"],
             linewidth=1,
+            color=configure.colors["unselect_no_annotation"],
             picker=5)
         self.spectrum_axes.set_ylim(0, 110)
         self.spectrum_axes.set_xlabel("Mass (Da)")
