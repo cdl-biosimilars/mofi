@@ -406,7 +406,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         min_spinbox.setMinimum(0)
         min_spinbox.setFrame(False)
         min_spinbox.setValue(min_count)
-        min_spinbox.setStyleSheet(configure.spin_box_flat_style)
+        min_spinbox.setStyleSheet(configure.spin_box_flat_style(bg="white"))
         # noinspection PyUnresolvedReferences
         min_spinbox.valueChanged.connect(self.calculate_mod_mass)
         self.tbMonomers.setCellWidget(row_id, 3, min_spinbox)
@@ -416,7 +416,9 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         max_spinbox.setSpecialValueText("inf")
         max_spinbox.setFrame(False)
         max_spinbox.setValue(max_count)
-        max_spinbox.setStyleSheet(configure.spin_box_flat_style)
+        max_spinbox.setStyleSheet(configure.spin_box_flat_style(bg="white"))
+        # noinspection PyUnresolvedReferences
+        max_spinbox.valueChanged.connect(self.calculate_mod_mass)
         self.tbMonomers.setCellWidget(row_id, 4, max_spinbox)
 
         self.tbMonomers.blockSignals(False)
@@ -465,7 +467,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         abundance_spinbox.setSingleStep(.1)
         abundance_spinbox.setFrame(False)
         abundance_spinbox.setValue(abundance)
-        abundance_spinbox.setStyleSheet(configure.double_spin_box_flat_style)
+        abundance_spinbox.setStyleSheet(
+            configure.spin_box_flat_style(double=True))
         self.tbPolymers.setCellWidget(row_id, 4, abundance_spinbox)
 
         self.tbPolymers.blockSignals(False)
@@ -919,12 +922,15 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         # add min counts for monomers to the theoretical mass
         for row_id in range(self.tbMonomers.rowCount()):
+            # extract the variables
             ch = self.tbMonomers.cellWidget(row_id, 0).findChild(QCheckBox)
             name = self.tbMonomers.item(row_id, 1).text()
             composition = self.tbMonomers.item(row_id, 2).text().strip()
             min_count = self.tbMonomers.cellWidget(row_id, 3).value()
             max_count = self.tbMonomers.cellWidget(row_id, 4).value()
             mass = 0
+
+            # get the mass from the formula cell
             error_in_formula = False
             try:  # composition could be a mass ...
                 mass = float(composition)
@@ -935,15 +941,23 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                     error_in_formula = True
                 else:
                     mass = formula.mass
+
+            # set the mass tooltip and color the cell
             if error_in_formula or mass == 0:
-                self.tbMonomers.item(row_id, 2).setBackground(
-                    QColor(255, 225, 225))
-                self.tbMonomers.item(row_id, 2).setToolTip("")
-            else:  # set the tooltip
-                self.tbMonomers.item(row_id, 2).setBackground(
-                    QColor(255, 255, 255))
-                self.tbMonomers.item(row_id, 2).setToolTip(
-                    "{:.2f} Da".format(mass))
+                bg_color = QColor(255, 225, 225)
+                tooltip = ""
+            else:
+                bg_color = QColor(255, 255, 255)
+                tooltip = "{:.2f} Da".format(mass)
+            self.tbMonomers.item(row_id, 2).setBackground(bg_color)
+            self.tbMonomers.item(row_id, 2).setToolTip(tooltip)
+
+            # color the Min cell if its value exceeds the one of Max
+            if min_count > max_count != -1:
+                style = configure.spin_box_flat_style(bg="red")
+            else:
+                style = configure.spin_box_flat_style(bg="white")
+            self.tbMonomers.cellWidget(row_id, 3).setStyleSheet(style)
 
             if ch.isChecked():
                 self._known_mods_mass += mass * min_count
