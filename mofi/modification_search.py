@@ -75,8 +75,8 @@ def find_monomers(mods, unexplained_masses, mass_tolerance=5.0,
         if result:
             any_combination_found = True
             for r in result:
-                theoretical_mass = explained_mass\
-                                   + sum(np.array(r) * mod_masses)
+                theoretical_mass = (explained_mass
+                                    + sum(np.array(r) * mod_masses))
                 experimental_mass = explained_mass + unexplained_mass
                 r = dict(zip(mod_names, r))
                 r["Theo. Mass"] = theoretical_mass
@@ -136,9 +136,10 @@ def find_monomers(mods, unexplained_masses, mass_tolerance=5.0,
     #     from different searches (peaks) may have been grouped
     #     under a single theo. mass index
     combinations.reset_index("Stage1_hit", drop=True, inplace=True)
-    combinations["Stage1_hit"] = combinations \
-        .groupby(level="Isobar") \
-        .cumcount()  # create column "Stage1_hit", a counter per isobar
+    combinations["Stage1_hit"] = (
+        combinations
+        .groupby(level="Isobar")
+        .cumcount())  # create column "Stage1_hit", a counter per isobar
 
     combinations.set_index("Stage1_hit", inplace=True, append=True)
     combinations.reorder_levels(["Mass_ID", "Isobar", "Stage1_hit"])
@@ -212,6 +213,7 @@ def get_monomers_from_library(glycan_library):
     :param glycan_library: dataframe with glycan library (see find_polymers)
     :return: alphabetically ordered list of monomers
     """
+
     rows = []
     for name, data in glycan_library.iterrows():
         for (count, monomer) in _re_monomer_list.findall(data["Composition"]):
@@ -234,7 +236,7 @@ def calc_polymer_combinations(glycan_library, monomers, progress_bar=None):
     :param monomers: list of monomers in the library
                      as returned by get_monomers_from_library
     :param progress_bar: a QProgressBar that gets updated during the search
-    :return: the dataframe df_glycan_combinations, like
+    :return: df_glycan_combinations, a dataframe like
 
                                   N149_A N149_B    N171_A    N171_B  Abundance
             Hex HexNAc Fuc N-core
@@ -243,6 +245,8 @@ def calc_polymer_combinations(glycan_library, monomers, progress_bar=None):
                            4          M5   A2G2     A2G0F     A2G0F        0.0
                        3   4       A2G2F     M5     A2G0F     A2G0F        0.0
                            4          M5  A2G2F     A2G0F     A2G0F        0.0
+
+    :raises ValueError: if the library contains duplicate glycan/site pairs
     """
 
     if not monomers:  # we need a nonempty list of monomers to continue
@@ -261,9 +265,10 @@ def calc_polymer_combinations(glycan_library, monomers, progress_bar=None):
     for name, data in glycan_library.iterrows():
         for site in data["Sites"].split(","):
             rows.append([site.strip(), name])
-    mods_per_site = pd.DataFrame(rows, columns=["Sites", "Name"]) \
-        .groupby("Sites")["Name"] \
-        .apply(list)
+    mods_per_site = (
+        pd.DataFrame(rows, columns=["Sites", "Name"])
+        .groupby("Sites")["Name"]
+        .apply(list))
 
     if progress_bar is not None:
         progress_bar.setValue(50)
@@ -275,37 +280,56 @@ def calc_polymer_combinations(glycan_library, monomers, progress_bar=None):
     #          N171_B         1 N-core, 2 HexNAc, 1 Fuc      10.00 [0, 2, 1, 1]
     # A2G1F    N171_A  1 N-core, 2 HexNAc, 1 Fuc, 1 Hex       6.20 [1, 2, 1, 1]
     #          N171_B  1 N-core, 2 HexNAc, 1 Fuc, 1 Hex       6.20 [1, 2, 1, 1]
-    df_glycan_composition = glycan_library \
-        .set_index(["Composition", "Abundance"], append=True)
-    df_glycan_composition["Sites"] = df_glycan_composition["Sites"] \
-        .apply(lambda x: [x.strip() for x in x.split(",")])  # sites to list
-    df_glycan_composition = pd.melt(
+    df_glycan_composition = (
+        glycan_library
+        .set_index(["Composition", "Abundance"], append=True))
+    df_glycan_composition["Sites"] = (
+        df_glycan_composition["Sites"]
+        .apply(lambda x: [x.strip() for x in x.split(",")]))  # sites to list
+    df_glycan_composition = (
+        pd.melt(
             df_glycan_composition["Sites"].apply(pd.Series)
                                           .reset_index(),
             id_vars=["Name", "Composition", "Abundance"],
-            value_name="Site") \
-        .dropna() \
-        .set_index(["Name", "Site"]) \
-        .drop("variable", axis=1) \
-        .sort_index()  # explode sites and move to index
-    df_glycan_composition["Monomers"] = df_glycan_composition["Composition"] \
-        .apply(_calc_monomer_counts, monomers=monomers)
+            value_name="Site")
+        .dropna()
+        .set_index(["Name", "Site"])
+        .drop("variable", axis=1)
+        .sort_index())  # explode sites and move to index
+    df_glycan_composition["Monomers"] = (
+        df_glycan_composition["Composition"]
+        .apply(_calc_monomer_counts, monomers=monomers))
+
+    # check for duplicate glycan/site combinations in the list of glycans
+    df_duplicates = df_glycan_composition[
+        (df_glycan_composition
+         .groupby(level=["Name", "Site"])
+         .size() > 1)
+        .reindex(df_glycan_composition.index)]
+    if not df_duplicates.empty:
+        df_duplicates = (df_duplicates[~df_duplicates.index.duplicated()]
+                         .reset_index())
+        duplicates = ["{} at site {}".format(row["Name"], row["Site"])
+                      for _, row in df_duplicates.iterrows()]
+        raise ValueError("Duplicate glycan/site pairs detected: "
+                         + ", ".join(duplicates))
 
     # df_glycan_combinations: see above
     df_glycan_combinations = pd.DataFrame(list(product(*list(mods_per_site))),
                                           columns=list(mods_per_site.index))
-    df_glycan_combinations["Monomers"], df_glycan_combinations["Abundance"] = \
+    df_glycan_combinations["Monomers"], df_glycan_combinations["Abundance"] = (
         zip(*df_glycan_combinations.apply(
             _calc_glycan_composition_abundance,
             axis=1,
             glycan_composition=df_glycan_composition,
-            monomers=monomers))
-    df_glycan_combinations = df_glycan_combinations \
+            monomers=monomers)))
+    df_glycan_combinations = (
+        df_glycan_combinations
         .set_index(
             pd.MultiIndex.from_tuples(df_glycan_combinations["Monomers"],
-                                      names=monomers)) \
-        .sort_index() \
-        .drop("Monomers", axis=1)
+                                      names=monomers))
+        .sort_index()
+        .drop("Monomers", axis=1))
 
     if progress_bar is not None:
         progress_bar.setValue(100)
@@ -355,29 +379,33 @@ def find_polymers(stage_1_results, polymer_combinations,
 
     old_index = stage_1_results.index.names
     try:
-        df_found_polymers = stage_1_results \
-            .reset_index(old_index) \
-            .set_index(monomers) \
-            .sort_index() \
-            .join(polymer_combinations, how="inner")
+        df_found_polymers = (
+            stage_1_results
+            .reset_index(old_index)
+            .set_index(monomers)
+            .sort_index()
+            .join(polymer_combinations, how="inner"))
     except TypeError:
         return None
 
     if progress_bar is not None:
         progress_bar.setValue(50)
 
-    df_found_polymers = df_found_polymers \
-        .reset_index(df_found_polymers.index.names) \
-        .set_index(old_index) \
-        .sort_index()
+    df_found_polymers = (
+        df_found_polymers
+        .reset_index(df_found_polymers.index.names)
+        .set_index(old_index)
+        .sort_index())
 
     # create an additional index "Stage2_hit", which counts
     # different possible combinations per monomer hit
-    df_found_polymers["Stage2_hit"] = df_found_polymers \
-        .groupby(["Isobar", "Stage1_hit"]).cumcount()
+    df_found_polymers["Stage2_hit"] = (
+        df_found_polymers
+        .groupby(["Isobar", "Stage1_hit"])
+        .cumcount())
     df_found_polymers.set_index("Stage2_hit", inplace=True, append=True)
-    df_found_polymers.reorder_levels(
-        ["Mass_ID", "Isobar", "Stage1_hit", "Stage2_hit"])
+    df_found_polymers.reorder_levels(["Mass_ID", "Isobar",
+                                      "Stage1_hit", "Stage2_hit"])
 
     if progress_bar is not None:
         progress_bar.setValue(100)

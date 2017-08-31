@@ -1039,12 +1039,18 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                            .set_index("Name", drop=True))
             monomers_in_library = set(
                 modification_search.get_monomers_from_library(df_polymers))
+
             monomers_for_polymer_search = [m for m in available_monomers
                                            if m in monomers_in_library]
-            polymer_combs = modification_search.calc_polymer_combinations(
-                df_polymers,
-                monomers_for_polymer_search,
-                self.pbSearchProgress)
+            try:
+                polymer_combs = modification_search.calc_polymer_combinations(
+                    df_polymers,
+                    monomers_for_polymer_search,
+                    self.pbSearchProgress)
+            except ValueError as e:
+                QMessageBox.critical(self, "Error", str(e))
+                return
+
         else:  # list remained empty, i.e., there are no polymers
             monomers_in_library = set()
             monomers_for_polymer_search = None
