@@ -639,9 +639,9 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         if filename:
             if file_format == "csv":
-                df = pd.read_csv(filename)
+                df = pd.read_csv(filename, keep_default_na=False)
             elif file_format == "xls":
-                df = pd.read_excel(filename)
+                df = pd.read_excel(filename, keep_default_na=False)
             else:
                 df = io_tools.read_bpf_library(filename)
             self.table_from_df(df, table_widget, cols)
