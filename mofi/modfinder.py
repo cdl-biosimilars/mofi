@@ -110,6 +110,57 @@ def find_in_intervals(value, intervals):
     return ""
 
 
+def table_insert_row(table_widget, above=True):
+    """
+    Insert a row into a :class:`QTableWidget`.
+    The row will be inserted relative to the current selection
+    (if one exists) or to all rows otherwise.
+
+    :param table_widget: the :class:`QTableWidget` to modify
+    :param above: True if the row should be inserted
+                  above the current selection
+    :return: nothing
+    """
+
+    selected_rows = table_widget.selectionModel().selectedRows()
+    if selected_rows:
+        if above:
+            last_row = selected_rows[0].row()
+        else:
+            last_row = selected_rows[-1].row() + 1
+    else:
+        if above:
+            last_row = 0
+        else:
+            last_row = table_widget.rowCount()
+
+    table_widget.create_row(last_row)
+
+
+def table_clear(table_widget):
+    """
+    Delete all rows in a :class:`QTableWidget`.
+
+    :param table_widget: the :class:`QTableWidget` to modify
+    :return: nothing
+    """
+
+    table_widget.clearContents()
+    table_widget.setRowCount(0)
+
+
+def table_delete_row(table_widget):
+    """
+    Delete selected rows in a :class:`QTableWidget`.
+
+    :param table_widget: the :class:`QTableWidget` to modify
+    :return: nothing
+    """
+    if table_widget.selectionModel().selectedRows():
+        for i in table_widget.selectionModel().selectedRows()[::-1]:
+            table_widget.removeRow(i.row())
+
+
 class CollapsingRectangleSelector(RectangleSelector):
     """
     Select a rectangular region of an axes.
@@ -194,22 +245,22 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.acSaveSettings.triggered.connect(self.save_settings)
 
         self.btClearMonomers.clicked.connect(
-            lambda: self.table_clear(self.tbMonomers))
+            lambda: table_clear(self.tbMonomers))
         self.btClearPolymers.clicked.connect(
-            lambda: self.table_clear(self.tbPolymers))
+            lambda: table_clear(self.tbPolymers))
         self.btDeleteRowMonomers.clicked.connect(
-            lambda: self.table_delete_row(self.tbMonomers))
+            lambda: table_delete_row(self.tbMonomers))
         self.btDeleteRowPolymers.clicked.connect(
-            lambda: self.table_delete_row(self.tbPolymers))
+            lambda: table_delete_row(self.tbPolymers))
         self.btFindModifications.clicked.connect(self.sample_modifications)
         self.btInsertRowAboveMonomers.clicked.connect(
-            lambda: self.table_insert_row(self.tbMonomers, above=True))
+            lambda: table_insert_row(self.tbMonomers, above=True))
         self.btInsertRowAbovePolymers.clicked.connect(
-            lambda: self.table_insert_row(self.tbPolymers, above=True))
+            lambda: table_insert_row(self.tbPolymers, above=True))
         self.btInsertRowBelowMonomers.clicked.connect(
-            lambda: self.table_insert_row(self.tbMonomers, above=False))
+            lambda: table_insert_row(self.tbMonomers, above=False))
         self.btInsertRowBelowPolymers.clicked.connect(
-            lambda: self.table_insert_row(self.tbPolymers, above=False))
+            lambda: table_insert_row(self.tbPolymers, above=False))
         self.btLabelPeaks.clicked.connect(lambda: self.show_results())
         self.btLoadMonomers.clicked.connect(
             lambda: self.load_table(
@@ -497,60 +548,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.tbPolymers.blockSignals(False)
 
 
-    @staticmethod
-    def table_insert_row(table_widget, above=True):
-        """
-        Insert a row into the table of modifications.
-        The row will be inserted relative to the current selection
-        (if one exists) or to all rows otherwise.
-
-        :param table_widget: the :class:`QTableWidget` to modify
-        :param above: True if the row should be inserted
-                      above the current selection
-        :return: nothing
-        """
-
-        selected_rows = table_widget.selectionModel().selectedRows()
-        if selected_rows:
-            if above:
-                last_row = selected_rows[0].row()
-            else:
-                last_row = selected_rows[-1].row() + 1
-        else:
-            if above:
-                last_row = 0
-            else:
-                last_row = table_widget.rowCount()
-
-        table_widget.create_row(last_row)
-
-
-    @staticmethod
-    def table_clear(table_widget):
-        """
-        Delete all rows in a :class:`QTableWidget`.
-
-        :param table_widget: the :class:`QTableWidget` to modify
-        :return: nothing
-        """
-
-        table_widget.clearContents()
-        table_widget.setRowCount(0)
-
-
-    @staticmethod
-    def table_delete_row(table_widget):
-        """
-        Delete selected rows in a :class:`QTableWidget`.
-
-        :param table_widget: the :class:`QTableWidget` to modify
-        :return: nothing
-        """
-        if table_widget.selectionModel().selectedRows():
-            for i in table_widget.selectionModel().selectedRows()[::-1]:
-                table_widget.removeRow(i.row())
-
-
     def table_to_df(self, which="monomers"):
         """
         Create a dataframe from the contents of the monomer or polymer table.
@@ -627,7 +624,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 else:
                     df[label] = default
 
-        self.table_clear(table_widget)
+        table_clear(table_widget)
         for row_id, data in df.iterrows():
             table_widget.create_row(row_id, *[data[c[0]] for c in cols])
         self.calculate_mod_mass()
