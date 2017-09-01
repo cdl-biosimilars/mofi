@@ -56,7 +56,7 @@ def find_monomers(mods, unexplained_masses, mass_tolerance=5.0,
 
         if progress_bar is not None:
             progress_bar.setValue(int((mass_index + 1)
-                                  / len(unexplained_masses) * 100))
+                                      / len(unexplained_masses) * 100))
         print(mass_index, end="\t", flush=True)
         result = findmods.examine_modifications(sorted_mods,
                                                 unexplained_mass,
@@ -87,23 +87,21 @@ def find_monomers(mods, unexplained_masses, mass_tolerance=5.0,
                             / theoretical_mass * 1000000)
                 combs_per_mass.append(r)
         else:  # no appropriate combination was found
-            r = dict()
-            r["Theo. Mass"] = 0.0
-            r["abs(Delta)"] = 0.0
-            combs_per_mass.append(r)
+            combs_per_mass.append({"Theo. Mass": 0.0,
+                                   "abs(Delta)": 0.0})
 
         # (b) create a dataframe from combs_per_mass
-        combs_frame = pd.DataFrame(combs_per_mass)
-
         # sort by abs(Delta) and reindex the frame starting from 1 instead of 0
         # thereby, alternative combninations will be numbered 1, 2, ...
-        combs_frame = combs_frame.sort_values("abs(Delta)")
+        combs_frame = pd.DataFrame(combs_per_mass).sort_values("abs(Delta)")
         combs_frame.index = range(1, len(combs_frame) + 1)
 
         # (c) finally, append the solutions for the current peak
         # to the overall list of combinations
-        combinations[mass_index] = combs_frame.set_index(
-            "Theo. Mass", append=True, drop=False).swaplevel(1, 0)
+        combinations[mass_index] = (
+            combs_frame
+            .set_index("Theo. Mass", append=True, drop=False)
+            .swaplevel(1, 0))
 
     # after processing all peaks, combinations is a dict of dataframes
     # each dataframe contains information on all found combinations
@@ -140,8 +138,8 @@ def find_monomers(mods, unexplained_masses, mass_tolerance=5.0,
         combinations
         .groupby(level="Isobar")
         .cumcount())  # create column "Stage1_hit", a counter per isobar
-
     combinations.set_index("Stage1_hit", inplace=True, append=True)
+
     combinations.reorder_levels(["Mass_ID", "Isobar", "Stage1_hit"])
 
     # final structure of combinations:
@@ -403,9 +401,11 @@ def find_polymers(stage_1_results, polymer_combinations,
         df_found_polymers
         .groupby(["Isobar", "Stage1_hit"])
         .cumcount())
-    df_found_polymers.set_index("Stage2_hit", inplace=True, append=True)
-    df_found_polymers.reorder_levels(["Mass_ID", "Isobar",
-                                      "Stage1_hit", "Stage2_hit"])
+    df_found_polymers = (
+        df_found_polymers
+        .set_index("Stage2_hit", append=True)
+        .reorder_levels(["Mass_ID", "Isobar",
+                         "Stage1_hit", "Stage2_hit"]))
 
     if progress_bar is not None:
         progress_bar.setValue(100)
