@@ -154,7 +154,6 @@ def find_monomers(mods, unexplained_masses, mass_tolerance=5.0,
     # - Theo. Mass: mass of found combination
     # - Da: Theo. Mass - Exp. Mass
     # - ppm: relative difference wrt Theo. Mass
-    # - Modstring: string representation of modifications
     return combinations
 
 

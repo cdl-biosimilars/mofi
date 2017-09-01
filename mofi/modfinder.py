@@ -1616,7 +1616,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         after the selection or parameters influencing the selection
         have changed.
 
-        :param selected_peaks: list of selected peaks
+        :param selected_peaks: list of indices of selected peaks
         :return: the DataFrame whose contents are shown in the results table
         """
 
@@ -1678,8 +1678,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         query = self.make_query_string()
         if query:
             df_hit = df_hit.query(query)
-        else:
-            df_hit = df_hit.copy()
         cb_filter_permutations = self.wdFilters.findChild(QCheckBox)
         if (cb_filter_permutations
                 and cb_filter_permutations.isChecked()
@@ -1691,6 +1689,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         header_labels.extend(df_hit.columns)
         self.twResults.setColumnCount(len(header_labels))
         self.twResults.setHeaderLabels(header_labels)
+        monomers = list(df_hit.columns[:df_hit.columns.get_loc("Exp. Mass")])
 
         for mass_index in selected_peaks:
             # generate root item (experimental mass, relative abundance)
@@ -1712,8 +1711,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 # generate one child item per possible combination
                 for _, hit in df_hit.loc[mass_index].iterrows():
                     child_item = SortableTreeWidgetItem(root_item)
-                    monomers = (hit[:df_hit.columns.get_loc("Exp. Mass")]
-                                .index)
 
                     # monomer counts
                     for j, monomer in enumerate(monomers):
@@ -1772,7 +1769,10 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.twResults.header().setStretchLastSection(False)
         self.twResults.setUpdatesEnabled(True)
 
-        return df_hit
+        if df_hit.empty:
+            return df_hit
+        else:
+            return df_hit.loc[selected_peaks]
 
 
     def create_filter_widgets(self):
@@ -1886,6 +1886,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         """
 
         # create a column that hashes the set of glycans
+        df = df.copy()  # type: pd.DataFrame
         df["Hash"] = (df.iloc[:, df.columns.get_loc("ppm") + 1: -1]
                         .apply(lambda x: hash(frozenset(x)), axis=1))
 
