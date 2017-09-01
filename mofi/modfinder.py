@@ -1610,6 +1610,51 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.spectrum_canvas.draw()
 
 
+    def create_child_item(self, row, root_item, monomers, sites):
+        """
+        Fill the results table with child items for each peak.
+
+        :param pd.Series row: data for the child item
+        :param SortableTreeWidgetItem root_item: root item for the child
+        :param list monomers: list of monomer column names
+        :param list sites: list of glycan site column names
+        :return: nothing
+        """
+
+        child_item = SortableTreeWidgetItem(root_item)
+
+        # monomer counts
+        pos = 2
+        for monomer in monomers:
+            child_item.setText(pos, "{:.0f}".format(row[monomer]))
+            child_item.setTextAlignment(pos, Qt.AlignHCenter)
+            pos += 1
+
+        # hit properties
+        for label in ["Exp. Mass", "Theo. Mass", "Da", "ppm"]:
+            child_item.setText(pos, "{:.2f}".format(row[label]))
+            child_item.setTextAlignment(pos, Qt.AlignRight)
+            pos += 1
+
+        if (self.btFilterStructureHits.isChecked()
+                and self._polymer_hits is not None):
+            # polymer composition
+            for site in sites:
+                child_item.setText(pos, "{}".format(row[site]))
+                child_item.setTextAlignment(pos, Qt.AlignHCenter)
+                pos += 1
+
+            # polymer abundance
+            child_item.setText(pos, "{:.2f}".format(row["Abundance"]))
+            child_item.setTextAlignment(pos, Qt.AlignHCenter)
+            pos += 1
+
+            # permutation counts
+            if "Permutations" in row.index:
+                child_item.setText(pos, "{}".format(row["Permutations"]))
+                child_item.setTextAlignment(pos, Qt.AlignHCenter)
+
+
     def show_results(self, selected_peaks=None):
         """
         Update the spectrum, the list of masses and the result tree
@@ -1689,9 +1734,15 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         header_labels.extend(df_hit.columns)
         self.twResults.setColumnCount(len(header_labels))
         self.twResults.setHeaderLabels(header_labels)
-        monomers = list(df_hit.columns[:df_hit.columns.get_loc("Exp. Mass")])
 
+        monomers = list(df_hit.columns[:df_hit.columns.get_loc("Exp. Mass")])
+        if "Permutations" in df_hit.columns:
+            stop = -2
+        else:
+            stop = -1
+        sites = list(df_hit.columns[df_hit.columns.get_loc("ppm") + 1: stop])
         selected_annotated_peaks = []
+
         for mass_index in selected_peaks:
             # generate root item (experimental mass, relative abundance)
             root_item = SortableTreeWidgetItem(self.twResults)
@@ -1711,59 +1762,11 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             else:
                 selected_annotated_peaks.append(mass_index)
                 # generate one child item per possible combination
-                for _, hit in df_hit.loc[mass_index].iterrows():
-                    child_item = SortableTreeWidgetItem(root_item)
-
-                    # monomer counts
-                    for j, monomer in enumerate(monomers):
-                        child_item.setText(
-                            2 + j, "{:.0f}".format(hit[monomer]))
-                        child_item.setTextAlignment(2 + j, Qt.AlignHCenter)
-
-                    # hit properties
-                    for j, label in enumerate(["Exp. Mass", "Theo. Mass",
-                                               "Da", "ppm"]):
-                        child_item.setText(
-                            len(monomers) + 2 + j,
-                            "{:.2f}".format(hit[label]))
-                        child_item.setTextAlignment(
-                            len(monomers) + 2 + j,
-                            Qt.AlignRight)
-
-                    if (self.btFilterStructureHits.isChecked()
-                            and self._polymer_hits is not None):
-                        # polymer composition
-                        if "Permutations" in hit.index:
-                            stop = -2
-                        else:
-                            stop = -1
-                        sites = (hit[df_hit.columns.get_loc("ppm") + 1: stop]
-                                 .index)
-
-                        for j, site in enumerate(sites):
-                            child_item.setText(
-                                len(monomers) + 6 + j,
-                                "{}".format(hit[site]))
-                            child_item.setTextAlignment(
-                                len(monomers) + 6 + j,
-                                Qt.AlignHCenter)
-
-                        # polymer abundance
-                        child_item.setText(
-                            len(monomers) + 7 + j,
-                            "{:.2f}".format(hit["Abundance"]))
-                        child_item.setTextAlignment(
-                            len(monomers) + 7 + j,
-                            Qt.AlignHCenter)
-
-                        # permutation counts
-                        if "Permutations" in hit.index:
-                            child_item.setText(
-                                len(monomers) + 8 + j,
-                                "{}".format(hit["Permutations"]))
-                            child_item.setTextAlignment(
-                                len(monomers) + 8 + j,
-                                Qt.AlignRight)
+                df_hit.loc[mass_index].apply(
+                    lambda row:
+                        self.create_child_item(row, root_item,
+                                               monomers, sites),
+                    axis=1)
 
         self.twResults.expandAll()
         self.twResults.header().setSectionResizeMode(
