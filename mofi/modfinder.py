@@ -164,7 +164,9 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         # connect signals to slots
         self.acAbout.triggered.connect(self.show_about)
         self.acLoadSettings.triggered.connect(self.load_settings)
-        self.acManual.triggered.connect(self.show_manual)
+        self.acManual.triggered.connect(
+            lambda: webbrowser.open("file://"
+                                    + os.path.join(docs_dir, "index.html")))
         self.acOpenFasta.triggered.connect(self.load_fasta_file)
         self.acOpenPeaks.triggered.connect(self.load_mass_file)
         self.acQuit.triggered.connect(QApplication.instance().quit)
@@ -658,17 +660,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         """
 
         QMessageBox.about(self, "About ModFinder", _version_info)
-
-
-    @staticmethod
-    def show_manual(): # TODO remove
-        """
-        Open the manual.
-
-        :return: nothing
-        """
-
-        webbrowser.open("file://" + os.path.join(docs_dir, "index.html"))
 
 
     def choose_tolerance_units(self):

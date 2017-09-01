@@ -1525,8 +1525,8 @@
     <property name="title">
      <string>Help</string>
     </property>
-    <addaction name="acAbout"/>
     <addaction name="acManual"/>
+    <addaction name="acAbout"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuOptions"/>
