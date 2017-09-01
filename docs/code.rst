@@ -27,6 +27,12 @@ Code documentation
 .. automodule:: mofi.mass_tools
 
 
+``modification_search.py``
+==========================
+
+.. automodule:: mofi.modification_search
+
+
 ``paths.py``
 ============
 

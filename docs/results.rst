@@ -46,7 +46,7 @@ For each peak, the parent row shows its experimental mass and relative abundance
 In addition, a structure search (stage 2) yields the following columns:
 
 * glycan combination (one column per site; here: *ch_A* and *ch_B*)
-* overall abundance calculated for this combination from the relative abundances of the glycans
+* overall abundance calculated for this combination from the relative abundances of the glycans. This value corresponds to the contribution of each combination to the peak height.
 
 The button *Show stage 2 results* toggles between the results from the composition and structure search to be displayed in the table. (The button text changes accordingly.) You may only display the former results if you select a single peak. However, you may export those results for all peaks (see below).
 
@@ -69,7 +69,7 @@ Constraints may have one of the following forms:
 
 You may also filter *permutations* of glycan combinations. Here, permutations are annotations with equal masses that comprise an equal set of glycans, but assign those glycans to different glycosylation sites. For instance, the annotations "G0F at site A, G1F at site B" and "G1F at site A, G0F at site B" are considered permutations of the glycan set G0F, G1F.
 
-Checking the box *Filter permutations* drops permutations from the results table. In addition, MoFi adds a column *Permutations* that lists the counts for each glycan set.
+Checking the box *Filter permutations* eliminates permutations from the results table. In addition, MoFi adds a column *Permutations* that lists the counts for each glycan set and updates the values in column "Abundance".
 
 .. image:: images/permutations.png
            :alt: Filter permutations

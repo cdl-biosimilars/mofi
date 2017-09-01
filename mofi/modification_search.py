@@ -12,8 +12,8 @@ from itertools import product
 def find_monomers(mods, unexplained_masses, mass_tolerance=5.0,
                   explained_mass=0, progress_bar=None):
     """
-    Wrapper function that runs the C function findmods.examine_modifications
-    on a list of target masses.
+    Wrapper function that runs the C function
+    :func:`findmods.examine_modifications()` on a list of target masses.
 
     :param mods: list of tuples (name, mass, maxcount)
     :param unexplained_masses: iterable of unexplained masses (floats)
@@ -23,19 +23,24 @@ def find_monomers(mods, unexplained_masses, mass_tolerance=5.0,
                            (one value per unexplained mass)
     :param explained_mass: mass explained by the protein sequence
                            and known modifications
-    :param progress_bar: a QProgressBar that gets updated during the search
+    :param QProgressBar progress_bar: a progress bar that gets updated
+                                      during the search
     :return: None if the search completely failed, i.e., no single combination
-             was found; otherwise: a dataframe with index
-                 (1) Mass_ID (corresponds to index of experimental mass
-                     in input list of peaks),
-                 (2) Isobar (0-based consecutive numbering of found masses) and
-                 (3) Stage1_hit (0-based numbering of hits per Mass_ID)
-                 (4) Stage2_hit (0-based numbering of hits per Stage1_hit)
-             columns: one column for each modification
-                      Exp. Mass
-                      Theo. Mass
-                      Da
-                      ppm
+             was found; otherwise: a dataframe with multiindex
+
+             (1) Mass_ID (corresponds to index of experimental mass
+                 in input list of peaks),
+             (2) Isobar (0-based consecutive numbering of found masses) and
+             (3) Stage1_hit (0-based numbering of hits per Mass_ID)
+             (4) Stage2_hit (0-based numbering of hits per Stage1_hit)
+
+             columns:
+
+             * one column for each modification
+             * Exp. Mass
+             * Theo. Mass
+             * Da
+             * ppm
     """
 
     sorted_mods = sorted(mods, key=lambda t: t[1], reverse=True)
@@ -192,7 +197,7 @@ def _calc_glycan_composition_abundance(row, glycan_composition=None,
     Sum the monomer counts of several glycans and calculate their abundance.
 
     :param row: row from a dataframe containing the name of a glycan per cell
-    :param glycan_composition: dataframe indication the glycan composition
+    :param glycan_composition: dataframe indicating the glycan composition
     :param monomers: list of monomers in the library
     :return: a tuple containing the numbers of each atom
     """
@@ -209,7 +214,7 @@ def get_monomers_from_library(glycan_library):
     """
     Find all monomers that appear in the glycan library
 
-    :param glycan_library: dataframe with glycan library (see find_polymers)
+    :param glycan_library: dataframe with glycan library
     :return: alphabetically ordered list of monomers
     """
 
@@ -229,21 +234,22 @@ def calc_polymer_combinations(glycan_library, monomers, progress_bar=None):
     """
     Calculate all possible polymer combinations based on a library.
 
-    :param glycan_library: dataframe containing a glycan library
-                           index: glycan names
+    :param glycan_library: dataframe containing a glycan library;
+                           index: glycan names;
                            columns: Composition, Sites, Abundance
     :param monomers: list of monomers in the library
-                     as returned by get_monomers_from_library
-    :param progress_bar: a QProgressBar that gets updated during the search
-    :return: df_glycan_combinations, a dataframe like
+                     as returned by :func:`get_monomers_from_library()`
+    :param QProgressBar progress_bar: a progress bar that gets updated
+                                      during the search
+    :return: a dataframe like::
 
-                                  N149_A N149_B    N171_A    N171_B  Abundance
-            Hex HexNAc Fuc N-core
-            4   4      2   4          M5     M5     A2G0F     A2G0F        0.0
-                6      2   4        A2G2     M5     A2G0F     A2G0F        0.0
-                           4          M5   A2G2     A2G0F     A2G0F        0.0
-                       3   4       A2G2F     M5     A2G0F     A2G0F        0.0
-                           4          M5  A2G2F     A2G0F     A2G0F        0.0
+        #                         N149_A N149_B    N171_A    N171_B  Abundance
+        #   Hex HexNAc Fuc N-core
+        #   4   4      2   4          M5     M5     A2G0F     A2G0F        0.0
+        #       6      2   4        A2G2     M5     A2G0F     A2G0F        0.0
+        #                  4          M5   A2G2     A2G0F     A2G0F        0.0
+        #              3   4       A2G2F     M5     A2G0F     A2G0F        0.0
+        #                  4          M5  A2G2F     A2G0F     A2G0F        0.0
 
     :raises ValueError: if the library contains duplicate glycan/site pairs
     """
@@ -344,34 +350,37 @@ def find_polymers(stage_1_results, polymer_combinations,
     :param stage_1_results: dataframe with results from search stage 1
     :param polymer_combinations: dataframe with all possible
                                  polymer combinations as returned by
-                                 calc_polymer_combinations
+                                 :func:`calc_polymer_combinations`
     :param monomers: list of monomers in the library
                      as returned by get_monomers_from_library
     :param QProgressBar progress_bar: a progress bar that gets updated
                                       during the search
-    :return pd.DataFrame: a dataframe like
-                                          Hex  HexNAc  Neu5Ac  Fuc  N-core  DM5
-    Mass_ID Isobar Stage1_hit Stage2_hit
-    0       6      2          0             0       4       0    2       2    0
-    2       137    1          0             1       4       0    2       2    0
-                              1             1       4       0    2       2    0
-    4       288    0          0             2       4       0    2       2    0
-                              1             2       4       0    2       2    0
+    :return pd.DataFrame: a dataframe like::
 
-        Exp. Mass    Theo. Mass        Da        ppm    ch_A    ch_B  Abundance
-
-    148057.122228  148056.20272  0.919508   6.210536     G0F     G0F        0.0
-    148220.112210  148218.34356  1.768650  11.932736     G0F     G1F        0.0
-    148220.112210  148218.34356  1.768650  11.932736     G1F     G0F        0.0
-    148381.360467  148380.48440  0.876067   5.904193     G0F     G2F        0.0
-    148381.360467  148380.48440  0.876067   5.904193     G1F     G1F        0.0
-
-                    Hash  Permutations  Permutation abundance
-      329177915115358981             1                    nan
-    -4442633047439962303             2                    nan
-    -4442633047439962303             2                    nan
-      335986899926952527             1                    nan
-    -4554265004199314174             1                    nan
+        #                                       Hex  HexNAc  Neu5Ac  Fuc  ...
+        # Mass_ID Isobar Stage1_hit Stage2_hit
+        # 0       6      2          0             0       4       0    2  ...
+        # 2       137    1          0             1       4       0    2  ...
+        #                           1             1       4       0    2  ...
+        # 4       288    0          0             2       4       0    2  ...
+        #                           1             2       4       0    2  ...
+        #
+        #
+        #     Exp. Mass    Theo. Mass        Da        ppm    ch_A    ch_B
+        #
+        # 148057.122228  148056.20272  0.919508   6.210536     G0F     G0F
+        # 148220.112210  148218.34356  1.768650  11.932736     G0F     G1F
+        # 148220.112210  148218.34356  1.768650  11.932736     G1F     G0F
+        # 148381.360467  148380.48440  0.876067   5.904193     G0F     G2F
+        # 148381.360467  148380.48440  0.876067   5.904193     G1F     G1F
+        #
+        #
+        # Abundance                  Hash  Permutations  Permutation abundance
+        #       0.0    329177915115358981             1                    nan
+        #       0.0  -4442633047439962303             2                    nan
+        #       0.0  -4442633047439962303             2                    nan
+        #       0.0    335986899926952527             1                    nan
+        #       0.0  -4554265004199314174             1                    nan
     """
 
     if progress_bar is not None:
@@ -453,7 +462,7 @@ def drop_glycan_permutations(df):
     at different glycosylation sites.
 
     :param pd.DataFrame df: stage 2 search results
-    :return pd.DataFrame: the deduplicated dataframe
+    :return: the deduplicated dataframe
     """
 
     return (df.reset_index()
