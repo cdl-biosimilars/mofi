@@ -839,10 +839,13 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                     f.write("# Results from structure search (stage 2).\n")
                     df_hits = self._polymer_hits
                 elif mode == "stage2_filter":
-                    f.write("# Results from structure search (stage 2),"
+                    f.write("# Results from structure search (stage 2), "
                             "filters applied.\n")
                     df_hits = modification_search.drop_glycan_permutations(
                         self._polymer_hits)
+                    df_hits["Abundance"] = df_hits["Permutation abundance"]
+                    df_hits.drop(["Hash", "Permutation abundance"],
+                                 axis=1, inplace=True)
                 else:
                     f.write("# Results as displayed in results table.\n")
                     df_hits = self.show_results()
@@ -1716,10 +1719,10 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             if cb_filter and cb_filter.isChecked():
                 df_hit = (modification_search
                           .drop_glycan_permutations(df_hit))
-                df_hit["Abundance"] *= df_hit["Permutations"]
+                df_hit["Abundance"] = df_hit["Permutation abundance"]
             else:
                 df_hit = df_hit.drop("Permutations", axis=1)
-            df_hit = df_hit.drop("Hash", axis=1)
+            df_hit = df_hit.drop(["Hash", "Permutation abundance"], axis=1)
 
         # set column headers
         header_labels = ["Exp. Mass", "%"]

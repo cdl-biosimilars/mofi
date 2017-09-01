@@ -366,12 +366,12 @@ def find_polymers(stage_1_results, polymer_combinations,
     148381.360467  148380.48440  0.876067   5.904193     G0F     G2F        0.0
     148381.360467  148380.48440  0.876067   5.904193     G1F     G1F        0.0
 
-                    Hash  Permutations
-      329177915115358981             1
-    -4442633047439962303             2
-    -4442633047439962303             2
-      335986899926952527             1
-    -4554265004199314174             1
+                    Hash  Permutations  Permutation abundance
+      329177915115358981             1                    nan
+    -4442633047439962303             2                    nan
+    -4442633047439962303             2                    nan
+      335986899926952527             1                    nan
+    -4554265004199314174             1                    nan
     """
 
     if progress_bar is not None:
@@ -419,7 +419,7 @@ def find_polymers(stage_1_results, polymer_combinations,
     if progress_bar is not None:
         progress_bar.setValue(67)
 
-    # calculate glycan hash and counts per hash/peak/isobar
+    # calculate glycan hash and counts/abundance per hash/peak/isobar
     df_found_polymers["Hash"] = (
         df_found_polymers
         .iloc[:, df_found_polymers.columns.get_loc("ppm") + 1: -1]
@@ -428,14 +428,18 @@ def find_polymers(stage_1_results, polymer_combinations,
     df_found_polymers = (
         df_found_polymers
         .reset_index()
-        .join(df_found_polymers
-              .reset_index()
-              .groupby(["Mass_ID", "Isobar", "Hash"])
-              .size()
-              .rename("Permutations"),
-              on=["Mass_ID", "Isobar", "Hash"])
-        .set_index(["Mass_ID", "Isobar",
-                    "Stage1_hit", "Stage2_hit"]))
+        .set_index(["Mass_ID", "Isobar", "Hash"]))
+
+    hash_group = df_found_polymers.groupby(df_found_polymers.index)
+    df_found_polymers["Permutations"] = hash_group.size()
+    df_found_polymers["Permutation abundance"] = hash_group["Abundance"].sum()
+
+    df_found_polymers = (
+        df_found_polymers
+        .reset_index()
+        .set_index(["Mass_ID", "Isobar", "Stage1_hit", "Stage2_hit"]))
+
+    df_found_polymers.to_csv("df_found.csv")
 
     if progress_bar is not None:
         progress_bar.setValue(100)
