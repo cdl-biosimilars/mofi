@@ -1769,10 +1769,10 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.twResults.header().setStretchLastSection(False)
         self.twResults.setUpdatesEnabled(True)
 
-        if df_hit.empty:
-            return df_hit
-        else:
+        try:
             return df_hit.loc[selected_peaks]
+        except (KeyError, ValueError):
+            return df_hit
 
 
     def create_filter_widgets(self):
@@ -1827,13 +1827,16 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         bt_clear_filters.show()
 
         # create checkbutton
-        ch_filter_permutations = QCheckBox(self.wdFilters)
-        ch_filter_permutations.setText("Filter permutations")
-        # noinspection PyUnresolvedReferences
-        ch_filter_permutations.clicked.connect(lambda: self.show_results())
-        ch_filter_permutations.move(x_start + width + 150, 0)
-        ch_filter_permutations.resize(150, 20)
-        ch_filter_permutations.show()
+        x_start = self.twResults.header().sectionPosition(
+            self._monomer_hits.columns.get_loc("ppm") + 3)
+        if x_start > 0:
+            ch_filter_permutations = QCheckBox(self.wdFilters)
+            ch_filter_permutations.setText("Filter permutations")
+            # noinspection PyUnresolvedReferences
+            ch_filter_permutations.clicked.connect(lambda: self.show_results())
+            ch_filter_permutations.move(x_start, 0)
+            ch_filter_permutations.resize(150, 20)
+            ch_filter_permutations.show()
 
 
     def clear_filters(self):
