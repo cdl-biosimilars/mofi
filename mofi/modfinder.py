@@ -1633,8 +1633,9 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 pos += 1
 
             # polymer abundance
-            child_item.setText(pos, "{:.2f}".format(row["Abundance"]))
-            child_item.setTextAlignment(pos, Qt.AlignHCenter)
+            if not np.isnan(row["Abundance"]):
+                child_item.setText(pos, "{:.2f}".format(row["Abundance"]))
+                child_item.setTextAlignment(pos, Qt.AlignHCenter)
             pos += 1
 
             # permutation counts
