@@ -1691,6 +1691,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.twResults.setHeaderLabels(header_labels)
         monomers = list(df_hit.columns[:df_hit.columns.get_loc("Exp. Mass")])
 
+        selected_annotated_peaks = []
         for mass_index in selected_peaks:
             # generate root item (experimental mass, relative abundance)
             root_item = SortableTreeWidgetItem(self.twResults)
@@ -1708,6 +1709,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 root_item.setBackground(0, QBrush(missing_color))
                 root_item.setBackground(1, QBrush(missing_color))
             else:
+                selected_annotated_peaks.append(mass_index)
                 # generate one child item per possible combination
                 for _, hit in df_hit.loc[mass_index].iterrows():
                     child_item = SortableTreeWidgetItem(root_item)
@@ -1770,8 +1772,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.twResults.setUpdatesEnabled(True)
 
         try:
-            return df_hit.loc[selected_peaks]
-        except (KeyError, ValueError):
+            return df_hit.loc[selected_annotated_peaks]
+        except ValueError:  # empty dataframe
             return df_hit
 
 
