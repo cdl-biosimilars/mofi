@@ -111,8 +111,10 @@ def find_monomers(mods, unexplained_masses, mass_tolerance=5.0,
     #                              (2) theoretical mass
     #                              (3) 1-based counter for hits per exp. mass
     # drop all rows with NaN values (i.e., corresponding to failed searches)
-    combinations = pd.concat(combinations)  # type: pd.DataFrame
-    combinations.dropna(inplace=True)
+    combinations = (
+        pd.concat(combinations)
+        .dropna()
+        .astype({m: int for m in mod_names}))
     if not any_combination_found:
         return
 
