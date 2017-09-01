@@ -409,6 +409,13 @@ def find_polymers(stage_1_results, polymer_combinations,
         .reorder_levels(["Mass_ID", "Isobar",
                          "Stage1_hit", "Stage2_hit"]))
 
+    # update column "Abundance" to represent the contribution
+    # of each annotation to the peak height
+    df_found_polymers["Abundance"] = (
+        df_found_polymers["Abundance"]
+        * 100
+        / df_found_polymers.groupby("Mass_ID")["Abundance"].sum())
+
     if progress_bar is not None:
         progress_bar.setValue(67)
 

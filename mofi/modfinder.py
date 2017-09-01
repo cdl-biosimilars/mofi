@@ -1715,6 +1715,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             if cb_filter and cb_filter.isChecked():
                 df_hit = (modification_search
                           .drop_glycan_permutations(df_hit))
+                df_hit["Abundance"] *= df_hit["Permutations"]
             else:
                 df_hit = df_hit.drop("Permutations", axis=1)
             df_hit = df_hit.drop("Hash", axis=1)
