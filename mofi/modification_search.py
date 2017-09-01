@@ -343,11 +343,13 @@ def find_polymers(stage_1_results, polymer_combinations,
 
     :param stage_1_results: dataframe with results from search stage 1
     :param polymer_combinations: dataframe with all possible
-               polymer combinations as returned by calc_polymer_combinations
+                                 polymer combinations as returned by
+                                 calc_polymer_combinations
     :param monomers: list of monomers in the library
-               as returned by get_monomers_from_library
-    :param progress_bar: a QProgressBar that gets updated during the search
-    :return: a dataframe like
+                     as returned by get_monomers_from_library
+    :param QProgressBar progress_bar: a progress bar that gets updated
+                                      during the search
+    :return pd.DataFrame: a dataframe like
                                           Hex  HexNAc  Neu5Ac  Fuc  N-core  DM5
     Mass_ID Isobar Stage1_hit Stage2_hit
     0       6      2          0             0       4       0    2       2    0
@@ -356,21 +358,20 @@ def find_polymers(stage_1_results, polymer_combinations,
     4       288    0          0             2       4       0    2       2    0
                               1             2       4       0    2       2    0
 
-                                              Exp. Mass    Theo. Mass        Da
-    Mass_ID Isobar Stage1_hit Stage2_hit
-    0       6      2          0           148057.122228  148056.20272  0.919508
-    2       137    1          0           148220.112210  148218.34356  1.768650
-                              1           148220.112210  148218.34356  1.768650
-    4       288    0          0           148381.360467  148380.48440  0.876067
-                              1           148381.360467  148380.48440  0.876067
+        Exp. Mass    Theo. Mass        Da        ppm    ch_A    ch_B  Abundance
 
-                                                ppm    ch_A    ch_B  Abundance
-    Mass_ID Isobar Stage1_hit Stage2_hit
-    0       6      2          0            6.210536     G0F     G0F        0.0
-    2       137    1          0           11.932736     G0F     G1F        0.0
-                              1           11.932736     G1F     G0F        0.0
-    4       288    0          0            5.904193     G0F     G2F        0.0
-                              1            5.904193     G1F     G1F        0.0
+    148057.122228  148056.20272  0.919508   6.210536     G0F     G0F        0.0
+    148220.112210  148218.34356  1.768650  11.932736     G0F     G1F        0.0
+    148220.112210  148218.34356  1.768650  11.932736     G1F     G0F        0.0
+    148381.360467  148380.48440  0.876067   5.904193     G0F     G2F        0.0
+    148381.360467  148380.48440  0.876067   5.904193     G1F     G1F        0.0
+
+                    Hash  Permutations
+      329177915115358981             1
+    -4442633047439962303             2
+    -4442633047439962303             2
+      335986899926952527             1
+    -4554265004199314174             1
     """
 
     if progress_bar is not None:
@@ -388,7 +389,7 @@ def find_polymers(stage_1_results, polymer_combinations,
         return None
 
     if progress_bar is not None:
-        progress_bar.setValue(50)
+        progress_bar.setValue(33)
 
     df_found_polymers = (
         df_found_polymers
@@ -409,6 +410,41 @@ def find_polymers(stage_1_results, polymer_combinations,
                          "Stage1_hit", "Stage2_hit"]))
 
     if progress_bar is not None:
+        progress_bar.setValue(67)
+
+    # calculate glycan hash and counts per hash/peak/isobar
+    df_found_polymers["Hash"] = (
+        df_found_polymers
+        .iloc[:, df_found_polymers.columns.get_loc("ppm") + 1: -1]
+        .apply(lambda x: hash(frozenset(x)), axis=1))
+
+    df_found_polymers = (
+        df_found_polymers
+        .reset_index()
+        .join(df_found_polymers
+              .reset_index()
+              .groupby(["Mass_ID", "Isobar", "Hash"])
+              .size()
+              .rename("Permutations"),
+              on=["Mass_ID", "Isobar", "Hash"])
+        .set_index(["Mass_ID", "Isobar",
+                    "Stage1_hit", "Stage2_hit"]))
+
+    if progress_bar is not None:
         progress_bar.setValue(100)
 
     return df_found_polymers
+
+
+def drop_glycan_permutations(df):
+    """
+    Drop duplicate permutations of glycans
+    at different glycosylation sites.
+
+    :param pd.DataFrame df: stage 2 search results
+    :return pd.DataFrame: the deduplicated dataframe
+    """
+
+    return (df.reset_index()
+              .drop_duplicates(["Mass_ID", "Isobar", "Hash"])
+              .set_index(["Mass_ID", "Isobar", "Stage1_hit", "Stage2_hit"]))

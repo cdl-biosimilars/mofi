@@ -661,7 +661,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
 
     @staticmethod
-    def show_manual():
+    def show_manual(): # TODO remove
         """
         Open the manual.
 
@@ -832,7 +832,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 elif mode == "stage2_filter":
                     f.write("# Results from structure search (stage 2),"
                             "filters applied.\n")
-                    df_hits = self.drop_glycan_permutations(self._polymer_hits)
+                    df_hits = modification_search.drop_glycan_permutations(
+                        self._polymer_hits)
                 else:
                     f.write("# Results as displayed in results table.\n")
                     df_hits = self.show_results()
@@ -1367,7 +1368,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
 
     @staticmethod
-    def find_in_intervals(value, intervals):
+    def find_in_intervals(value, intervals):  # TODO move to module
         """
         Simple :math:`O(n)` algorithm to determine whether a value
         falls into a set of intervals.
@@ -1711,8 +1712,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.twResults.clear()
         self.twResults.setUpdatesEnabled(False)
 
-        missing_color = QColor(255, 185, 200)
-
         if (self.btFilterStructureHits.isChecked()
                 and self._polymer_hits is not None):
             df_hit = self._polymer_hits
@@ -1723,11 +1722,15 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         query = self.make_query_string()
         if query:
             df_hit = df_hit.query(query)
-        cb_filter_permutations = self.wdFilters.findChild(QCheckBox)
-        if (cb_filter_permutations
-                and cb_filter_permutations.isChecked()
-                and "Stage2_hit" in df_hit.index.names):
-            df_hit = self.drop_glycan_permutations(df_hit)
+
+        if "Stage2_hit" in df_hit.index.names:
+            try:
+                if self.wdFilters.findChild(QCheckBox).isChecked():
+                    df_hit = (modification_search
+                              .drop_glycan_permutations(df_hit))
+            except AttributeError:  # there was no checkbox
+                pass
+            df_hit = df_hit.drop("Hash", axis=1)
 
         # set column headers
         header_labels = ["Exp. Mass", "%"]
@@ -1736,12 +1739,9 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.twResults.setHeaderLabels(header_labels)
 
         monomers = list(df_hit.columns[:df_hit.columns.get_loc("Exp. Mass")])
-        if "Permutations" in df_hit.columns:
-            stop = -2
-        else:
-            stop = -1
-        sites = list(df_hit.columns[df_hit.columns.get_loc("ppm") + 1: stop])
+        sites = list(df_hit.columns[df_hit.columns.get_loc("ppm") + 1: -2])
         selected_annotated_peaks = []
+        missing_color = QColor(255, 185, 200)
 
         for mass_index in selected_peaks:
             # generate root item (experimental mass, relative abundance)
@@ -1879,37 +1879,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                     query.append("({} <= {})".format(mod, f[2]))
 
         return " and ".join(query)
-
-
-    @staticmethod
-    def drop_glycan_permutations(df):
-        """
-        Drop duplicate permutations of glycans
-        at different glycosylation sites.
-        In addition, add a column "Permutations" that contains
-        the number of each permutation.
-
-        :param pd.DataFrame df: dataframe possibly containing duplicates
-        :return pd.DataFrame: the deduplicated dataframe
-        """
-
-        # create a column that hashes the set of glycans
-        df = df.copy()  # type: pd.DataFrame
-        df["Hash"] = (df.iloc[:, df.columns.get_loc("ppm") + 1: -1]
-                        .apply(lambda x: hash(frozenset(x)), axis=1))
-
-        # calculate counts per hash/peak/isobar and drop duplicates
-        return (df.reset_index()
-                .join(df
-                      .reset_index()
-                      .groupby(["Mass_ID", "Isobar", "Hash"])
-                      .size()
-                      .rename("Permutations"),
-                      on=["Mass_ID", "Isobar", "Hash"])
-                .drop_duplicates(["Mass_ID", "Isobar", "Hash"])
-                .set_index(["Mass_ID", "Isobar",
-                            "Stage1_hit", "Stage2_hit"])
-                .drop("Hash", axis=1))
 
 
     def save_settings(self):
