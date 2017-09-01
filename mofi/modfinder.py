@@ -1711,12 +1711,12 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             df_hit = df_hit.query(query)
 
         if "Stage2_hit" in df_hit.index.names:
-            try:
-                if self.wdFilters.findChild(QCheckBox).isChecked():
-                    df_hit = (modification_search
-                              .drop_glycan_permutations(df_hit))
-            except AttributeError:  # there was no checkbox
-                pass
+            cb_filter = self.wdFilters.findChild(QCheckBox)
+            if cb_filter and cb_filter.isChecked():
+                df_hit = (modification_search
+                          .drop_glycan_permutations(df_hit))
+            else:
+                df_hit = df_hit.drop("Permutations", axis=1)
             df_hit = df_hit.drop("Hash", axis=1)
 
         # set column headers
@@ -1725,8 +1725,12 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.twResults.setColumnCount(len(header_labels))
         self.twResults.setHeaderLabels(header_labels)
 
-        monomers = list(df_hit.columns[:df_hit.columns.get_loc("Exp. Mass")])
-        sites = list(df_hit.columns[df_hit.columns.get_loc("ppm") + 1: -2])
+        monomers = df_hit.columns[:df_hit.columns.get_loc("Exp. Mass")]
+        try:
+            sites = df_hit.columns[df_hit.columns.get_loc("ppm") + 1:
+                                   df_hit.columns.get_loc("Abundance")]
+        except KeyError:
+            sites = []
         selected_annotated_peaks = []
         missing_color = QColor(255, 185, 200)
 
