@@ -89,6 +89,27 @@ def file_extensions(*args):
     return ";;".join([_file_extensions[a] for a in args])
 
 
+def find_in_intervals(value, intervals):
+    """
+    Simple :math:`O(n)` algorithm to determine whether a value
+    falls into a set of intervals.
+
+    Examples:
+    ``value=12, intervals={"a": (1, 6), "b": (9, 14)}`` -> ``"b"``
+    ``value=8,  intervals={"a": (1, 6), "b": (9, 14)}`` -> ``""``
+
+    :param value: Value to search
+    :param intervals: {interval name: (lower interval boundary,
+                                       upper interval boundary)} dict
+    :return: Name of the interval containing the value;
+             empty string if no such interval exists
+    """
+    for name, (lower, upper) in intervals.items():
+        if lower <= value <= upper:
+            return name
+    return ""
+
+
 class CollapsingRectangleSelector(RectangleSelector):
     """
     Select a rectangular region of an axes.
@@ -1358,28 +1379,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.show_results(peak_indices)
 
 
-    @staticmethod
-    def find_in_intervals(value, intervals):  # TODO move to module
-        """
-        Simple :math:`O(n)` algorithm to determine whether a value
-        falls into a set of intervals.
-
-        Examples:
-        ``value=12, intervals={"a": (1, 6), "b": (9, 14)}`` -> ``"b"``
-        ``value=8,  intervals={"a": (1, 6), "b": (9, 14)}`` -> ``""``
-
-        :param value: Value to search
-        :param intervals: {interval name: (lower interval boundary,
-                                           upper interval boundary)} dict
-        :return: Name of the interval containing the value;
-                 empty string if no such interval exists
-        """
-        for name, (lower, upper) in intervals.items():
-            if lower <= value <= upper:
-                return name
-        return ""
-
-
     def find_delta_peaks(self, query_peak, delta, tolerance, iterations):
         """
         Find peaks separated from a given peak
@@ -1424,7 +1423,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             i += 1
 
         interval_per_peak = (self._exp_mass_data["Average Mass"]
-                             .apply(self.find_in_intervals,
+                             .apply(find_in_intervals,
                                     intervals=intervals))
         interval_per_peak[query_peak] = "0"
         return interval_per_peak
