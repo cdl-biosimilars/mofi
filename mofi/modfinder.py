@@ -312,8 +312,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             lambda: self.teSequence.setStyleSheet(
                 "QTextEdit { background-color: rgb(255, 225, 225) }"))
 
-        self.twResults.itemClicked.connect(self.select_peaks_in_tree)
-
         # generate mass set selectors from config file
         self.agSelectMassSet = QActionGroup(self.menuAtomicMasses)
         for set_id, mass_set in enumerate(configure.mass_sets):
@@ -1332,20 +1330,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.show_results()
 
 
-    def select_peaks_in_tree(self):
-        """
-        Select the peak corresponding to an entry in the result tree.
-
-        :return: nothing
-        """
-
-        toplevel_item = self.twResults.currentItem()
-        while toplevel_item.parent():
-            toplevel_item = toplevel_item.parent()
-        self.spectrum_picked_peak = toplevel_item.mass_index
-        self.show_results([toplevel_item.mass_index])
-
-
     def select_peaks_by_pick(self, event):
         """
         Select a peak picked by a mouseclick on the spectrum.
@@ -1371,12 +1355,14 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         for i in range(self.lwPeaks.count()):
             if min_mass <= float(self.lwPeaks.item(i).text()) <= max_mass:
                 peak_indices.append(i)
-        self.btFilterStructureHits.blockSignals(True)
-        self.btFilterStructureHits.setChecked(True)
-        self.btFilterStructureHits.setText("Show stage 2 results")
-        self.btFilterStructureHits.blockSignals(False)
-        self.spectrum_picked_peak = peak_indices[0]
-        self.show_results(peak_indices)
+
+        if peak_indices:
+            self.btFilterStructureHits.blockSignals(True)
+            self.btFilterStructureHits.setChecked(True)
+            self.btFilterStructureHits.setText("Show stage 2 results")
+            self.btFilterStructureHits.blockSignals(False)
+            self.spectrum_picked_peak = peak_indices[0]
+            self.show_results(peak_indices)
 
 
     def find_delta_peaks(self, query_peak, delta, tolerance, iterations):
@@ -1613,6 +1599,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         """
 
         child_item = SortableTreeWidgetItem(root_item)
+        child_item.setCheckState(1, Qt.Unchecked)
 
         # monomer counts
         pos = 2
