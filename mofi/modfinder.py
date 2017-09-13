@@ -843,8 +843,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                             "filters applied.\n")
                     df_hits = modification_search.drop_glycan_permutations(
                         self._polymer_hits)
-                    df_hits["Abundance"] = df_hits["Permutation abundance"]
-                    df_hits.drop(["Hash", "Permutation abundance"],
+                    df_hits["Score"] = df_hits["Permutation score"]
+                    df_hits.drop(["Hash", "Permutation score"],
                                  axis=1, inplace=True)
                 else:
                     f.write("# Results as displayed in results table.\n")
@@ -1636,8 +1636,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 pos += 1
 
             # polymer abundance
-            if not np.isnan(row["Abundance"]):
-                child_item.setText(pos, "{:.2f}".format(row["Abundance"]))
+            if not np.isnan(row["Score"]):
+                child_item.setText(pos, "{:.2f}".format(row["Score"]))
                 child_item.setTextAlignment(pos, Qt.AlignHCenter)
             pos += 1
 
@@ -1719,10 +1719,10 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             if cb_filter and cb_filter.isChecked():
                 df_hit = (modification_search
                           .drop_glycan_permutations(df_hit))
-                df_hit["Abundance"] = df_hit["Permutation abundance"]
+                df_hit["Score"] = df_hit["Permutation score"]
             else:
                 df_hit = df_hit.drop("Permutations", axis=1)
-            df_hit = df_hit.drop(["Hash", "Permutation abundance"], axis=1)
+            df_hit = df_hit.drop(["Hash", "Permutation score"], axis=1)
 
         # set column headers
         header_labels = ["Exp. Mass", "%"]
@@ -1733,7 +1733,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         monomers = df_hit.columns[:df_hit.columns.get_loc("Exp. Mass")]
         try:
             sites = df_hit.columns[df_hit.columns.get_loc("ppm") + 1:
-                                   df_hit.columns.get_loc("Abundance")]
+                                   df_hit.columns.get_loc("Score")]
         except KeyError:
             sites = []
         selected_annotated_peaks = []
