@@ -1657,27 +1657,29 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                     QColor(configure.colors["table_hit_odd"]))
 
             # (2) child items for all permutations per hit
-            start_pos = pos
-            for perm_id, perm in (hit.reset_index("Stage2_hit", drop=True)
-                                     .iterrows()):
-                perm_item = SortableTreeWidgetItem(hit_item)
-                pos = start_pos
+            # only if there are at least two permutations
+            if hit.shape[0] > 1:
+                start_pos = pos
+                for perm_id, perm in (hit.reset_index("Stage2_hit", drop=True)
+                                         .iterrows()):
+                    perm_item = SortableTreeWidgetItem(hit_item)
+                    pos = start_pos
 
-                # polymer composition
-                for site in sites:
-                    perm_item.setText(pos, "{}".format(perm[site]))
+                    # polymer composition
+                    for site in sites:
+                        perm_item.setText(pos, "{}".format(perm[site]))
+                        perm_item.setTextAlignment(pos, Qt.AlignHCenter)
+                        pos += 1
+
+                    # polymer abundance
+                    if not np.isnan(perm["Score"]):
+                        perm_item.setText(pos, "{:.2f}".format(perm["Score"]))
+                        perm_item.setTextAlignment(pos, Qt.AlignHCenter)
+                        pos += 1
+
+                    perm_item.setText(pos, "{}".format(perm_id))
                     perm_item.setTextAlignment(pos, Qt.AlignHCenter)
                     pos += 1
-
-                # polymer abundance
-                if not np.isnan(perm["Score"]):
-                    perm_item.setText(pos, "{:.2f}".format(perm["Score"]))
-                    perm_item.setTextAlignment(pos, Qt.AlignHCenter)
-                    pos += 1
-
-                perm_item.setText(pos, "{}".format(perm_id))
-                perm_item.setTextAlignment(pos, Qt.AlignHCenter)
-                pos += 1
 
 
     def show_results(self, selected_peaks=None):
