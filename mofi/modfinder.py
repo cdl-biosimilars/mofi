@@ -1616,8 +1616,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                                  .groupby("Stage2_hit")):
             hit_item = SortableTreeWidgetItem(root_item)
             # hit_item.setCheckState(1, Qt.Unchecked) TODO
-            top_row = hit.iloc[0]
-
+            top_row = hit.loc[hit["Score"].idxmax()]
             # stage 2 hit index
             pos = 2
             hit_item.setText(pos, "{}".format(stage2_id))
@@ -1640,12 +1639,20 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 hit_item.setTextAlignment(pos, Qt.AlignRight)
                 pos += 1
 
-            # representative glycan combination
+            # representative glycan combination and its score/abundance
             start_pos = pos
             for site in sites:
                 hit_item.setText(start_pos, "{}".format(top_row[site]))
                 hit_item.setTextAlignment(start_pos, Qt.AlignRight)
                 start_pos += 1
+
+            if not np.isnan(top_row["Score"]):
+                hit_item.setText(start_pos, "{:.2f}".format(top_row["Score"]))
+                hit_item.setTextAlignment(start_pos, Qt.AlignRight)
+            start_pos += 1
+
+            hit_item.setText(start_pos, "{}".format(top_row.name[1]))
+            hit_item.setTextAlignment(start_pos, Qt.AlignRight)
 
             # background color
             hit_item.setText(column_count, "")
@@ -1665,7 +1672,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                     perm_item = SortableTreeWidgetItem(hit_item)
                     pos = start_pos
 
-                    # glycan composition
+                    # glycan combination
                     for site in sites:
                         perm_item.setText(pos, "{}".format(perm[site]))
                         perm_item.setTextAlignment(pos, Qt.AlignRight)
@@ -1675,7 +1682,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                     if not np.isnan(perm["Score"]):
                         perm_item.setText(pos, "{:.2f}".format(perm["Score"]))
                         perm_item.setTextAlignment(pos, Qt.AlignRight)
-                        pos += 1
+                    pos += 1
 
                     perm_item.setText(pos, "{}".format(perm_id))
                     perm_item.setTextAlignment(pos, Qt.AlignRight)
