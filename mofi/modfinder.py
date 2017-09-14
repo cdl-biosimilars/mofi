@@ -1597,7 +1597,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.spectrum_canvas.draw()
 
 
-    def create_child_items(self, df, root_item, monomers, sites):
+    @staticmethod
+    def create_child_items(df, root_item, monomers, sites, column_count):
         """
         Fill the results table with child items (hit and permutation)
         for each peak.
@@ -1606,9 +1607,11 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         :param SortableTreeWidgetItem root_item: root item for the child
         :param list monomers: list of monomer column names
         :param list sites: list of glycan site column names
+        :param int column_count: total number of columns in results table
         :return: nothing
         """
 
+        # (1) child items for all hits per peak
         for stage2_id, hit in (df.reset_index("Isobar", drop=True)
                                  .groupby("Stage2_hit")):
             hit_item = SortableTreeWidgetItem(root_item)
@@ -1637,34 +1640,44 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 hit_item.setTextAlignment(pos, Qt.AlignHCenter)
                 pos += 1
 
+            # representative glycan combination
             start_pos = pos
             for site in sites:
                 hit_item.setText(start_pos, "{}".format(top_row[site]))
                 hit_item.setTextAlignment(start_pos, Qt.AlignHCenter)
                 start_pos += 1
 
-            if self._polymer_hits is not None:
-                start_pos = pos
-                for perm_id, perm in (hit.reset_index("Stage2_hit", drop=True)
-                                         .iterrows()):
-                    perm_item = SortableTreeWidgetItem(hit_item)
-                    pos = start_pos
+            # background color
+            hit_item.setText(column_count, "")
+            if stage2_id % 2 == 0:
+                hit_item.setTotalBackground(
+                    QColor(configure.colors["table_hit_even"]))
+            else:
+                hit_item.setTotalBackground(
+                    QColor(configure.colors["table_hit_odd"]))
 
-                    # polymer composition
-                    for site in sites:
-                        perm_item.setText(pos, "{}".format(perm[site]))
-                        perm_item.setTextAlignment(pos, Qt.AlignHCenter)
-                        pos += 1
+            # (2) child items for all permutations per hit
+            start_pos = pos
+            for perm_id, perm in (hit.reset_index("Stage2_hit", drop=True)
+                                     .iterrows()):
+                perm_item = SortableTreeWidgetItem(hit_item)
+                pos = start_pos
 
-                    # polymer abundance
-                    if not np.isnan(perm["Score"]):
-                        perm_item.setText(pos, "{:.2f}".format(perm["Score"]))
-                        perm_item.setTextAlignment(pos, Qt.AlignHCenter)
-                        pos += 1
-
-                    perm_item.setText(pos, "{}".format(perm_id))
+                # polymer composition
+                for site in sites:
+                    perm_item.setText(pos, "{}".format(perm[site]))
                     perm_item.setTextAlignment(pos, Qt.AlignHCenter)
                     pos += 1
+
+                # polymer abundance
+                if not np.isnan(perm["Score"]):
+                    perm_item.setText(pos, "{:.2f}".format(perm["Score"]))
+                    perm_item.setTextAlignment(pos, Qt.AlignHCenter)
+                    pos += 1
+
+                perm_item.setText(pos, "{}".format(perm_id))
+                perm_item.setTextAlignment(pos, Qt.AlignHCenter)
+                pos += 1
 
 
     def show_results(self, selected_peaks=None):
@@ -1782,7 +1795,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 df_hit.loc[mass_index].pipe(self.create_child_items,
                                             root_item,
                                             mono_columns,
-                                            site_columns)
+                                            site_columns,
+                                            len(header_labels))
 
         self.twResults.expandToDepth(0)
         self.twResults.header().setSectionResizeMode(
