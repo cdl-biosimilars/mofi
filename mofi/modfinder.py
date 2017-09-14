@@ -1621,7 +1621,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             # stage 2 hit index
             pos = 2
             hit_item.setText(pos, "{}".format(stage2_id))
-            hit_item.setTextAlignment(pos, Qt.AlignHCenter)
+            hit_item.setTextAlignment(pos, Qt.AlignRight)
             pos += 1
 
             # hit properties
@@ -1637,14 +1637,14 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             # monomer counts
             for monomer in monomers:
                 hit_item.setText(pos, "{}".format(top_row[monomer]))
-                hit_item.setTextAlignment(pos, Qt.AlignHCenter)
+                hit_item.setTextAlignment(pos, Qt.AlignRight)
                 pos += 1
 
             # representative glycan combination
             start_pos = pos
             for site in sites:
                 hit_item.setText(start_pos, "{}".format(top_row[site]))
-                hit_item.setTextAlignment(start_pos, Qt.AlignHCenter)
+                hit_item.setTextAlignment(start_pos, Qt.AlignRight)
                 start_pos += 1
 
             # background color
@@ -1665,20 +1665,20 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                     perm_item = SortableTreeWidgetItem(hit_item)
                     pos = start_pos
 
-                    # polymer composition
+                    # glycan composition
                     for site in sites:
                         perm_item.setText(pos, "{}".format(perm[site]))
-                        perm_item.setTextAlignment(pos, Qt.AlignHCenter)
+                        perm_item.setTextAlignment(pos, Qt.AlignRight)
                         pos += 1
 
-                    # polymer abundance
+                    # permutation score and abundance
                     if not np.isnan(perm["Score"]):
                         perm_item.setText(pos, "{:.2f}".format(perm["Score"]))
-                        perm_item.setTextAlignment(pos, Qt.AlignHCenter)
+                        perm_item.setTextAlignment(pos, Qt.AlignRight)
                         pos += 1
 
                     perm_item.setText(pos, "{}".format(perm_id))
-                    perm_item.setTextAlignment(pos, Qt.AlignHCenter)
+                    perm_item.setTextAlignment(pos, Qt.AlignRight)
                     pos += 1
 
 
@@ -1751,8 +1751,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         # set column headers
         header_labels = ["Exp. Mass", "%",
-                         "Stage2_hit", "Theo. Mass", "Da", "ppm",
-                         "Permutations", "Permutation score"]
+                         "Hit", "Theo. Mass", "Da", "ppm",
+                         "# Perms", "Score"]
         mono_columns = df_hit.columns[:df_hit.columns.get_loc("Exp. Mass")]
         try:
             site_columns = df_hit.columns[df_hit.columns.get_loc("ppm") + 1:
@@ -1764,6 +1764,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         header_labels += ["Score", "Perm_ID"]
         self.twResults.setColumnCount(len(header_labels))
         self.twResults.setHeaderLabels(header_labels)
+        self.twResults.header().setDefaultAlignment(Qt.AlignRight)
 
         selected_annotated_peaks = []
         for count, mass_index in enumerate(selected_peaks):
