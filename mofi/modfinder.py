@@ -1587,51 +1587,74 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.spectrum_canvas.draw()
 
 
-    def create_child_item(self, row, root_item, monomers, sites):
+    def create_child_items(self, df, root_item, monomers, sites):
         """
-        Fill the results table with child items for each peak.
+        Fill the results table with child items (hit and permutation)
+        for each peak.
 
-        :param pd.Series row: data for the child item
+        :param pd.DataFrame df: data for the child items
         :param SortableTreeWidgetItem root_item: root item for the child
         :param list monomers: list of monomer column names
         :param list sites: list of glycan site column names
         :return: nothing
         """
 
-        child_item = SortableTreeWidgetItem(root_item)
-        child_item.setCheckState(1, Qt.Unchecked)
+        for stage2_id, hit in (df.reset_index("Isobar", drop=True)
+                                 .groupby("Stage2_hit")):
+            hit_item = SortableTreeWidgetItem(root_item)
+            # hit_item.setCheckState(1, Qt.Unchecked) TODO
+            top_row = hit.iloc[0]
 
-        # monomer counts
-        pos = 2
-        for monomer in monomers:
-            child_item.setText(pos, "{:.0f}".format(row[monomer]))
-            child_item.setTextAlignment(pos, Qt.AlignHCenter)
+            # stage 2 hit index
+            pos = 2
+            hit_item.setText(pos, "{}".format(stage2_id))
+            hit_item.setTextAlignment(pos, Qt.AlignHCenter)
             pos += 1
 
-        # hit properties
-        for label in ["Exp. Mass", "Theo. Mass", "Da", "ppm"]:
-            child_item.setText(pos, "{:.2f}".format(row[label]))
-            child_item.setTextAlignment(pos, Qt.AlignRight)
-            pos += 1
-
-        if (self.btFilterStructureHits.isChecked()
-                and self._polymer_hits is not None):
-            # polymer composition
-            for site in sites:
-                child_item.setText(pos, "{}".format(row[site]))
-                child_item.setTextAlignment(pos, Qt.AlignHCenter)
+            # hit properties
+            for label, form in [("Theo. Mass", "{:.2f}"),
+                                ("Da", "{:.2f}"),
+                                ("ppm", "{:.2f}"),
+                                ("Permutations", "{}"),
+                                ("Permutation score", "{:.2f}")]:
+                hit_item.setText(pos, form.format(top_row[label]))
+                hit_item.setTextAlignment(pos, Qt.AlignRight)
                 pos += 1
 
-            # polymer abundance
-            if not np.isnan(row["Score"]):
-                child_item.setText(pos, "{:.2f}".format(row["Score"]))
-                child_item.setTextAlignment(pos, Qt.AlignHCenter)
-            pos += 1
+            # monomer counts
+            for monomer in monomers:
+                hit_item.setText(pos, "{}".format(top_row[monomer]))
+                hit_item.setTextAlignment(pos, Qt.AlignHCenter)
+                pos += 1
 
-            # permutation counts
-            if "Permutations" in row.index:
-                child_item.setText(pos, "{}".format(row["Permutations"]))
-                child_item.setTextAlignment(pos, Qt.AlignHCenter)
+            start_pos = pos
+            for site in sites:
+                hit_item.setText(start_pos, "{}".format(top_row[site]))
+                hit_item.setTextAlignment(start_pos, Qt.AlignHCenter)
+                start_pos += 1
+
+            if self._polymer_hits is not None:
+                start_pos = pos
+                for perm_id, perm in (hit.reset_index("Stage2_hit", drop=True)
+                                         .iterrows()):
+                    perm_item = SortableTreeWidgetItem(hit_item)
+                    pos = start_pos
+
+                    # polymer composition
+                    for site in sites:
+                        perm_item.setText(pos, "{}".format(perm[site]))
+                        perm_item.setTextAlignment(pos, Qt.AlignHCenter)
+                        pos += 1
+
+                    # polymer abundance
+                    if not np.isnan(perm["Score"]):
+                        perm_item.setText(pos, "{:.2f}".format(perm["Score"]))
+                        perm_item.setTextAlignment(pos, Qt.AlignHCenter)
+                        pos += 1
+
+                    perm_item.setText(pos, "{}".format(perm_id))
+                    perm_item.setTextAlignment(pos, Qt.AlignHCenter)
+                    pos += 1
 
 
     def show_results(self, selected_peaks=None):
@@ -1701,28 +1724,32 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         if query:
             df_hit = df_hit.query(query)
 
-        if "Stage2_hit" in df_hit.index.names:
-            cb_filter = self.wdFilters.findChild(QCheckBox)
-            if cb_filter and cb_filter.isChecked():
-                df_hit = (modification_search
-                          .drop_glycan_permutations(df_hit))
-                df_hit["Score"] = df_hit["Permutation score"]
-            else:
-                df_hit = df_hit.drop("Permutations", axis=1)
-            df_hit = df_hit.drop(["Hash", "Permutation score"], axis=1)
+        # if "Stage2_hit" in df_hit.index.names: TODO remove
+        #     cb_filter = self.wdFilters.findChild(QCheckBox)
+        #     if cb_filter and cb_filter.isChecked():
+        #         df_hit = (modification_search
+        #                   .drop_glycan_permutations(df_hit))
+        #         df_hit["Score"] = df_hit["Permutation score"]
+        #     else:
+        #         df_hit = df_hit.drop("Permutations", axis=1)
+        #     df_hit = df_hit.drop(["Hash", "Permutation score"], axis=1)
 
         # set column headers
-        header_labels = ["Exp. Mass", "%"]
-        header_labels.extend(df_hit.columns)
+        header_labels = ["Exp. Mass", "%",
+                         "Stage2_hit", "Theo. Mass", "Da", "ppm",
+                         "Permutations", "Permutation score"]
+        mono_columns = df_hit.columns[:df_hit.columns.get_loc("Exp. Mass")]
+        try:
+            site_columns = df_hit.columns[df_hit.columns.get_loc("ppm") + 1:
+                                          df_hit.columns.get_loc("Score")]
+        except KeyError:
+            site_columns = []
+        header_labels.extend(mono_columns)
+        header_labels.extend(site_columns)
+        header_labels += ["Score", "Perm_ID"]
         self.twResults.setColumnCount(len(header_labels))
         self.twResults.setHeaderLabels(header_labels)
 
-        monomers = df_hit.columns[:df_hit.columns.get_loc("Exp. Mass")]
-        try:
-            sites = df_hit.columns[df_hit.columns.get_loc("ppm") + 1:
-                                   df_hit.columns.get_loc("Score")]
-        except KeyError:
-            sites = []
         selected_annotated_peaks = []
         missing_color = QColor(255, 185, 200)
 
@@ -1737,21 +1764,19 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 1, "{:.1f}".format(self._exp_mass_data
                                    .loc[mass_index, "Relative Abundance"]))
             root_item.setTextAlignment(1, Qt.AlignRight)
-            root_item.mass_index = mass_index
 
             if mass_index not in df_hit.index.levels[0]:
                 root_item.setBackground(0, QBrush(missing_color))
                 root_item.setBackground(1, QBrush(missing_color))
             else:
                 selected_annotated_peaks.append(mass_index)
-                # generate one child item per possible combination
-                df_hit.loc[mass_index].apply(
-                    lambda row:
-                        self.create_child_item(row, root_item,
-                                               monomers, sites),
-                    axis=1)
+                # generate child items for the hits and permutations
+                df_hit.loc[mass_index].pipe(self.create_child_items,
+                                            root_item,
+                                            mono_columns,
+                                            site_columns)
 
-        self.twResults.expandAll()
+        self.twResults.expandToDepth(0)
         self.twResults.header().setSectionResizeMode(
             QHeaderView.ResizeToContents)
         self.twResults.header().setStretchLastSection(False)

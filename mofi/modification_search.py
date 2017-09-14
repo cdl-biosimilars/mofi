@@ -404,8 +404,8 @@ def find_polymers(stage_1_results, polymer_combinations,
     try:
         df_found_polymers = (
             stage_1_results
-            .sort_index()
             .join(polymer_combinations, on=monomers, how="inner")
+            .sort_index()
             .rename(columns={"Abundance": "Score"}))
     except TypeError:
         return None
@@ -429,12 +429,12 @@ def find_polymers(stage_1_results, polymer_combinations,
         .iloc[:, df_found_polymers.columns.get_loc("ppm") + 1: -1]
         .apply(lambda x: hash(frozenset(x)), axis=1))
 
-    # column "Stage2_hit" numbers unique permutations per isobar
+    # column "Stage2_hit" numbers unique permutations per mass index
     df_found_polymers.reset_index(inplace=True)
-    unique_hashes = df_found_polymers.groupby("Isobar")["Hash"].unique()
+    unique_hashes = df_found_polymers.groupby("Mass_ID")["Hash"].unique()
     df_found_polymers["Stage2_hit"] = (
         df_found_polymers
-        .apply(lambda x: list(unique_hashes[x["Isobar"]]).index(x["Hash"]),
+        .apply(lambda x: list(unique_hashes[x["Mass_ID"]]).index(x["Hash"]),
                axis=1))
 
     if progress_bar is not None:
@@ -458,8 +458,6 @@ def find_polymers(stage_1_results, polymer_combinations,
     if progress_bar is not None:
         progress_bar.setValue(100)
 
-    print(df_found_polymers)
-    df_found_polymers.to_csv("~/Desktop/df_found_polymers.csv")
     return df_found_polymers
 
 
