@@ -209,12 +209,11 @@ class CollapsingRectangleSelector(RectangleSelector):
 class SortableTreeWidgetItem(QTreeWidgetItem):
     """
     A QTreeWidget which supports numerical sorting.
-    Additionally, the attribute mass_index stores the mass index
-    of a top level widget.
+    In addition, :meth:`setTotalBackground`
     """
+
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.mass_index = None
 
     def __lt__(self, other):
         column = self.treeWidget().sortColumn()
@@ -224,6 +223,17 @@ class SortableTreeWidgetItem(QTreeWidgetItem):
             return float(key1) < float(key2)
         except ValueError:
             return key1 < key2
+
+    # noinspection PyPep8Naming
+    def setTotalBackground(self, color):
+        """
+        Set the background color for all columns.
+
+        :param QColor color: the color to use
+        :return: nothing
+        """
+        for i in range(self.columnCount()):
+            self.setBackground(i, QBrush(color))
 
 
 class MainWindow(QMainWindow, Ui_ModFinder):
@@ -1724,16 +1734,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         if query:
             df_hit = df_hit.query(query)
 
-        # if "Stage2_hit" in df_hit.index.names: TODO remove
-        #     cb_filter = self.wdFilters.findChild(QCheckBox)
-        #     if cb_filter and cb_filter.isChecked():
-        #         df_hit = (modification_search
-        #                   .drop_glycan_permutations(df_hit))
-        #         df_hit["Score"] = df_hit["Permutation score"]
-        #     else:
-        #         df_hit = df_hit.drop("Permutations", axis=1)
-        #     df_hit = df_hit.drop(["Hash", "Permutation score"], axis=1)
-
         # set column headers
         header_labels = ["Exp. Mass", "%",
                          "Stage2_hit", "Theo. Mass", "Da", "ppm",
@@ -1751,9 +1751,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.twResults.setHeaderLabels(header_labels)
 
         selected_annotated_peaks = []
-        missing_color = QColor(255, 185, 200)
-
-        for mass_index in selected_peaks:
+        for count, mass_index in enumerate(selected_peaks):
             # generate root item (experimental mass, relative abundance)
             root_item = SortableTreeWidgetItem(self.twResults)
             root_item.setText(
@@ -1764,13 +1762,23 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 1, "{:.1f}".format(self._exp_mass_data
                                    .loc[mass_index, "Relative Abundance"]))
             root_item.setTextAlignment(1, Qt.AlignRight)
+            root_item.setText(len(header_labels) - 1, "")
 
             if mass_index not in df_hit.index.levels[0]:
-                root_item.setBackground(0, QBrush(missing_color))
-                root_item.setBackground(1, QBrush(missing_color))
+                if count % 2 == 0:
+                    root_item.setTotalBackground(
+                        QColor(configure.colors["table_root_missing_even"]))
+                else:
+                    root_item.setTotalBackground(
+                        QColor(configure.colors["table_root_missing_odd"]))
             else:
+                if count % 2 == 0:
+                    root_item.setTotalBackground(
+                        QColor(configure.colors["table_root_annotated_even"]))
+                else:
+                    root_item.setTotalBackground(
+                        QColor(configure.colors["table_root_annotated_odd"]))
                 selected_annotated_peaks.append(mass_index)
-                # generate child items for the hits and permutations
                 df_hit.loc[mass_index].pipe(self.create_child_items,
                                             root_item,
                                             mono_columns,
@@ -1838,18 +1846,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         bt_clear_filters.move(x_start + width + 50, 0)
         bt_clear_filters.resize(50, 20)
         bt_clear_filters.show()
-
-        # create checkbutton
-        x_start = self.twResults.header().sectionPosition(
-            self._monomer_hits.columns.get_loc("ppm") + 3)
-        if x_start > 0:
-            ch_filter_permutations = QCheckBox(self.wdFilters)
-            ch_filter_permutations.setText("Filter permutations")
-            # noinspection PyUnresolvedReferences
-            ch_filter_permutations.clicked.connect(lambda: self.show_results())
-            ch_filter_permutations.move(x_start, 0)
-            ch_filter_permutations.resize(150, 20)
-            ch_filter_permutations.show()
 
 
     def clear_filters(self):
