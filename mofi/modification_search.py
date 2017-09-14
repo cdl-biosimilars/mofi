@@ -357,68 +357,61 @@ def find_polymers(stage_1_results, polymer_combinations,
                                       during the search
     :return pd.DataFrame: a dataframe like::
 
-        #                                       Hex  HexNAc  Neu5Ac  Fuc  ...
-        # Mass_ID Isobar Stage1_hit Stage2_hit
-        # 0       6      2          0             0       4       0    2  ...
-        # 2       137    1          0             1       4       0    2  ...
-        #                           1             1       4       0    2  ...
-        # 4       288    0          0             2       4       0    2  ...
-        #                           1             2       4       0    2  ...
+                                             Hex  HexNAc  Neu5Ac  Fuc  [...]
+        # Mass_ID Isobar Stage2_hit Perm_ID
+        # 0       5      0          0          6       8       0    2  [...]
+        # 1       27     0          0          8       6       1    1  [...]
+        #                           1          8       6       1    1  [...]
+        #                1          0          5       4       1    1  [...]
+        #                           1          5       4       1    1  [...]
+        # 2       37     0          0          7       8       0    2  [...]
+        #                           1          7       8       0    2  [...]
         #
+        #                                    Exp. Mass   Theo. Mass        Da
+        # Mass_ID Isobar Stage2_hit Perm_ID
+        # 0       5      0          0        148057.12  148057.8620 -0.739772
+        # 1       27     0          0        148122.21  148120.8700  1.341018
+        #                           1        148122.21  148120.8700  1.341018
+        #                1          0        148122.21  148120.8700  1.341018
+        #                           1        148122.21  148120.8700  1.341018
+        # 2       37     0          0        148220.11  148220.0030  0.109210
+        #                           1        148220.11  148220.0030  0.109210
         #
-        #     Exp. Mass    Theo. Mass        Da        ppm    ch_A    ch_B
+        #                                          ppm     ch_A     ch_B
+        # Mass_ID Isobar Stage2_hit Perm_ID
+        # 0       5      0          0        -4.996506     2G0F    A2G0F
+        # 1       27     0          0         9.053539  A2S1G0F       M4
+        #                           1         9.053539       M4  A2S1G0F
+        #                1          0         9.053539   Unglyc  A2S1G1F
+        #                           1         9.053539  A2S1G1F   Unglyc
+        # 2       37     0          0         0.736810    A2G0F    A2G1F
+        #                           1         0.736810    A2G1F    A2G0F
         #
-        # 148057.122228  148056.20272  0.919508   6.210536     G0F     G0F
-        # 148220.112210  148218.34356  1.768650  11.932736     G0F     G1F
-        # 148220.112210  148218.34356  1.768650  11.932736     G1F     G0F
-        # 148381.360467  148380.48440  0.876067   5.904193     G0F     G2F
-        # 148381.360467  148380.48440  0.876067   5.904193     G1F     G1F
-        #
-        #
-        # Abundance                  Hash  Permutations  Permutation abundance
-        #       0.0    329177915115358981             1                    nan
-        #       0.0  -4442633047439962303             2                    nan
-        #       0.0  -4442633047439962303             2                    nan
-        #       0.0    335986899926952527             1                    nan
-        #       0.0  -4554265004199314174             1                    nan
+        #                                        Score  Permut  Permutation
+        # Mass_ID Isobar Stage2_hit Perm_ID             ations  score
+        # 0       5      0          0        100.000000      1  100.000000
+        # 1       27     0          0          4.403297      2    8.806594
+        #                           1          4.403297      2    8.806594
+        #                1          0         45.596703      2   91.193406
+        #                           1         45.596703      2   91.193406
+        # 2       37     0          0         50.000000      2  100.000000
+        #                           1         50.000000      2  100.000000
     """
 
     if progress_bar is not None:
         progress_bar.setValue(0)
 
-    old_index = stage_1_results.index.names
     try:
         df_found_polymers = (
             stage_1_results
-            .reset_index(old_index)
-            .set_index(monomers)
             .sort_index()
-            .join(polymer_combinations, how="inner"))
+            .join(polymer_combinations, on=monomers, how="inner")
+            .rename(columns={"Abundance": "Score"}))
     except TypeError:
         return None
 
     if progress_bar is not None:
-        progress_bar.setValue(33)
-
-    df_found_polymers = (
-        df_found_polymers
-        .reset_index(df_found_polymers.index.names)
-        .set_index(old_index)
-        .sort_index())
-
-    # create an additional index "Stage2_hit", which counts
-    # different possible combinations per monomer hit,
-    # and rename column "Abundance" to "Score"
-    df_found_polymers["Stage2_hit"] = (
-        df_found_polymers
-        .groupby(["Isobar", "Stage1_hit"])
-        .cumcount())
-    df_found_polymers = (
-        df_found_polymers
-        .set_index("Stage2_hit", append=True)
-        .reorder_levels(["Mass_ID", "Isobar",
-                         "Stage1_hit", "Stage2_hit"])
-        .rename(columns={"Abundance": "Score"}))
+        progress_bar.setValue(25)
 
     # recalculate the scores to represent the contribution
     # of each annotation to the peak height
@@ -428,7 +421,7 @@ def find_polymers(stage_1_results, polymer_combinations,
         / df_found_polymers.groupby("Mass_ID")["Score"].sum())
 
     if progress_bar is not None:
-        progress_bar.setValue(67)
+        progress_bar.setValue(50)
 
     # calculate glycan hash and counts/abundance per hash/peak/isobar
     df_found_polymers["Hash"] = (
@@ -436,23 +429,37 @@ def find_polymers(stage_1_results, polymer_combinations,
         .iloc[:, df_found_polymers.columns.get_loc("ppm") + 1: -1]
         .apply(lambda x: hash(frozenset(x)), axis=1))
 
-    df_found_polymers = (
+    # column "Stage2_hit" numbers unique permutations per isobar
+    df_found_polymers.reset_index(inplace=True)
+    unique_hashes = df_found_polymers.groupby("Isobar")["Hash"].unique()
+    df_found_polymers["Stage2_hit"] = (
         df_found_polymers
-        .reset_index()
-        .set_index(["Mass_ID", "Isobar", "Hash"]))
+        .apply(lambda x: list(unique_hashes[x["Isobar"]]).index(x["Hash"]),
+               axis=1))
 
-    hash_group = df_found_polymers.groupby(df_found_polymers.index)
+    if progress_bar is not None:
+        progress_bar.setValue(75)
+
+    # create columns Perm_ID (index of permutation), Permutations (count)
+    # and Permutation score
+    df_found_polymers.set_index(["Isobar", "Stage2_hit"], inplace=True)
+    hash_group = df_found_polymers.groupby(df_found_polymers.index.names)
+    df_found_polymers["Perm_ID"] = hash_group.cumcount()
     df_found_polymers["Permutations"] = hash_group.size()
     df_found_polymers["Permutation score"] = hash_group["Score"].sum()
 
     df_found_polymers = (
         df_found_polymers
-        .reset_index()
-        .set_index(["Mass_ID", "Isobar", "Stage1_hit", "Stage2_hit"]))
+        .drop(["Stage1_hit", "Hash"], axis=1)
+        .set_index(["Mass_ID", "Perm_ID"], append=True)
+        .reorder_levels(["Mass_ID", "Isobar", "Stage2_hit", "Perm_ID"])
+        .sort_index())
 
     if progress_bar is not None:
         progress_bar.setValue(100)
 
+    print(df_found_polymers)
+    df_found_polymers.to_csv("~/Desktop/df_found_polymers.csv")
     return df_found_polymers
 
 
@@ -465,6 +472,7 @@ def drop_glycan_permutations(df):
     :return: the deduplicated dataframe
     """
 
+    old_columns = df.columns
     return (df.reset_index()
               .drop_duplicates(["Mass_ID", "Isobar", "Hash"])
-              .set_index(["Mass_ID", "Isobar", "Stage1_hit", "Stage2_hit"]))
+              .set_index(old_columns))
