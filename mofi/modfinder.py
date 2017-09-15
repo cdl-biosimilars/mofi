@@ -1598,6 +1598,32 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
 
     @staticmethod
+    def create_site_columns(item, pos, row, sites):
+        """
+        Create columns containing information about glycan sites
+        in a :class:`SortableTreeWidgetItem`.
+
+        :param SortableTreeWidgetItem item: the item to fill
+        :param int pos: position of the first column
+        :param pd.Series row: glycan site data
+        :param list sites: glycosylation site names
+        :return: nothing
+        """
+        for site in sites:
+            item.setText(pos, "{}".format(row[site]))
+            item.setTextAlignment(pos, Qt.AlignRight)
+            pos += 1
+
+        if not np.isnan(row["Score"]):
+            item.setText(pos, "{:.2f}".format(row["Score"]))
+            item.setTextAlignment(pos, Qt.AlignRight)
+        pos += 1
+
+        item.setText(pos, "{}".format(row.name))
+        item.setTextAlignment(pos, Qt.AlignRight)
+
+
+    @staticmethod
     def create_child_items(df, root_item, monomers, sites, column_count):
         """
         Fill the results table with child items (hit and permutation)
@@ -1617,6 +1643,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             hit_item = SortableTreeWidgetItem(root_item)
             # hit_item.setCheckState(1, Qt.Unchecked) TODO
             top_row = hit.loc[hit["Score"].idxmax()]
+            top_row.name = top_row.name[1]
+
             # stage 2 hit index
             pos = 2
             hit_item.setText(pos, "{}".format(stage2_id))
@@ -1640,19 +1668,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 pos += 1
 
             # representative glycan combination and its score/abundance
-            start_pos = pos
-            for site in sites:
-                hit_item.setText(start_pos, "{}".format(top_row[site]))
-                hit_item.setTextAlignment(start_pos, Qt.AlignRight)
-                start_pos += 1
-
-            if not np.isnan(top_row["Score"]):
-                hit_item.setText(start_pos, "{:.2f}".format(top_row["Score"]))
-                hit_item.setTextAlignment(start_pos, Qt.AlignRight)
-            start_pos += 1
-
-            hit_item.setText(start_pos, "{}".format(top_row.name[1]))
-            hit_item.setTextAlignment(start_pos, Qt.AlignRight)
+            MainWindow.create_site_columns(hit_item, pos, top_row, sites)
 
             # background color
             hit_item.setText(column_count, "")
@@ -1666,27 +1682,10 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             # (2) child items for all permutations per hit
             # only if there are at least two permutations
             if hit.shape[0] > 1:
-                start_pos = pos
-                for perm_id, perm in (hit.reset_index("Stage2_hit", drop=True)
-                                         .iterrows()):
+                for _, perm in (hit.reset_index("Stage2_hit", drop=True)
+                                   .iterrows()):
                     perm_item = SortableTreeWidgetItem(hit_item)
-                    pos = start_pos
-
-                    # glycan combination
-                    for site in sites:
-                        perm_item.setText(pos, "{}".format(perm[site]))
-                        perm_item.setTextAlignment(pos, Qt.AlignRight)
-                        pos += 1
-
-                    # permutation score and abundance
-                    if not np.isnan(perm["Score"]):
-                        perm_item.setText(pos, "{:.2f}".format(perm["Score"]))
-                        perm_item.setTextAlignment(pos, Qt.AlignRight)
-                    pos += 1
-
-                    perm_item.setText(pos, "{}".format(perm_id))
-                    perm_item.setTextAlignment(pos, Qt.AlignRight)
-                    pos += 1
+                    MainWindow.create_site_columns(perm_item, pos, perm, sites)
 
 
     def show_results(self, selected_peaks=None):
