@@ -150,44 +150,65 @@ def create_child_items(df, root_item, column_count, monomers, sites):
     :return: nothing
     """
 
-    # add the best annotation to the parent row
-    # peak_optimum is a (hit_ID, permutation_ID) tuple
-    peak_optimum = df.loc[df["Score"].idxmax()]
-    peak_optimum.name = (peak_optimum.name[1], peak_optimum.name[2])
-    create_hit_columns(root_item, peak_optimum, monomers, sites)
+    if sites:  # show stage 2 results
+        # add the best annotation to the parent row
+        # peak_optimum is a (hit_ID, permutation_ID) tuple
+        peak_optimum = df.loc[df["Score"].idxmax()]
+        peak_optimum.name = (peak_optimum.name[1], peak_optimum.name[2])
+        create_hit_columns(root_item, peak_optimum, monomers, sites)
 
-    # (1) child items for all hits per peak
-    for stage2_id, hit in (df.reset_index("Isobar", drop=True)
-                             .groupby("Stage2_hit")):
-        hit_optimum = hit.loc[hit["Score"].idxmax()]
-        hit_item = SortableTreeWidgetItem(root_item)
-        pos = create_hit_columns(hit_item, hit_optimum, monomers, sites)
+        # (1) child items for all hits per peak
+        for stage2_id, hit in (df.reset_index("Isobar", drop=True)
+                                 .groupby("Stage2_hit")):
+            hit_optimum = hit.loc[hit["Score"].idxmax()]
+            hit_item = SortableTreeWidgetItem(root_item)
+            pos = create_hit_columns(hit_item, hit_optimum, monomers, sites)
 
-        # background color
-        if stage2_id % 2 == 0:
-            hit_item.setTotalBackground(
-                QColor(configure.colors["table_hit_even"]), column_count)
-        else:
-            hit_item.setTotalBackground(
-                QColor(configure.colors["table_hit_odd"]), column_count)
+            # background color
+            if stage2_id % 2 == 0:
+                hit_item.setTotalBackground(
+                    QColor(configure.colors["table_hit_even"]), column_count)
+            else:
+                hit_item.setTotalBackground(
+                    QColor(configure.colors["table_hit_odd"]), column_count)
 
-        # (2) child items for all permutations per hit
-        # only if there are at least two permutations
-        if hit.shape[0] > 1:
-            for _, perm in (hit.reset_index("Stage2_hit", drop=True)
-                               .iterrows()):
-                perm.name = (0, perm.name)
-                perm_item = SortableTreeWidgetItem(hit_item)
-                create_site_columns(perm_item, pos, perm, sites)
+            # (2) child items for all permutations per hit
+            # only if there are at least two permutations
+            if hit.shape[0] > 1:
+                for _, perm in (hit.reset_index("Stage2_hit", drop=True)
+                                   .iterrows()):
+                    perm.name = (0, perm.name)
+                    perm_item = SortableTreeWidgetItem(hit_item)
+                    create_site_columns(perm_item, pos, perm, sites)
+
+    else:  # stage 1 results
+        # add the best annotation to the parent row
+        # peak_optimum is a (hit_ID, permutation_ID) tuple
+        # peak_optimum = df.loc[df["Score"].idxmax()]
+        # peak_optimum.name = (peak_optimum.name[1], peak_optimum.name[2])
+        # create_hit_columns(root_item, peak_optimum, monomers, sites)
+
+        # child items for all hits per peak
+        for hit in df.reset_index().itertuples():
+            hit_item = SortableTreeWidgetItem(root_item)
+            create_hit_columns(hit_item, hit, monomers, sites)
+
+            # background color
+            if hit.Index % 2 == 0:
+                hit_item.setTotalBackground(
+                    QColor(configure.colors["table_hit_even"]), column_count)
+            else:
+                hit_item.setTotalBackground(
+                    QColor(configure.colors["table_hit_odd"]), column_count)
 
 
 def create_hit_columns(item, hit, monomers, sites):
     """
-    Create columns that contain information on a stage 2 hit
+    Create columns that contain information on a stage 1/2 hit
     in the results table.
 
     :param SortableTreeWidgetItem item: row to fill
-    :param pd.Series hit: hit data
+    :param pd.Series/namedtuple hit: hit data
     :param list monomers: list of monosaccharides
     :param list sites: list of glycosylation sites
     :return: the position of the first unused column
@@ -196,30 +217,49 @@ def create_hit_columns(item, hit, monomers, sites):
 
     # hit_item.setCheckState(1, Qt.Unchecked) TODO
 
-    # stage 2 hit index
-    pos = 2
-    item.setText(pos, "{}".format(hit.name[0]))
-    item.setTextAlignment(pos, Qt.AlignRight)
-    pos += 1
-
-    # hit properties
-    for label, form in [("Theo. Mass", "{:.2f}"),
-                        ("Da", "{:.2f}"),
-                        ("ppm", "{:.2f}"),
-                        ("Permutations", "{}"),
-                        ("Permutation score", "{:.2f}")]:
-        item.setText(pos, form.format(hit[label]))
+    if sites:  # stage 2 results
+        # hit index
+        pos = 2
+        item.setText(pos, "{}".format(hit.name[0]))
         item.setTextAlignment(pos, Qt.AlignRight)
         pos += 1
 
-    # monomer counts
-    for monomer in monomers:
-        item.setText(pos, "{}".format(hit[monomer]))
-        item.setTextAlignment(pos, Qt.AlignRight)
-        pos += 1
+        # hit properties
+        for label, form in [("Theo_Mass", "{:.2f}"),
+                            ("Da", "{:.2f}"),
+                            ("ppm", "{:.2f}"),
+                            ("Permutations", "{}"),
+                            ("Permutation score", "{:.2f}")]:
+            item.setText(pos, form.format(hit[label]))
+            item.setTextAlignment(pos, Qt.AlignRight)
+            pos += 1
 
-    # highest-scoring glycan combination
-    create_site_columns(item, pos, hit, sites)
+        # monomer counts
+        for monomer in monomers:
+            item.setText(pos, "{}".format(hit[monomer]))
+            item.setTextAlignment(pos, Qt.AlignRight)
+            pos += 1
+
+        # highest-scoring glycan combination
+        create_site_columns(item, pos, hit, sites)
+
+    else:  # stage 1 results
+        pos = 2
+
+        # hit properties
+        for label, form in [("Theo_Mass", "{:.2f}"),
+                            ("Da", "{:.2f}"),
+                            ("ppm", "{:.2f}")]:
+            item.setText(pos, form.format(getattr(hit, label)))
+            item.setTextAlignment(pos, Qt.AlignRight)
+            pos += 1
+
+        # monomer counts
+        for monomer in monomers:
+            item.setText(pos, "{}".format(getattr(hit, monomer)))
+            item.setTextAlignment(pos, Qt.AlignRight)
+            pos += 1
+
     return pos
 
 
@@ -1767,37 +1807,44 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self.btFilterStructureHits.setText("Show stage 2 results")
             self.btFilterStructureHits.blockSignals(False)
 
-        # update the results tree if available
         if self._monomer_hits is None:
             return
         self.twResults.clear()
         self.twResults.setUpdatesEnabled(False)
 
+        # select the requested results dataframe
+        # and determine the appropriate column names
         if (self.btFilterStructureHits.isChecked()
                 and self._polymer_hits is not None):
             df_hit = self._polymer_hits
+            hit_columns = ["Exp. Mass", "%", "Hit", "Theo. Mass",
+                           "Da", "ppm", "# Perms", "Hit Score"]
+            perm_columns = ["Perm", "Perm Score"]
+            site_columns = list(
+                    df_hit.columns[df_hit.columns.get_loc("ppm") + 1:
+                                   df_hit.columns.get_loc("Score")]
+                )
+
         else:
             df_hit = self._monomer_hits
+            hit_columns = ["Exp. Mass", "%", "Theo. Mass", "Da", "ppm"]
+            perm_columns = []
+            site_columns = []
 
-        # apply filters and drop permutations
+        # apply filters
         query = self.make_query_string()
         if query:
             df_hit = df_hit.query(query)
 
         # set column headers
-        header_labels = ["Exp. Mass", "%",
-                         "Hit", "Theo. Mass", "Da", "ppm",
-                         "# Perms", "Hit Score"]
-        mono_columns = df_hit.columns[:df_hit.columns.get_loc("Exp. Mass")]
-        try:
-            site_columns = df_hit.columns[df_hit.columns.get_loc("ppm") + 1:
-                                          df_hit.columns.get_loc("Score")]
-        except KeyError:
-            site_columns = []
-        header_labels.extend(mono_columns)
-        header_labels += ["Perm", "Perm Score"]
-        header_labels.extend(site_columns)
-        self.twResults.setColumnCount(len(header_labels))
+        mono_columns = list(
+            df_hit.columns[:df_hit.columns.get_loc("Exp_Mass")])
+        header_labels = (hit_columns
+                         + mono_columns
+                         + perm_columns
+                         + site_columns)
+        column_count = len(header_labels)
+        self.twResults.setColumnCount(column_count)
         self.twResults.setHeaderLabels(header_labels)
         self.twResults.header().setDefaultAlignment(Qt.AlignRight)
 
@@ -1814,7 +1861,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                                    .loc[mass_index, "Relative Abundance"]))
             root_item.setTextAlignment(1, Qt.AlignRight)
 
-            column_count = len(header_labels)
             if mass_index not in df_hit.index.levels[0]:
                 if count % 2 == 0:
                     root_item.setTotalBackground(
@@ -1836,7 +1882,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 selected_annotated_peaks.append(mass_index)
                 df_hit.loc[mass_index].pipe(create_child_items,
                                             root_item,
-                                            len(header_labels),
+                                            column_count,
                                             mono_columns,
                                             site_columns)
 
@@ -1873,7 +1919,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         # create line edits
         x_start = 0
         width = 0
-        for i in range(2, self._monomer_hits.columns.get_loc("Exp. Mass") + 2):
+        for i in range(2, self._monomer_hits.columns.get_loc("Exp_Mass") + 2):
             x_start = self.twResults.header().sectionPosition(i)
             width = self.twResults.header().sectionPosition(i + 1) - x_start
 

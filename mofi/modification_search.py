@@ -32,13 +32,12 @@ def find_monomers(mods, unexplained_masses, mass_tolerance=5.0,
                  in input list of peaks),
              (2) Isobar (0-based consecutive numbering of found masses) and
              (3) Stage1_hit (0-based numbering of hits per Mass_ID)
-             (4) Stage2_hit (0-based numbering of hits per Stage1_hit)
 
              columns:
 
-             * one column for each modification
-             * Exp. Mass
-             * Theo. Mass
+             * one column for each modification (e.g., Hex, HexNAc, ...)
+             * Exp_Mass
+             * Theo_Mass
              * Da
              * ppm
     """
@@ -71,8 +70,8 @@ def find_monomers(mods, unexplained_masses, mass_tolerance=5.0,
         # (a) transform result to combs_per_mass.
         # combs_per_mass will be a list of dicts with the following keys:
         # [mod_name]: number of occurrences ... for each type of modification
-        # Exp. Mass: mass measured in the experiment
-        # Theo. Mass: mass of protein and found modifications
+        # Exp_Mass: mass measured in the experiment
+        # Theo_Mass: mass of protein and found modifications
         # Da: remaining unexplained mass difference
         # abs(Delta): absolute remaining mass difference
         # ppm: mass difference in ppm
@@ -84,15 +83,15 @@ def find_monomers(mods, unexplained_masses, mass_tolerance=5.0,
                                     + sum(np.array(r) * mod_masses))
                 experimental_mass = explained_mass + unexplained_mass
                 r = dict(zip(mod_names, r))
-                r["Theo. Mass"] = theoretical_mass
-                r["Exp. Mass"] = experimental_mass
+                r["Theo_Mass"] = theoretical_mass
+                r["Exp_Mass"] = experimental_mass
                 r["Da"] = experimental_mass - theoretical_mass
                 r["abs(Delta)"] = abs(r["Da"])
                 r["ppm"] = ((experimental_mass - theoretical_mass)
                             / theoretical_mass * 1000000)
                 combs_per_mass.append(r)
         else:  # no appropriate combination was found
-            combs_per_mass.append({"Theo. Mass": 0.0,
+            combs_per_mass.append({"Theo_Mass": 0.0,
                                    "abs(Delta)": 0.0})
 
         # (b) create a dataframe from combs_per_mass
@@ -105,7 +104,7 @@ def find_monomers(mods, unexplained_masses, mass_tolerance=5.0,
         # to the overall list of combinations
         combinations[mass_index] = (
             combs_frame
-            .set_index("Theo. Mass", append=True, drop=False)
+            .set_index("Theo_Mass", append=True, drop=False)
             .swaplevel(1, 0))
 
     # after processing all peaks, combinations is a dict of dataframes
@@ -124,7 +123,7 @@ def find_monomers(mods, unexplained_masses, mass_tolerance=5.0,
         return
 
     # sort columns so that they have the original order from the monomer table
-    sortlist = [m[0] for m in mods] + ["Exp. Mass", "Theo. Mass", "Da", "ppm"]
+    sortlist = [m[0] for m in mods] + ["Exp_Mass", "Theo_Mass", "Da", "ppm"]
     combinations = combinations.reindex_axis(sortlist, axis="columns")
     combinations.index.names = ["Mass_ID", "Isobar", "Stage1_hit"]
 
@@ -132,9 +131,9 @@ def find_monomers(mods, unexplained_masses, mass_tolerance=5.0,
     # (a) index "Isobar", which is currently a list of (float) theo. masses,
     #     but should be a zero-based consecutive (integer) numbering
     # isodict is a {mass: running counter} dict
-    isodict = {v: i for i, v in enumerate(combinations["Theo. Mass"].unique())}
+    isodict = {v: i for i, v in enumerate(combinations["Theo_Mass"].unique())}
     combinations.reset_index("Isobar", drop=True, inplace=True)
-    combinations["Isobar"] = combinations["Theo. Mass"].map(isodict)
+    combinations["Isobar"] = combinations["Theo_Mass"].map(isodict)
     combinations.set_index("Isobar", append=True, inplace=True)
 
     # (b) index "Stage1_hit", which is wrong at this stage, since theo. masses
@@ -145,23 +144,7 @@ def find_monomers(mods, unexplained_masses, mass_tolerance=5.0,
         combinations
         .groupby(level="Isobar")
         .cumcount())  # create column "Stage1_hit", a counter per isobar
-    combinations.set_index("Stage1_hit", inplace=True, append=True)
-
-    combinations.reorder_levels(["Mass_ID", "Isobar", "Stage1_hit"])
-
-    # final structure of combinations:
-    # - multiindex with three levels:
-    #   (1) Mass_ID: consecutive numbers for peaks (=exp. masses)
-    #   (2) Isobar: consecutive numbers for combinations (=theo. masses)
-    #   (3) Stage1_hit: consecutive numbers for all
-    #                  combinations within an isobar
-    # - one column for each modification (Hex, HexNAc, N-core, ...):
-    #   number of each modification
-    # - Exp. Mass: peak mass
-    # - Theo. Mass: mass of found combination
-    # - Da: Theo. Mass - Exp. Mass
-    # - ppm: relative difference wrt Theo. Mass
-    return combinations
+    return combinations.set_index("Stage1_hit", append=True)
 
 
 # regex for decomposing glycan compositions
@@ -367,7 +350,7 @@ def find_polymers(stage_1_results, polymer_combinations,
         # 2       37     0          0          7       8       0    2  [...]
         #                           1          7       8       0    2  [...]
         #
-        #                                    Exp. Mass   Theo. Mass        Da
+        #                                     Exp_Mass    Theo_Mass        Da
         # Mass_ID Isobar Stage2_hit Perm_ID
         # 0       5      0          0        148057.12  148057.8620 -0.739772
         # 1       27     0          0        148122.21  148120.8700  1.341018
