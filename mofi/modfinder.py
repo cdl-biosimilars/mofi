@@ -137,6 +137,121 @@ def table_insert_row(table_widget, above=True):
     table_widget.create_row(last_row)
 
 
+def create_child_items(df, root_item, column_count, monomers, sites):
+    """
+    Fill the results table with child items (hit and permutation)
+    for each peak.
+
+    :param pd.DataFrame df: data for the child items
+    :param SortableTreeWidgetItem root_item: root item for the child
+    :param int column_count: total number of columns in results table
+    :param list monomers: list of monomer column names
+    :param list sites: list of glycan site column names
+    :return: nothing
+    """
+
+    # add the best annotation to the parent row
+    # peak_optimum is a (hit_ID, permutation_ID) tuple
+    peak_optimum = df.loc[df["Score"].idxmax()]
+    peak_optimum.name = (peak_optimum.name[1], peak_optimum.name[2])
+    create_hit_columns(root_item, peak_optimum, monomers, sites)
+
+    # (1) child items for all hits per peak
+    for stage2_id, hit in (df.reset_index("Isobar", drop=True)
+                             .groupby("Stage2_hit")):
+        hit_optimum = hit.loc[hit["Score"].idxmax()]
+        hit_item = SortableTreeWidgetItem(root_item)
+        pos = create_hit_columns(hit_item, hit_optimum, monomers, sites)
+
+        # background color
+        if stage2_id % 2 == 0:
+            hit_item.setTotalBackground(
+                QColor(configure.colors["table_hit_even"]), column_count)
+        else:
+            hit_item.setTotalBackground(
+                QColor(configure.colors["table_hit_odd"]), column_count)
+
+        # (2) child items for all permutations per hit
+        # only if there are at least two permutations
+        if hit.shape[0] > 1:
+            for _, perm in (hit.reset_index("Stage2_hit", drop=True)
+                               .iterrows()):
+                perm.name = (0, perm.name)
+                perm_item = SortableTreeWidgetItem(hit_item)
+                create_site_columns(perm_item, pos, perm, sites)
+
+
+def create_hit_columns(item, hit, monomers, sites):
+    """
+    Create columns that contain information on a stage 2 hit
+    in the results table.
+
+    :param SortableTreeWidgetItem item: row to fill
+    :param pd.Series hit: hit data
+    :param list monomers: list of monosaccharides
+    :param list sites: list of glycosylation sites
+    :return: the position of the first unused column
+    :rtype: int
+    """
+
+    # hit_item.setCheckState(1, Qt.Unchecked) TODO
+
+    # stage 2 hit index
+    pos = 2
+    item.setText(pos, "{}".format(hit.name[0]))
+    item.setTextAlignment(pos, Qt.AlignRight)
+    pos += 1
+
+    # hit properties
+    for label, form in [("Theo. Mass", "{:.2f}"),
+                        ("Da", "{:.2f}"),
+                        ("ppm", "{:.2f}"),
+                        ("Permutations", "{}"),
+                        ("Permutation score", "{:.2f}")]:
+        item.setText(pos, form.format(hit[label]))
+        item.setTextAlignment(pos, Qt.AlignRight)
+        pos += 1
+
+    # monomer counts
+    for monomer in monomers:
+        item.setText(pos, "{}".format(hit[monomer]))
+        item.setTextAlignment(pos, Qt.AlignRight)
+        pos += 1
+
+    # highest-scoring glycan combination
+    create_site_columns(item, pos, hit, sites)
+    return pos
+
+
+def create_site_columns(item, pos, hit, sites):
+    """
+    Create columns that contain information on glycan sites
+    in the results table.
+
+    :param SortableTreeWidgetItem item: row to fill
+    :param int pos: position of the first column
+    :param pd.Series hit: hit data
+    :param list sites: list of glycosylation sites
+    :return: nothing
+    """
+
+    # glycan sites
+    for site in sites:
+        item.setText(pos, "{}".format(hit[site]))
+        item.setTextAlignment(pos, Qt.AlignRight)
+        pos += 1
+
+    # permutation score
+    if not np.isnan(hit["Score"]):
+        item.setText(pos, "{:.2f}".format(hit["Score"]))
+        item.setTextAlignment(pos, Qt.AlignRight)
+    pos += 1
+
+    # permutation index
+    item.setText(pos, "{}".format(hit.name[1]))
+    item.setTextAlignment(pos, Qt.AlignRight)
+
+
 def table_clear(table_widget):
     """
     Delete all rows in a :class:`QTableWidget`.
@@ -209,7 +324,7 @@ class CollapsingRectangleSelector(RectangleSelector):
 class SortableTreeWidgetItem(QTreeWidgetItem):
     """
     A QTreeWidget which supports numerical sorting.
-    In addition, :meth:`setTotalBackground`
+    :meth:`setTotalBackground` set the background of all columns.
     """
 
     def __init__(self, parent=None):
@@ -225,13 +340,17 @@ class SortableTreeWidgetItem(QTreeWidgetItem):
             return key1 < key2
 
     # noinspection PyPep8Naming
-    def setTotalBackground(self, color):
+    def setTotalBackground(self, color, column_count=None):
         """
         Set the background color for all columns.
 
         :param QColor color: the color to use
+        :param int column_count: the intended number of columns
         :return: nothing
         """
+
+        if column_count and self.columnCount() != column_count:
+            self.setText(column_count - 1, "")
         for i in range(self.columnCount()):
             self.setBackground(i, QBrush(color))
 
@@ -1597,97 +1716,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.spectrum_canvas.draw()
 
 
-    @staticmethod
-    def create_site_columns(item, pos, row, sites):
-        """
-        Create columns containing information about glycan sites
-        in a :class:`SortableTreeWidgetItem`.
-
-        :param SortableTreeWidgetItem item: the item to fill
-        :param int pos: position of the first column
-        :param pd.Series row: glycan site data
-        :param list sites: glycosylation site names
-        :return: nothing
-        """
-        for site in sites:
-            item.setText(pos, "{}".format(row[site]))
-            item.setTextAlignment(pos, Qt.AlignRight)
-            pos += 1
-
-        if not np.isnan(row["Score"]):
-            item.setText(pos, "{:.2f}".format(row["Score"]))
-            item.setTextAlignment(pos, Qt.AlignRight)
-        pos += 1
-
-        item.setText(pos, "{}".format(row.name))
-        item.setTextAlignment(pos, Qt.AlignRight)
-
-
-    @staticmethod
-    def create_child_items(df, root_item, monomers, sites, column_count):
-        """
-        Fill the results table with child items (hit and permutation)
-        for each peak.
-
-        :param pd.DataFrame df: data for the child items
-        :param SortableTreeWidgetItem root_item: root item for the child
-        :param list monomers: list of monomer column names
-        :param list sites: list of glycan site column names
-        :param int column_count: total number of columns in results table
-        :return: nothing
-        """
-
-        # (1) child items for all hits per peak
-        for stage2_id, hit in (df.reset_index("Isobar", drop=True)
-                                 .groupby("Stage2_hit")):
-            hit_item = SortableTreeWidgetItem(root_item)
-            # hit_item.setCheckState(1, Qt.Unchecked) TODO
-            top_row = hit.loc[hit["Score"].idxmax()]
-            top_row.name = top_row.name[1]
-
-            # stage 2 hit index
-            pos = 2
-            hit_item.setText(pos, "{}".format(stage2_id))
-            hit_item.setTextAlignment(pos, Qt.AlignRight)
-            pos += 1
-
-            # hit properties
-            for label, form in [("Theo. Mass", "{:.2f}"),
-                                ("Da", "{:.2f}"),
-                                ("ppm", "{:.2f}"),
-                                ("Permutations", "{}"),
-                                ("Permutation score", "{:.2f}")]:
-                hit_item.setText(pos, form.format(top_row[label]))
-                hit_item.setTextAlignment(pos, Qt.AlignRight)
-                pos += 1
-
-            # monomer counts
-            for monomer in monomers:
-                hit_item.setText(pos, "{}".format(top_row[monomer]))
-                hit_item.setTextAlignment(pos, Qt.AlignRight)
-                pos += 1
-
-            # representative glycan combination and its score/abundance
-            MainWindow.create_site_columns(hit_item, pos, top_row, sites)
-
-            # background color
-            hit_item.setText(column_count, "")
-            if stage2_id % 2 == 0:
-                hit_item.setTotalBackground(
-                    QColor(configure.colors["table_hit_even"]))
-            else:
-                hit_item.setTotalBackground(
-                    QColor(configure.colors["table_hit_odd"]))
-
-            # (2) child items for all permutations per hit
-            # only if there are at least two permutations
-            if hit.shape[0] > 1:
-                for _, perm in (hit.reset_index("Stage2_hit", drop=True)
-                                   .iterrows()):
-                    perm_item = SortableTreeWidgetItem(hit_item)
-                    MainWindow.create_site_columns(perm_item, pos, perm, sites)
-
-
     def show_results(self, selected_peaks=None):
         """
         Update the spectrum, the list of masses and the result tree
@@ -1784,30 +1812,33 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 1, "{:.1f}".format(self._exp_mass_data
                                    .loc[mass_index, "Relative Abundance"]))
             root_item.setTextAlignment(1, Qt.AlignRight)
-            root_item.setText(len(header_labels) - 1, "")
 
+            column_count = len(header_labels)
             if mass_index not in df_hit.index.levels[0]:
                 if count % 2 == 0:
                     root_item.setTotalBackground(
-                        QColor(configure.colors["table_root_missing_even"]))
+                        QColor(configure.colors["table_root_missing_even"]),
+                        column_count)
                 else:
                     root_item.setTotalBackground(
-                        QColor(configure.colors["table_root_missing_odd"]))
+                        QColor(configure.colors["table_root_missing_odd"]),
+                        column_count)
             else:
                 if count % 2 == 0:
                     root_item.setTotalBackground(
-                        QColor(configure.colors["table_root_annotated_even"]))
+                        QColor(configure.colors["table_root_annotated_even"]),
+                        column_count)
                 else:
                     root_item.setTotalBackground(
-                        QColor(configure.colors["table_root_annotated_odd"]))
+                        QColor(configure.colors["table_root_annotated_odd"]),
+                        column_count)
                 selected_annotated_peaks.append(mass_index)
-                df_hit.loc[mass_index].pipe(self.create_child_items,
+                df_hit.loc[mass_index].pipe(create_child_items,
                                             root_item,
+                                            len(header_labels),
                                             mono_columns,
-                                            site_columns,
-                                            len(header_labels))
+                                            site_columns)
 
-        self.twResults.expandToDepth(0)
         self.twResults.header().setSectionResizeMode(
             QHeaderView.ResizeToContents)
         self.twResults.header().setStretchLastSection(False)
