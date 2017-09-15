@@ -235,11 +235,10 @@ def create_site_columns(item, pos, hit, sites):
     :return: nothing
     """
 
-    # glycan sites
-    for site in sites:
-        item.setText(pos, "{}".format(hit[site]))
-        item.setTextAlignment(pos, Qt.AlignRight)
-        pos += 1
+    # permutation index
+    item.setText(pos, "{}".format(hit.name[1]))
+    item.setTextAlignment(pos, Qt.AlignRight)
+    pos += 1
 
     # permutation score
     if not np.isnan(hit["Score"]):
@@ -247,9 +246,11 @@ def create_site_columns(item, pos, hit, sites):
         item.setTextAlignment(pos, Qt.AlignRight)
     pos += 1
 
-    # permutation index
-    item.setText(pos, "{}".format(hit.name[1]))
-    item.setTextAlignment(pos, Qt.AlignRight)
+    # glycan sites
+    for site in sites:
+        item.setText(pos, "{}".format(hit[site]))
+        item.setTextAlignment(pos, Qt.AlignRight)
+        pos += 1
 
 
 def table_clear(table_widget):
@@ -1786,7 +1787,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         # set column headers
         header_labels = ["Exp. Mass", "%",
                          "Hit", "Theo. Mass", "Da", "ppm",
-                         "# Perms", "Score"]
+                         "# Perms", "Hit Score"]
         mono_columns = df_hit.columns[:df_hit.columns.get_loc("Exp. Mass")]
         try:
             site_columns = df_hit.columns[df_hit.columns.get_loc("ppm") + 1:
@@ -1794,8 +1795,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         except KeyError:
             site_columns = []
         header_labels.extend(mono_columns)
+        header_labels += ["Perm", "Perm Score"]
         header_labels.extend(site_columns)
-        header_labels += ["Score", "Perm_ID"]
         self.twResults.setColumnCount(len(header_labels))
         self.twResults.setHeaderLabels(header_labels)
         self.twResults.header().setDefaultAlignment(Qt.AlignRight)
