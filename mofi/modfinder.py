@@ -598,6 +598,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         # private members
         self._disulfide_mass = 0  # mass of the current number of disulfides
         self._exp_mass_data = None  # peak list (mass + relative abundance)
+        self._filter_values = {}  # values on the results table filters
         self._known_mods_mass = 0  # mass of known modification
         self._monomer_hits = None  # results from the monomer search
         self._path = configure.path  # last path selected in a file dialog
@@ -1923,11 +1924,13 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         for i in range(self._monomer_hits.columns.get_loc("Exp_Mass")):
             x_start = self.twResults.header().sectionPosition(start_col + i)
             width = self.twResults.header().sectionSize(start_col + i)
+            monomer = self._monomer_hits.columns[i]
 
             le_test = QLineEdit(self.wdFilters)
-            le_test.setObjectName(self._monomer_hits.columns[i])
+            le_test.setObjectName(monomer)
             # noinspection PyUnresolvedReferences
             le_test.returnPressed.connect(lambda: self.show_results())
+            le_test.setText(self._filter_values.get(monomer, ""))
             le_test.resize(width, 20)
             le_test.move(x_start, 0)
             le_test.show()
@@ -1974,6 +1977,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         for child in self.wdFilters.findChildren(QLineEdit):
             f = re_filter.match(child.text()).groups()
             mod = child.objectName()
+            self._filter_values[mod] = child.text()
             if "".join(f):
                 if f[0] and not f[1] and not f[2]:
                     query.append("({} == {})".format(mod, f[0]))
