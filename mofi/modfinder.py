@@ -527,8 +527,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.spectrum_rectangle_selector = None
         # original limits of the x axis when the plot is drawn
         self.spectrum_x_limits = None
-        # the single peak that was picked, or a representative singe peak
-        self.spectrum_picked_peak = None
 
         # button group for specrum interaction mode
         self.bgSpectrum = QButtonGroup()
@@ -1465,7 +1463,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         else:
             self.chCombineDelta.setEnabled(False)
 
-        self.highlight_delta_series()
+        self.update_selection()
 
 
     def select_peaks_in_list(self):
@@ -1474,7 +1472,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         :return: nothing
         """
-        self.spectrum_picked_peak = self.lwPeaks.currentRow()
         self.update_selection()
 
 
@@ -1486,7 +1483,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         :return: nothing
         """
         if event.mouseevent.button == 1:
-            self.spectrum_picked_peak = event.ind[0]
             self.update_selection(event.ind)
 
 
@@ -1505,7 +1501,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 peak_indices.append(i)
 
         if peak_indices:
-            self.spectrum_picked_peak = peak_indices[0]
             self.update_selection(peak_indices)
 
 
@@ -1528,7 +1523,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         if self.bgSpectrum.checkedButton() == self.btModeSelection:
             self.highlight_selected_peaks(selected_peaks)
         else:
-            selected_peaks = self.highlight_delta_series()
+            selected_peaks = self.highlight_delta_series(selected_peaks[0])
 
         # (2) update the selection in the mass list
         self.lwPeaks.blockSignals(True)
@@ -1536,11 +1531,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self.lwPeaks.item(i).setSelected(i in selected_peaks)
         self.lwPeaks.blockSignals(False)
 
-        if self.spectrum_picked_peak is not None:
-            self.lwPeaks.scrollToItem(
-                self.lwPeaks.item(self.spectrum_picked_peak))
-        else:
-            self.lwPeaks.scrollToItem(self.lwPeaks.item(selected_peaks[0]))
+        self.lwPeaks.scrollToItem(self.lwPeaks.item(selected_peaks[0]))
 
         # (3) fill the single mass spin box with the currently selected mass
         try:
@@ -1600,10 +1591,11 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         return interval_per_peak
 
 
-    def highlight_delta_series(self):
+    def highlight_delta_series(self, central_peak):
         """
         Highlights a series of peaks that differ by a given mass.
 
+        :param int central_peak: index of the central peak
         :return: list of peak indices in the delta series
         """
 
@@ -1620,7 +1612,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         # column "1" is straight forward
         if self.chDelta1.isChecked():
             df_counts["1"] = self.find_delta_peaks(
-                self.spectrum_picked_peak,
+                central_peak,
                 self.sbDeltaValue1.value(),
                 self.sbDeltaTolerance1.value(),
                 self.sbDeltaRepetition1.value())
@@ -1646,7 +1638,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                                          axis=1))
             else:
                 df_counts["2"] = self.find_delta_peaks(
-                    self.spectrum_picked_peak,
+                    central_peak,
                     self.sbDeltaValue2.value(),
                     self.sbDeltaTolerance2.value(),
                     self.sbDeltaRepetition2.value())
@@ -1679,7 +1671,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             # calculate colors for both primary delat series
             df_counts["color"] = ((df_counts["1"] != "") * 1
                                   + (df_counts["2"] != "") * 2)
-        df_counts.loc[self.spectrum_picked_peak, "color"] = 4
+        df_counts.loc[central_peak, "color"] = 4
 
         # color the peaks in the delta series and increase their line width
         color_set = np.array([configure.colors["delta_other"],
@@ -2053,7 +2045,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             if not self._exp_mass_data.empty:
                 self.fill_peak_list(self._exp_mass_data["Average Mass"])
                 self.draw_spectrum()
-                self.spectrum_picked_peak = 0
                 self.show_results()
 
             self.cbTolerance.setCurrentIndex(
