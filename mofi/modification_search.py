@@ -384,7 +384,7 @@ def find_polymers(stage_1_results, polymer_combinations,
             stage_1_results
             .join(polymer_combinations, on=monomers, how="inner")
             .sort_index()
-            .rename(columns={"Abundance": "Score"}))
+            .rename(columns={"Abundance": "Permutation score"}))
     except TypeError:
         return None
 
@@ -393,10 +393,10 @@ def find_polymers(stage_1_results, polymer_combinations,
 
     # recalculate the scores to represent the contribution
     # of each annotation to the peak height
-    df_found_polymers["Score"] = (
-        df_found_polymers["Score"]
+    df_found_polymers["Permutation score"] = (
+        df_found_polymers["Permutation score"]
         * 100
-        / df_found_polymers.groupby("Mass_ID")["Score"].sum())
+        / df_found_polymers.groupby("Mass_ID")["Permutation score"].sum())
 
     if progress_bar is not None:
         progress_bar.setValue(50)
@@ -424,14 +424,15 @@ def find_polymers(stage_1_results, polymer_combinations,
     hash_group = df_found_polymers.groupby(df_found_polymers.index.names)
     df_found_polymers["Perm_ID"] = hash_group.cumcount()
     df_found_polymers["Permutations"] = hash_group.size()
-    df_found_polymers["Permutation score"] = hash_group["Score"].sum()
+    df_found_polymers["Hit score"] = hash_group["Permutation score"].sum()
 
     df_found_polymers = (
         df_found_polymers
         .drop(["Stage1_hit", "Hash"], axis=1)
         .set_index(["Mass_ID", "Perm_ID"], append=True)
         .reorder_levels(["Mass_ID", "Isobar", "Stage2_hit", "Perm_ID"])
-        .sort_index())
+        .sort_index()
+        .fillna({"Permutation score": 0, "Hit score": 0}))
 
     if progress_bar is not None:
         progress_bar.setValue(100)

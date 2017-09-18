@@ -154,7 +154,7 @@ def create_child_items(df, root_item, column_count, monomers, sites):
         # add the best annotation to the parent row
         # peak_optimum is a (hit_ID, permutation_ID) tuple
         try:
-            peak_optimum = df.loc[df["Score"].idxmax()]
+            peak_optimum = df.loc[df["Permutation score"].idxmax()]
             peak_optimum.name = (peak_optimum.name[1], peak_optimum.name[2])
             create_hit_columns(root_item, peak_optimum, monomers, sites)
         except ValueError:  # if df is empty, like due to filtering
@@ -164,7 +164,7 @@ def create_child_items(df, root_item, column_count, monomers, sites):
         for stage2_id, hit in (df.reset_index("Isobar", drop=True)
                                  .groupby("Stage2_hit")):
             hit_item = SortableTreeWidgetItem(root_item)
-            hit_optimum = hit.loc[hit["Score"].idxmax()]
+            hit_optimum = hit.loc[hit["Permutation score"].idxmax()]
             pos = create_hit_columns(hit_item, hit_optimum, monomers, sites)
 
             # background color
@@ -222,7 +222,7 @@ def create_hit_columns(item, hit, monomers, sites):
         pos += 1
 
         # hit properties
-        for label, form in [("Permutation score", "{:.2f}"),
+        for label, form in [("Hit score", "{:.2f}"),
                             ("Permutations", "{}"),
                             ("Theo_Mass", "{:.2f}"),
                             ("Da", "{:.2f}"),
@@ -278,8 +278,8 @@ def create_site_columns(item, pos, hit, sites):
     pos += 1
 
     # permutation score
-    if not np.isnan(hit["Score"]):
-        item.setText(pos, "{:.2f}".format(hit["Score"]))
+    if not np.isnan(hit["Permutation score"]):
+        item.setText(pos, "{:.2f}".format(hit["Permutation score"]))
         item.setTextAlignment(pos, Qt.AlignRight)
     pos += 1
 
@@ -1010,8 +1010,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                             "filters applied.\n")
                     df_hits = modification_search.drop_glycan_permutations(
                         self._polymer_hits)
-                    df_hits["Score"] = df_hits["Permutation score"]
-                    df_hits.drop(["Hash", "Permutation score"],
+                    df_hits["Score"] = df_hits["Hit score"]
+                    df_hits.drop(["Hash", "Hit score"],
                                  axis=1, inplace=True)
                 else:
                     f.write("# Results as displayed in results table.\n")
@@ -1823,7 +1823,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             perm_columns = ["Perm", "Perm Score"]
             site_columns = list(
                     df_hit.columns[df_hit.columns.get_loc("ppm") + 1:
-                                   df_hit.columns.get_loc("Score")]
+                                   df_hit.columns.get_loc("Permutation score")]
                 )
 
         else:
