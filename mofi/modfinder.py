@@ -457,22 +457,29 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         self.cbTolerance.activated.connect(self.choose_tolerance_units)
 
-        self.chCombineDelta.clicked.connect(self.update_selection)
+        self.chCombineDelta.clicked.connect(lambda: self.update_selection())
         self.chDelta1.clicked.connect(self.toggle_delta_series)
         self.chDelta2.clicked.connect(self.toggle_delta_series)
         self.chPngase.clicked.connect(self.calculate_protein_mass)
 
-        self.lwPeaks.itemSelectionChanged.connect(self.select_peaks_in_list)
+        self.lwPeaks.itemSelectionChanged.connect(
+            lambda: self.update_selection())
 
         self.rbStage1Results.clicked.connect(self.show_results)
         self.rbStage2Results.clicked.connect(self.show_results)
 
-        self.sbDeltaRepetition1.valueChanged.connect(self.update_selection)
-        self.sbDeltaRepetition2.valueChanged.connect(self.update_selection)
-        self.sbDeltaTolerance1.valueChanged.connect(self.update_selection)
-        self.sbDeltaTolerance2.valueChanged.connect(self.update_selection)
-        self.sbDeltaValue1.valueChanged.connect(self.update_selection)
-        self.sbDeltaValue2.valueChanged.connect(self.update_selection)
+        self.sbDeltaRepetition1.valueChanged.connect(
+            lambda: self.update_selection())
+        self.sbDeltaRepetition2.valueChanged.connect(
+            lambda: self.update_selection())
+        self.sbDeltaTolerance1.valueChanged.connect(
+            lambda: self.update_selection())
+        self.sbDeltaTolerance2.valueChanged.connect(
+            lambda: self.update_selection())
+        self.sbDeltaValue1.valueChanged.connect(
+            lambda: self.update_selection())
+        self.sbDeltaValue2.valueChanged.connect(
+            lambda: self.update_selection())
         self.sbDisulfides.valueChanged.connect(self.calculate_protein_mass)
 
         self.tbMonomers.cellChanged.connect(self.calculate_mod_mass)
@@ -1466,15 +1473,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.update_selection()
 
 
-    def select_peaks_in_list(self):
-        """
-        Select one or several peaks in the peak list.
-
-        :return: nothing
-        """
-        self.update_selection()
-
-
     def select_peaks_by_pick(self, event):
         """
         Select a peak picked by a mouseclick on the spectrum.
@@ -1520,10 +1518,11 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             selected_peaks = [i.row() for i in self.lwPeaks.selectedIndexes()]
 
         # (1) update selection in the spectrum
+        central_peak = selected_peaks[0]
         if self.bgSpectrum.checkedButton() == self.btModeSelection:
             self.highlight_selected_peaks(selected_peaks)
         else:
-            selected_peaks = self.highlight_delta_series(selected_peaks[0])
+            selected_peaks = self.highlight_delta_series(central_peak)
 
         # (2) update the selection in the mass list
         self.lwPeaks.blockSignals(True)
@@ -1531,7 +1530,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self.lwPeaks.item(i).setSelected(i in selected_peaks)
         self.lwPeaks.blockSignals(False)
 
-        self.lwPeaks.scrollToItem(self.lwPeaks.item(selected_peaks[0]))
+        self.lwPeaks.scrollToItem(self.lwPeaks.item(central_peak))
 
         # (3) fill the single mass spin box with the currently selected mass
         try:
