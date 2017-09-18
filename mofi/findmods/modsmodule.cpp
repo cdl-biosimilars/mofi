@@ -54,14 +54,14 @@ extern "C" {
         }
 
         // Find all the solutions
-        std::vector<mod_state_t> solutions;
+        SearchResult solutions;
         solutions = find_modifications(target_mass, mods, massrange);
 
         // Convert vector back to list
         PyObject* res_list;
-        res_list = PyList_New(solutions.size());
-        for (size_t sol_i = 0; sol_i < solutions.size(); sol_i++) {
-            const mod_state_t& sol = solutions[sol_i];
+        res_list = PyList_New(solutions.combs.size());
+        for (size_t sol_i = 0; sol_i < solutions.combs.size(); sol_i++) {
+            const mod_state_t& sol = solutions.combs[sol_i];
             PyObject* sol_list = PyList_New(sol.size());
             for (size_t count_i = 0; count_i < sol.size(); count_i++) {
                 PyObject* count = PyLong_FromLong(sol[count_i]);
@@ -70,7 +70,9 @@ extern "C" {
             PyList_SetItem(res_list, sol_i, sol_list);
         }
 
-        return res_list;
+        PyObject* result;
+        result = PyTuple_Pack(2, PyLong_FromLong(solutions.search_space_size), res_list);
+        return result;
     }
 
     static PyMethodDef module_methods[] = {

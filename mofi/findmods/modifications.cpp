@@ -55,7 +55,7 @@ void next_mod(
     used[index] = 0;
 }
 
-std::vector<mod_state_t> find_modifications(
+SearchResult find_modifications(
     const double target_mass,
     std::vector<Modification> mods,
     double massrange)
@@ -66,6 +66,7 @@ std::vector<mod_state_t> find_modifications(
     search_space = 0;
     massrange += TOLERANCE;
     next_mod(target_mass, mods, solutions, used, massrange, search_space);
-    std::cout << search_space;
-    return solutions;
+
+    SearchResult result = {search_space, solutions};
+    return result;
 }

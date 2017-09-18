@@ -3,20 +3,18 @@
 
 typedef std::vector<int> mod_state_t;
 
-/**
- * Struct to store modification details
- */
+// Struct to store modification details
 struct Modification
 {
-    /**
-     * Mass of the modification
-     */
-    double mass;
+    double mass;  // Mass of the modification
+    long max;  // Maximum amount of the modification on a protein
+};
 
-    /**
-     * Maximum amount of the modification on a protein
-     */
-    long max;
+// Struct to store the results of a modifications search
+struct SearchResult
+{
+    unsigned long long int search_space_size;
+    std::vector<mod_state_t> combs;
 };
 
 /**
@@ -28,7 +26,7 @@ struct Modification
  * @param massrange tolerance of the target mass
  * @return container with all found solutions
  */
-std::vector<mod_state_t> find_modifications(
+SearchResult find_modifications(
     const double target_mass,
     std::vector<Modification> mods,
     const double massrange=5.0);
