@@ -63,13 +63,11 @@ _polymer_table_columns = [
 
 # dict for file extensions to be used in a QFileDialog
 _file_extensions = {
-    "xls": "Excel files (*.xlsx *.xls)",
-    "csv": "CSV files (*.csv)",
-    "bpf": "BioPharma Finder results (*.xlsx *.xls)",
-    "fasta": "Sequence files (*.fasta)",
-    "xml": "ModFinder XML settings (*.xml)",
-    "png": "Portable network graphics (*.png)",
-    "svg": "Scalable vector graphics (*.svg)",
+    "xls": "Excel files [xlsx, xls] (*.xlsx *.xls)",
+    "csv": "CSV files [csv] (*.csv)",
+    "bpf": "BioPharma Finder results [xlsx, xls] (*.xlsx *.xls)",
+    "fasta": "Sequence files [fasta] (*.fasta)",
+    "xml": "ModFinder XML settings [xml] (*.xml)",
     "": ""
 }
 
@@ -77,16 +75,17 @@ _file_extensions = {
 _reverse_extensions = {v: k for k, v in _file_extensions.items()}
 
 
-def file_extensions(*args):
+def file_extensions(*args, ext_dict=_file_extensions):
     """
     Create a filter string for :class:`QFileDialog`.
 
     :param args: list of file extensions
+    :param dict ext_dict: dict of file extension: description
     :return: a string suitable as argument for the filter argument
              of :class:`QFileDialog.getOpenFileName` or
              :class:`~QFileDialog.getSaveFileName`
     """
-    return ";;".join([_file_extensions[a] for a in args])
+    return ";;".join([ext_dict[a] for a in args])
 
 
 def find_in_intervals(value, intervals):
@@ -2067,15 +2066,22 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         :return: nothing
         """
+        file_types = {k: "{0} [{1}] (*.{1})".format(v, k)
+                      for k, v in self.spectrum_canvas
+                                      .get_supported_filetypes()
+                                      .items()}
+        print(file_types)
+        reverse_file_types = {v: k for k, v in file_types.items()}
         filename, filefilter = QFileDialog.getSaveFileName(
             self,
             "Save spectrum",
             self._path,
-            file_extensions("png", "svg"))
+            file_extensions(*sorted(file_types.keys()), ext_dict=file_types),
+            options=QFileDialog.HideNameFilterDetails)
         self._path = os.path.split(filename)[0]
         if filename:
-            if not filename.endswith(_reverse_extensions[filefilter]):
-                filename += "." + _reverse_extensions[filefilter]
+            if not filename.endswith(reverse_file_types[filefilter]):
+                filename += "." + reverse_file_types[filefilter]
             try:
                 self.spectrum_fig.savefig(filename, dpi=200)
             except OSError:
