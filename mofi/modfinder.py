@@ -1535,7 +1535,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         # (3) fill the single mass spin box with the currently selected mass
         try:
             self.sbSingleMass.setValue(
-                float(self.lwPeaks.currentItem().text()))
+                float(self.lwPeaks.item(central_peak).text()))
         except AttributeError:  # occurs when second peak file is loaded
             pass
 
