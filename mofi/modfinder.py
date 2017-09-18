@@ -428,7 +428,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             lambda: table_insert_row(self.tbMonomers, above=False))
         self.btInsertRowBelowPolymers.clicked.connect(
             lambda: table_insert_row(self.tbPolymers, above=False))
-        self.btLabelPeaks.clicked.connect(lambda: self.show_results())
+        self.btLabelPeaks.clicked.connect(lambda: self.update_selection())
         self.btLoadMonomers.clicked.connect(
             lambda: self.load_table(
                 default=False,
@@ -458,19 +458,19 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         self.cbTolerance.activated.connect(self.choose_tolerance_units)
 
-        self.chCombineDelta.clicked.connect(self.show_results)
+        self.chCombineDelta.clicked.connect(self.update_selection)
         self.chDelta1.clicked.connect(self.toggle_delta_series)
         self.chDelta2.clicked.connect(self.toggle_delta_series)
         self.chPngase.clicked.connect(self.calculate_protein_mass)
 
         self.lwPeaks.itemSelectionChanged.connect(self.select_peaks_in_list)
 
-        self.sbDeltaRepetition1.valueChanged.connect(self.show_results)
-        self.sbDeltaRepetition2.valueChanged.connect(self.show_results)
-        self.sbDeltaTolerance1.valueChanged.connect(self.show_results)
-        self.sbDeltaTolerance2.valueChanged.connect(self.show_results)
-        self.sbDeltaValue1.valueChanged.connect(self.show_results)
-        self.sbDeltaValue2.valueChanged.connect(self.show_results)
+        self.sbDeltaRepetition1.valueChanged.connect(self.update_selection)
+        self.sbDeltaRepetition2.valueChanged.connect(self.update_selection)
+        self.sbDeltaTolerance1.valueChanged.connect(self.update_selection)
+        self.sbDeltaTolerance2.valueChanged.connect(self.update_selection)
+        self.sbDeltaValue1.valueChanged.connect(self.update_selection)
+        self.sbDeltaValue2.valueChanged.connect(self.update_selection)
         self.sbDisulfides.valueChanged.connect(self.calculate_protein_mass)
 
         self.tbMonomers.cellChanged.connect(self.calculate_mod_mass)
@@ -1015,7 +1015,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                                  axis=1, inplace=True)
                 else:
                     f.write("# Results as displayed in results table.\n")
-                    df_hits = self.show_results()
+                    df_hits = self._polymer_hits()  # TODO new export variants
 
                 # add a column "Relative abundance" to the data source
                 df_relative_abundance = (
@@ -1490,7 +1490,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         :return: nothing
         """
         self.spectrum_picked_peak = self.lwPeaks.currentRow()
-        self.show_results()
+        self.update_selection()
 
 
     def select_peaks_by_pick(self, event):
@@ -1502,7 +1502,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         """
         if event.mouseevent.button == 1:
             self.spectrum_picked_peak = event.ind[0]
-            self.show_results(event.ind)
+            self.update_selection(event.ind)
 
 
     def select_peaks_by_span(self, min_mass, max_mass):
@@ -1521,7 +1521,48 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         if peak_indices:
             self.spectrum_picked_peak = peak_indices[0]
-            self.show_results(peak_indices)
+            self.update_selection(peak_indices)
+
+
+    def update_selection(self, selected_peaks=None):
+        """
+        Update the spectrum, the list of masses and the single mass spinbox
+        after the selection has changed.
+
+        :param selected_peaks: list of indices of selected peaks
+        :return: the DataFrame whose contents are shown in the results table
+        """
+
+        if self._exp_mass_data is None:  # there's no spectrum
+            return
+
+        if selected_peaks is None:
+            selected_peaks = [i.row() for i in self.lwPeaks.selectedIndexes()]
+
+        # (1) update selection in the spectrum
+        if self.bgSpectrum.checkedButton() == self.btModeSelection:
+            self.highlight_selected_peaks(selected_peaks)
+        else:
+            selected_peaks = self.highlight_delta_series()
+
+        # (2) update the selection in the mass list
+        self.lwPeaks.blockSignals(True)
+        for i in range(self.lwPeaks.count()):
+            self.lwPeaks.item(i).setSelected(i in selected_peaks)
+        self.lwPeaks.blockSignals(False)
+
+        if self.spectrum_picked_peak is not None:
+            self.lwPeaks.scrollToItem(
+                self.lwPeaks.item(self.spectrum_picked_peak))
+        else:
+            self.lwPeaks.scrollToItem(self.lwPeaks.item(selected_peaks[0]))
+
+        # (3) fill the single mass spin box with the currently selected mass
+        try:
+            self.sbSingleMass.setValue(
+                float(self.lwPeaks.currentItem().text()))
+        except AttributeError:  # occurs when second peak file is loaded
+            pass
 
 
     def find_delta_peaks(self, query_peak, delta, tolerance, iterations):
@@ -1744,48 +1785,12 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.spectrum_canvas.draw()
 
 
-    def show_results(self, selected_peaks=None):
+    def show_results(self):
         """
-        Update the spectrum, the list of masses and the result tree
-        after the selection or parameters influencing the selection
-        have changed.
+        Update the results table.
 
-        :param selected_peaks: list of indices of selected peaks
-        :return: the DataFrame whose contents are shown in the results table
+        :return: nothing
         """
-
-        if self._exp_mass_data is None:  # there's no spectrum
-            return
-
-        if selected_peaks is None:
-            selected_peaks = [i.row() for i in self.lwPeaks.selectedIndexes()]
-
-        if self.bgSpectrum.checkedButton() == self.btModeSelection:
-            self.highlight_selected_peaks(selected_peaks)
-        else:
-            selected_peaks = self.highlight_delta_series()
-
-        # update the selection in the mass list
-        self.lwPeaks.blockSignals(True)
-        for i in range(self.lwPeaks.count()):
-            self.lwPeaks.item(i).setSelected(i in selected_peaks)
-        self.lwPeaks.blockSignals(False)
-
-        # show the first currently selected mass
-        # or the mass of the central peak in the delta series
-        # in the mass list
-        if self.spectrum_picked_peak is not None:
-            self.lwPeaks.scrollToItem(
-                self.lwPeaks.item(self.spectrum_picked_peak))
-        else:
-            self.lwPeaks.scrollToItem(self.lwPeaks.item(selected_peaks[0]))
-
-        # fill the single mass spin box with the currently selected mass
-        try:
-            self.sbSingleMass.setValue(
-                float(self.lwPeaks.currentItem().text()))
-        except AttributeError:  # occurs when second peak file is loaded
-            pass
 
         if self._monomer_hits is None:
             return
@@ -1828,8 +1833,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.twResults.setHeaderLabels(self._results_table_labels)
         self.twResults.header().setDefaultAlignment(Qt.AlignRight)
 
-        selected_annotated_peaks = []
-        for count, mass_index in enumerate(selected_peaks):
+        # selected_annotated_peaks = []
+        for mass_index in self._exp_mass_data.index:
             # generate root item (experimental mass, relative abundance)
             root_item = SortableTreeWidgetItem(self.twResults)
             root_item.setText(
@@ -1842,7 +1847,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             root_item.setTextAlignment(1, Qt.AlignRight)
 
             if mass_index not in df_hit.index.levels[0]:
-                if count % 2 == 0:
+                if mass_index % 2 == 0:
                     root_item.setTotalBackground(
                         QColor(configure.colors["table_root_missing_even"]),
                         column_count)
@@ -1851,7 +1856,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                         QColor(configure.colors["table_root_missing_odd"]),
                         column_count)
             else:
-                if count % 2 == 0:
+                if mass_index % 2 == 0:
                     root_item.setTotalBackground(
                         QColor(configure.colors["table_root_annotated_even"]),
                         column_count)
@@ -1859,7 +1864,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                     root_item.setTotalBackground(
                         QColor(configure.colors["table_root_annotated_odd"]),
                         column_count)
-                selected_annotated_peaks.append(mass_index)
+                # selected_annotated_peaks.append(mass_index)
                 df_hit.loc[mass_index].pipe(create_child_items,
                                             root_item,
                                             column_count,
@@ -1879,11 +1884,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             """)
         self.twResults.setUpdatesEnabled(True)
         self.create_filter_widgets()
-
-        try:
-            return df_hit.loc[selected_annotated_peaks]
-        except ValueError:  # empty dataframe
-            return df_hit
 
 
     def create_filter_widgets(self):
