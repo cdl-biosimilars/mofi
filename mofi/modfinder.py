@@ -153,15 +153,18 @@ def create_child_items(df, root_item, column_count, monomers, sites):
     if sites:  # show stage 2 results
         # add the best annotation to the parent row
         # peak_optimum is a (hit_ID, permutation_ID) tuple
-        peak_optimum = df.loc[df["Score"].idxmax()]
-        peak_optimum.name = (peak_optimum.name[1], peak_optimum.name[2])
-        create_hit_columns(root_item, peak_optimum, monomers, sites)
+        try:
+            peak_optimum = df.loc[df["Score"].idxmax()]
+            peak_optimum.name = (peak_optimum.name[1], peak_optimum.name[2])
+            create_hit_columns(root_item, peak_optimum, monomers, sites)
+        except ValueError:  # if df is empty, like due to filtering
+            pass
 
         # (1) child items for all hits per peak
         for stage2_id, hit in (df.reset_index("Isobar", drop=True)
                                  .groupby("Stage2_hit")):
-            hit_optimum = hit.loc[hit["Score"].idxmax()]
             hit_item = SortableTreeWidgetItem(root_item)
+            hit_optimum = hit.loc[hit["Score"].idxmax()]
             pos = create_hit_columns(hit_item, hit_optimum, monomers, sites)
 
             # background color
@@ -182,12 +185,6 @@ def create_child_items(df, root_item, column_count, monomers, sites):
                     create_site_columns(perm_item, pos, perm, sites)
 
     else:  # stage 1 results
-        # add the best annotation to the parent row
-        # peak_optimum is a (hit_ID, permutation_ID) tuple
-        # peak_optimum = df.loc[df["Score"].idxmax()]
-        # peak_optimum.name = (peak_optimum.name[1], peak_optimum.name[2])
-        # create_hit_columns(root_item, peak_optimum, monomers, sites)
-
         # child items for all hits per peak
         for hit in df.reset_index().itertuples():
             hit_item = SortableTreeWidgetItem(root_item)
@@ -225,11 +222,11 @@ def create_hit_columns(item, hit, monomers, sites):
         pos += 1
 
         # hit properties
-        for label, form in [("Theo_Mass", "{:.2f}"),
-                            ("Da", "{:.2f}"),
-                            ("ppm", "{:.2f}"),
+        for label, form in [("Permutation score", "{:.2f}"),
                             ("Permutations", "{}"),
-                            ("Permutation score", "{:.2f}")]:
+                            ("Theo_Mass", "{:.2f}"),
+                            ("Da", "{:.2f}"),
+                            ("ppm", "{:.2f}")]:
             item.setText(pos, form.format(hit[label]))
             item.setTextAlignment(pos, Qt.AlignRight)
             pos += 1
@@ -606,6 +603,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self._path = configure.path  # last path selected in a file dialog
         self._polymer_hits = None  # results from the polymer search
         self._protein_mass = 0  # mass of the current Protein object
+        self._results_table_labels = None  # labels of the results table header
 
 
     def _monomer_table_create_row(self, row_id, active=False, name="",
@@ -1484,10 +1482,12 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             for i in range(self.lwPeaks.count()):
                 if self.lwPeaks.item(i).isSelected():
                     break
-            self.show_results([i])
+            selected_peaks = [i]
         else:
             self.btFilterStructureHits.setText("Show stage 2 results")
-            self.show_results()
+            selected_peaks = None
+        self.show_results(selected_peaks)
+        self.create_filter_widgets()
 
 
     def select_peaks_in_list(self):
@@ -1817,8 +1817,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         if (self.btFilterStructureHits.isChecked()
                 and self._polymer_hits is not None):
             df_hit = self._polymer_hits
-            hit_columns = ["Exp. Mass", "%", "Hit", "Theo. Mass",
-                           "Da", "ppm", "# Perms", "Hit Score"]
+            hit_columns = ["Exp. Mass", "%", "Hit", "Hit Score", "# Perms",
+                           "Theo. Mass", "Da", "ppm", ]
             perm_columns = ["Perm", "Perm Score"]
             site_columns = list(
                     df_hit.columns[df_hit.columns.get_loc("ppm") + 1:
@@ -1839,13 +1839,13 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         # set column headers
         mono_columns = list(
             df_hit.columns[:df_hit.columns.get_loc("Exp_Mass")])
-        header_labels = (hit_columns
-                         + mono_columns
-                         + perm_columns
-                         + site_columns)
-        column_count = len(header_labels)
+        self._results_table_labels = (hit_columns
+                                      + mono_columns
+                                      + perm_columns
+                                      + site_columns)
+        column_count = len(self._results_table_labels)
         self.twResults.setColumnCount(column_count)
-        self.twResults.setHeaderLabels(header_labels)
+        self.twResults.setHeaderLabels(self._results_table_labels)
         self.twResults.header().setDefaultAlignment(Qt.AlignRight)
 
         selected_annotated_peaks = []
@@ -1919,12 +1919,13 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         # create line edits
         x_start = 0
         width = 0
-        for i in range(2, self._monomer_hits.columns.get_loc("Exp_Mass") + 2):
-            x_start = self.twResults.header().sectionPosition(i)
-            width = self.twResults.header().sectionPosition(i + 1) - x_start
+        start_col = self._results_table_labels.index("ppm") + 1
+        for i in range(self._monomer_hits.columns.get_loc("Exp_Mass")):
+            x_start = self.twResults.header().sectionPosition(start_col + i)
+            width = self.twResults.header().sectionSize(start_col + i)
 
             le_test = QLineEdit(self.wdFilters)
-            le_test.setObjectName(self._monomer_hits.columns[i-2])
+            le_test.setObjectName(self._monomer_hits.columns[i])
             # noinspection PyUnresolvedReferences
             le_test.returnPressed.connect(lambda: self.show_results())
             le_test.resize(width, 20)
