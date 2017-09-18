@@ -453,7 +453,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.btSavePolymers.clicked.connect(
             lambda: self.save_table("Export glycans", "polymers"))
         self.btSaveSpectrum.clicked.connect(self.save_spectrum)
-        self.btFilterStructureHits.clicked.connect(self.filter_structure_hits)
+        self.btFilterStructureHits.clicked.connect(self.toggle_search_results)
         self.btUpdateMass.clicked.connect(self.calculate_protein_mass)
 
         self.cbTolerance.activated.connect(self.choose_tolerance_units)
@@ -1468,25 +1468,19 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.highlight_delta_series()
 
 
-    def filter_structure_hits(self):
+    def toggle_search_results(self):
         """
         Called when the checkable button "Filter structure hits" is pressed.
         Ensure that only a single mass is displayed in the result tree
         if this button is unchecked.
 
         :return: nothing
-        """
+        """  # TODO
         if not self.btFilterStructureHits.isChecked():
             self.btFilterStructureHits.setText("Show stage 1 results")
-            i = 0
-            for i in range(self.lwPeaks.count()):
-                if self.lwPeaks.item(i).isSelected():
-                    break
-            selected_peaks = [i]
         else:
             self.btFilterStructureHits.setText("Show stage 2 results")
-            selected_peaks = None
-        self.show_results(selected_peaks)
+        self.show_results()
 
 
     def select_peaks_in_list(self):
@@ -1526,10 +1520,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 peak_indices.append(i)
 
         if peak_indices:
-            self.btFilterStructureHits.blockSignals(True)
-            self.btFilterStructureHits.setChecked(True)
-            self.btFilterStructureHits.setText("Show stage 2 results")
-            self.btFilterStructureHits.blockSignals(False)
             self.spectrum_picked_peak = peak_indices[0]
             self.show_results(peak_indices)
 
@@ -1725,8 +1715,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         # peak colors will be an array with one entry per peak:
         # no polymers: 0 - not selected, 1 - selected
         # polymers:    2 - not selected, 3 - selected
-        # alternative colors: orange [1, .49, .16, 1.0],
-        #                     light red [1, .66, .66, 1.0]
         peak_colors = selected_peaks + peaks_with_result
         color_set = np.array([configure.colors["unselect_no_annotation"],
                               configure.colors["select_no_annotation"],
@@ -1798,13 +1786,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 float(self.lwPeaks.currentItem().text()))
         except AttributeError:  # occurs when second peak file is loaded
             pass
-
-        # activate the polymer hit filter if more than one peak is selected
-        if len(selected_peaks) > 1:
-            self.btFilterStructureHits.blockSignals(True)
-            self.btFilterStructureHits.setChecked(True)
-            self.btFilterStructureHits.setText("Show stage 2 results")
-            self.btFilterStructureHits.blockSignals(False)
 
         if self._monomer_hits is None:
             return
