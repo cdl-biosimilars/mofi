@@ -1334,7 +1334,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self.statusbar.showMessage("Structure search done!", 5000)
         self.btFilterStructureHits.setEnabled(True)
         self.show_results()
-        self.create_filter_widgets()
 
 
     def draw_spectrum(self):
@@ -1488,7 +1487,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self.btFilterStructureHits.setText("Show stage 2 results")
             selected_peaks = None
         self.show_results(selected_peaks)
-        self.create_filter_widgets()
 
 
     def select_peaks_in_list(self):
@@ -1890,7 +1888,16 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.twResults.header().setSectionResizeMode(
             QHeaderView.ResizeToContents)
         self.twResults.header().setStretchLastSection(False)
+        self.twResults.header().setStyleSheet(
+            """
+            QHeaderView::section {
+                padding-top: 2px;
+                padding-bottom: 2px;
+                padding-left: 12px;
+            }
+            """)
         self.twResults.setUpdatesEnabled(True)
+        self.create_filter_widgets()
 
         try:
             return df_hit.loc[selected_annotated_peaks]
@@ -2081,7 +2088,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 self.draw_spectrum()
                 self.spectrum_picked_peak = 0
                 self.show_results()
-                self.create_filter_widgets()
 
             self.cbTolerance.setCurrentIndex(
                 int(root.find("tolerance-flavor").text))

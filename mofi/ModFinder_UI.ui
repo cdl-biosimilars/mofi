@@ -1471,6 +1471,9 @@
       <attribute name="headerHighlightSections">
        <bool>true</bool>
       </attribute>
+      <attribute name="headerMinimumSectionSize">
+       <number>0</number>
+      </attribute>
       <attribute name="headerShowSortIndicator" stdset="0">
        <bool>true</bool>
       </attribute>

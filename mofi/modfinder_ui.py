@@ -610,6 +610,7 @@ class Ui_ModFinder(object):
         self.twResults.setObjectName("twResults")
         self.twResults.header().setCascadingSectionResizes(True)
         self.twResults.header().setHighlightSections(True)
+        self.twResults.header().setMinimumSectionSize(0)
         self.twResults.header().setSortIndicatorShown(True)
         self.verticalLayout_6.addWidget(self.twResults)
         self.line_2.raise_()
