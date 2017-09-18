@@ -453,7 +453,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.btSavePolymers.clicked.connect(
             lambda: self.save_table("Export glycans", "polymers"))
         self.btSaveSpectrum.clicked.connect(self.save_spectrum)
-        self.btFilterStructureHits.clicked.connect(self.toggle_search_results)
         self.btUpdateMass.clicked.connect(self.calculate_protein_mass)
 
         self.cbTolerance.activated.connect(self.choose_tolerance_units)
@@ -464,6 +463,9 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.chPngase.clicked.connect(self.calculate_protein_mass)
 
         self.lwPeaks.itemSelectionChanged.connect(self.select_peaks_in_list)
+
+        self.rbStage1Results.clicked.connect(self.show_results)
+        self.rbStage2Results.clicked.connect(self.show_results)
 
         self.sbDeltaRepetition1.valueChanged.connect(self.update_selection)
         self.sbDeltaRepetition2.valueChanged.connect(self.update_selection)
@@ -936,7 +938,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self.twResults.clear()
             self._monomer_hits = None
             self._polymer_hits = None
-            self.btFilterStructureHits.setEnabled(False)
             self.fill_peak_list(self._exp_mass_data["Average Mass"])
             self.draw_spectrum()
 
@@ -1332,7 +1333,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 monomers=monomers_for_polymer_search,
                 progress_bar=self.pbSearchProgress)
             self.statusbar.showMessage("Structure search done!", 5000)
-        self.btFilterStructureHits.setEnabled(True)
         self.show_results()
 
 
@@ -1466,21 +1466,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self.chCombineDelta.setEnabled(False)
 
         self.highlight_delta_series()
-
-
-    def toggle_search_results(self):
-        """
-        Called when the checkable button "Filter structure hits" is pressed.
-        Ensure that only a single mass is displayed in the result tree
-        if this button is unchecked.
-
-        :return: nothing
-        """  # TODO
-        if not self.btFilterStructureHits.isChecked():
-            self.btFilterStructureHits.setText("Show stage 1 results")
-        else:
-            self.btFilterStructureHits.setText("Show stage 2 results")
-        self.show_results()
 
 
     def select_peaks_in_list(self):
@@ -1792,6 +1777,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         :return: nothing
         """
 
+        self.update_selection()
+
         if self._monomer_hits is None:
             return
         self.twResults.clear()
@@ -1799,7 +1786,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         # select the requested results dataframe
         # and determine the appropriate column names
-        if (self.btFilterStructureHits.isChecked()
+        if (self.rbStage2Results.isChecked()
                 and self._polymer_hits is not None):
             df_hit = self._polymer_hits
             hit_columns = ["Exp. Mass", "%", "Hit", "Hit Score", "# Perms",
@@ -2060,7 +2047,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
             self._monomer_hits = None
             self._polymer_hits = None
-            self.btFilterStructureHits.setEnabled(False)
             self.twResults.clear()
             self._exp_mass_data = io_tools.dataframe_from_xml(
                 root.find("masslist"))
