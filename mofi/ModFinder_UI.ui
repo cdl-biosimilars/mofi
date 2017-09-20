@@ -1545,10 +1545,106 @@
           </item>
          </layout>
         </widget>
+        <widget class="QWidget" name="tab">
+         <attribute name="title">
+          <string>Statistics</string>
+         </attribute>
+         <layout class="QHBoxLayout" name="horizontalLayout_16">
+          <item>
+           <widget class="QTableWidget" name="tbStatistics">
+            <column>
+             <property name="text">
+              <string>Mass</string>
+             </property>
+            </column>
+            <column>
+             <property name="text">
+              <string>Search space size</string>
+             </property>
+            </column>
+            <column>
+             <property name="text">
+              <string>Stage 1 results</string>
+             </property>
+            </column>
+            <column>
+             <property name="text">
+              <string>Stage 2 results</string>
+             </property>
+            </column>
+            <column>
+             <property name="text">
+              <string>Unique</string>
+             </property>
+            </column>
+           </widget>
+          </item>
+         </layout>
+        </widget>
        </widget>
       </item>
       <item>
        <layout class="QVBoxLayout" name="verticalLayout_11">
+        <item>
+         <widget class="QToolButton" name="btCollapseAll">
+          <property name="toolTip">
+           <string>Collapse all</string>
+          </property>
+          <property name="icon">
+           <iconset resource="mofi.qrc">
+            <normaloff>:/mofi resource/images/CollapseAll.png</normaloff>:/mofi resource/images/CollapseAll.png</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>24</width>
+            <height>24</height>
+           </size>
+          </property>
+          <property name="autoRaise">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QToolButton" name="btExpandParents">
+          <property name="toolTip">
+           <string>Expand parent items</string>
+          </property>
+          <property name="icon">
+           <iconset resource="mofi.qrc">
+            <normaloff>:/mofi resource/images/ExpandParent.png</normaloff>:/mofi resource/images/ExpandParent.png</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>24</width>
+            <height>24</height>
+           </size>
+          </property>
+          <property name="autoRaise">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QToolButton" name="btExpandAll">
+          <property name="toolTip">
+           <string>Expand all</string>
+          </property>
+          <property name="icon">
+           <iconset resource="mofi.qrc">
+            <normaloff>:/mofi resource/images/ExpandAll.png</normaloff>:/mofi resource/images/ExpandAll.png</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>24</width>
+            <height>24</height>
+           </size>
+          </property>
+          <property name="autoRaise">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
         <item>
          <spacer name="verticalSpacer">
           <property name="orientation">
@@ -1563,15 +1659,31 @@
          </spacer>
         </item>
         <item>
-         <widget class="QPushButton" name="btSaveResults">
-          <property name="minimumSize">
-           <size>
-            <width>0</width>
-            <height>0</height>
-           </size>
+         <widget class="QToolButton" name="btSaveResults">
+          <property name="toolTip">
+           <string>Save results</string>
           </property>
           <property name="text">
-           <string>Save results</string>
+           <string>...</string>
+          </property>
+          <property name="icon">
+           <iconset resource="mofi.qrc">
+            <normaloff>:/mofi resource/images/Save.png</normaloff>:/mofi resource/images/Save.png</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>24</width>
+            <height>24</height>
+           </size>
+          </property>
+          <property name="popupMode">
+           <enum>QToolButton::InstantPopup</enum>
+          </property>
+          <property name="autoRaise">
+           <bool>true</bool>
+          </property>
+          <property name="arrowType">
+           <enum>Qt::NoArrow</enum>
           </property>
          </widget>
         </item>

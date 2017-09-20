@@ -1,5 +1,8 @@
 <RCC>
   <qresource prefix="mofi resource">
+    <file>../images/CollapseAll.png</file>
+    <file>../images/ExpandAll.png</file>
+    <file>../images/ExpandParent.png</file>
     <file>../images/Label.png</file>
     <file>../images/SelectMode.png</file>
     <file>../images/DeltaMassMode.png</file>
