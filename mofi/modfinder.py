@@ -136,68 +136,6 @@ def table_insert_row(table_widget, above=True):
     table_widget.create_row(last_row)
 
 
-def create_child_items(df, root_item, column_count, monomers, sites):
-    """
-    Fill the results table with child items (hit and permutation)
-    for each peak.
-
-    :param pd.DataFrame df: data for the child items
-    :param SortableTreeWidgetItem root_item: root item for the child
-    :param int column_count: total number of columns in results table
-    :param list monomers: list of monomer column names
-    :param list sites: list of glycan site column names
-    :return: nothing
-    """
-
-    if sites:  # show stage 2 results
-        # add the best annotation to the parent row
-        # peak_optimum is a (hit_ID, permutation_ID) tuple
-        try:
-            peak_optimum = df.loc[df["Permutation score"].idxmax()]
-            peak_optimum.name = (peak_optimum.name[1], peak_optimum.name[2])
-            create_hit_columns(root_item, peak_optimum, monomers, sites)
-        except ValueError:  # if df is empty, like due to filtering
-            pass
-
-        # (1) child items for all hits per peak
-        for stage2_id, hit in (df.reset_index("Isobar", drop=True)
-                                 .groupby("Stage2_hit")):
-            hit_item = SortableTreeWidgetItem(root_item)
-            hit_optimum = hit.loc[hit["Permutation score"].idxmax()]
-            pos = create_hit_columns(hit_item, hit_optimum, monomers, sites)
-
-            # background color
-            if stage2_id % 2 == 0:
-                hit_item.setTotalBackground(
-                    QColor(configure.colors["table_hit_even"]), column_count)
-            else:
-                hit_item.setTotalBackground(
-                    QColor(configure.colors["table_hit_odd"]), column_count)
-
-            # (2) child items for all permutations per hit
-            # only if there are at least two permutations
-            if hit.shape[0] > 1:
-                for _, perm in (hit.reset_index("Stage2_hit", drop=True)
-                                   .iterrows()):
-                    perm.name = (0, perm.name)
-                    perm_item = SortableTreeWidgetItem(hit_item)
-                    create_site_columns(perm_item, pos, perm, sites)
-
-    else:  # stage 1 results
-        # child items for all hits per peak
-        for hit in df.reset_index().itertuples():
-            hit_item = SortableTreeWidgetItem(root_item)
-            create_hit_columns(hit_item, hit, monomers, sites)
-
-            # background color
-            if hit.Index % 2 == 0:
-                hit_item.setTotalBackground(
-                    QColor(configure.colors["table_hit_even"]), column_count)
-            else:
-                hit_item.setTotalBackground(
-                    QColor(configure.colors["table_hit_odd"]), column_count)
-
-
 def create_hit_columns(item, hit, monomers, sites):
     """
     Create columns that contain information on a stage 1/2 hit
@@ -252,7 +190,7 @@ def create_hit_columns(item, hit, monomers, sites):
 
         # monomer counts
         for monomer in monomers:
-            item.setText(pos, "{}".format(getattr(hit, monomer)))
+            item.setText(pos, "{:.0f}".format(getattr(hit, monomer)))
             item.setTextAlignment(pos, Qt.AlignRight)
             pos += 1
 
@@ -311,6 +249,25 @@ def table_delete_row(table_widget):
     if table_widget.selectionModel().selectedRows():
         for i in table_widget.selectionModel().selectedRows()[::-1]:
             table_widget.removeRow(i.row())
+
+
+def item_is_shown(query, item, col):
+    """
+    Determine whether a table widget item is shown
+    after applying a filter.
+
+    :param list query: list of query tuples
+    :param QTreeWidgetItem item: the item to check
+    :param int col: the first column containng a monosaccharide
+    :return: True if all columns satisfy the filtering condition
+             False otherwise
+    """
+
+    for lower, upper in query:
+        if not (lower <= int(item.text(col)) <= upper):
+            return False
+        col += 1
+    return True
 
 
 class CollapsingRectangleSelector(RectangleSelector):
@@ -464,9 +421,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.lwPeaks.itemSelectionChanged.connect(
             lambda: self.update_selection())
 
-        self.rbStage1Results.clicked.connect(self.show_results)
-        self.rbStage2Results.clicked.connect(self.show_results)
-
         self.sbDeltaRepetition1.valueChanged.connect(
             lambda: self.update_selection())
         self.sbDeltaRepetition2.valueChanged.connect(
@@ -604,13 +558,13 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         # private members
         self._disulfide_mass = 0  # mass of the current number of disulfides
         self._exp_mass_data = None  # peak list (mass + relative abundance)
-        self._filter_values = {}  # values on the results table filters
         self._known_mods_mass = 0  # mass of known modification
         self._monomer_hits = None  # results from the monomer search
         self._path = configure.path  # last path selected in a file dialog
         self._polymer_hits = None  # results from the polymer search
         self._protein_mass = 0  # mass of the current Protein object
-        self._results_table_labels = None  # labels of the results table header
+        self._results_tree_headers = [[], []]  # results tables headers
+        self._results_tree_items = [[], []]  # list of the results tree items
 
 
     def _monomer_table_create_row(self, row_id, active=False, name="",
@@ -939,7 +893,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 return
 
             self._exp_mass_data = mass_data
-            self.twResults.clear()
+            self.twResults2.clear()
             self._monomer_hits = None
             self._polymer_hits = None
             self.fill_peak_list(self._exp_mass_data["Average Mass"])
@@ -1316,9 +1270,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             explained_mass=explained_mass,
             progress_bar=self.pbSearchProgress)
 
-        self.statusbar.showMessage(
-            "Composition search done! Starting structure search (stage 2) ...")
-
         if self._monomer_hits is None:
             # the modification search was not successful
             QMessageBox.critical(
@@ -1331,13 +1282,20 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         # stage 2: polymer search
         if polymers:
+            self.statusbar.showMessage(
+                "Composition search done! "
+                "Starting structure search (stage 2) ...")
             self._polymer_hits = modification_search.find_polymers(
                 self._monomer_hits,
                 polymer_combinations=polymer_combs,
                 monomers=monomers_for_polymer_search,
                 progress_bar=self.pbSearchProgress)
-            self.statusbar.showMessage("Structure search done!", 5000)
-        self.show_results()
+            self.statusbar.showMessage(
+                "Structure search done! Preparing results tables ...")
+        else:
+            self.statusbar.showMessage(
+                "Composition search done! Preparing results tables ...")
+        self.populate_results_tables()
 
 
     def draw_spectrum(self):
@@ -1716,14 +1674,20 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         :return: nothing
         """
 
-        peaks_with_result = np.zeros(self.lwPeaks.count(), dtype=int)
+        peaks_with_result = np.full(self.lwPeaks.count(), 2, dtype=int)
         try:
-            peaks_with_result[self._polymer_hits.index.levels[0]] = 2
+            peaks_with_result[self._polymer_hits
+                                  .swaplevel(0, 1)
+                                  .loc[-1]
+                                  .index.labels[0]] = 0
         except AttributeError:
             try:
-                peaks_with_result[self._monomer_hits.index.levels[0]] = 2
+                peaks_with_result[self._monomer_hits
+                                      .swaplevel(0, 1)
+                                      .loc[-1]
+                                      .index.labels[0]] = 0
             except AttributeError:
-                pass
+                peaks_with_result = np.zeros(self.lwPeaks.count(), dtype=int)
 
         selected_peaks = np.zeros(self.lwPeaks.count(), dtype=int)
         selected_peaks[peak_indices] = 1
@@ -1760,60 +1724,115 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.spectrum_canvas.draw()
 
 
-    def show_results(self):
+    def create_child_items(self, df, stage, root_item,
+                           column_count, monomers, sites):
         """
-        Update the results table.
+        Fill the results table with child items (hit and permutation)
+        for each peak.
 
+        :param int stage: search stage (0 = stage 1, 1 = stage 2)
+        :param pd.DataFrame df: data for the child items
+        :param SortableTreeWidgetItem root_item: root item for the child
+        :param int column_count: total number of columns in results table
+        :param list monomers: list of monomer column names
+        :param list sites: list of glycan site column names
         :return: nothing
         """
 
-        self.update_selection()
+        if sites:  # show stage 2 results
+            # add the best annotation to the parent row
+            # peak_optimum is a (hit_ID, permutation_ID) tuple
+            try:
+                peak_optimum = df.loc[df["Permutation score"].idxmax()]
+                peak_optimum.name = (peak_optimum.name[1],
+                                     peak_optimum.name[2])
+                create_hit_columns(root_item, peak_optimum, monomers, sites)
+            except ValueError:  # if df is empty, like due to filtering
+                pass
 
-        if self._monomer_hits is None:
-            return
-        self.twResults.clear()
-        self.twResults.setUpdatesEnabled(False)
+            # (1) child items for all hits per peak
+            for stage2_id, hit in (df.reset_index("Isobar", drop=True)
+                                     .groupby("Stage2_hit")):
+                hit_item = SortableTreeWidgetItem(root_item)
+                self._results_tree_items[stage].append(hit_item)
+                hit_optimum = hit.loc[hit["Permutation score"].idxmax()]
+                pos = create_hit_columns(hit_item, hit_optimum,
+                                         monomers, sites)
 
-        # select the requested results dataframe
-        # and determine the appropriate column names
-        if (self.rbStage2Results.isChecked()
-                and self._polymer_hits is not None):
-            df_hit = self._polymer_hits
-            hit_columns = ["Exp. Mass", "%", "Hit", "Hit Score", "# Perms",
-                           "Theo. Mass", "Da", "ppm", ]
-            perm_columns = ["Perm", "Perm Score"]
-            site_columns = list(
-                    df_hit.columns[df_hit.columns.get_loc("ppm") + 1:
-                                   df_hit.columns.get_loc("Permutation score")]
-                )
+                # background color
+                if stage2_id % 2 == 0:
+                    hit_item.setTotalBackground(
+                        QColor(configure.colors["table_hit_even"]),
+                        column_count)
+                else:
+                    hit_item.setTotalBackground(
+                        QColor(configure.colors["table_hit_odd"]),
+                        column_count)
 
-        else:
-            df_hit = self._monomer_hits
-            hit_columns = ["Exp. Mass", "%", "Theo. Mass", "Da", "ppm"]
-            perm_columns = []
-            site_columns = []
+                # (2) child items for all permutations per hit
+                # only if there are at least two permutations
+                if hit.shape[0] > 1:
+                    for _, perm in (hit.reset_index("Stage2_hit", drop=True)
+                                       .iterrows()):
+                        perm.name = (0, perm.name)
+                        perm_item = SortableTreeWidgetItem(hit_item)
+                        self._results_tree_items[stage].append(perm_item)
+                        create_site_columns(perm_item, pos, perm, sites)
 
-        # apply filters
-        query = self.make_query_string()
-        if query:
-            df_hit = df_hit.query(query)
+        else:  # stage 1 results
+            try:
+                create_hit_columns(root_item, df.iloc[0], monomers, [])
+            except ValueError:  # if df is empty, like due to filtering
+                pass
+            # child items for all hits per peak
+            for hit in df.reset_index().itertuples():
+                hit_item = SortableTreeWidgetItem(root_item)
+                self._results_tree_items[stage].append(hit_item)
+                create_hit_columns(hit_item, hit, monomers, sites)
+
+                # background color
+                if hit.Index % 2 == 0:
+                    hit_item.setTotalBackground(
+                        QColor(configure.colors["table_hit_even"]),
+                        column_count)
+                else:
+                    hit_item.setTotalBackground(
+                        QColor(configure.colors["table_hit_odd"]),
+                        column_count)
+
+
+    def _populate_results_table(self, stage, tree_widget, cols,
+                                filter_widget, df_hit):
+        """
+        Fills a results table with rows.
+
+        :param int stage: search stage (0 = stage 1, 1 = stage 2)
+        :param QTreeWidget tree_widget: results table
+        :param list cols: column headers
+        :param QWidget filter_widget: widget that should contain the filters
+        :param pd.DataFrame df_hit: data for rows
+        :return:
+        """
+        tree_widget.clear()
+        tree_widget.setUpdatesEnabled(False)
 
         # set column headers
         mono_columns = list(
             df_hit.columns[:df_hit.columns.get_loc("Exp_Mass")])
-        self._results_table_labels = (hit_columns
-                                      + mono_columns
-                                      + perm_columns
-                                      + site_columns)
-        column_count = len(self._results_table_labels)
-        self.twResults.setColumnCount(column_count)
-        self.twResults.setHeaderLabels(self._results_table_labels)
-        self.twResults.header().setDefaultAlignment(Qt.AlignRight)
+        self._results_tree_headers[stage] = (cols[0]
+                                             + mono_columns
+                                             + cols[1]
+                                             + cols[2])
+        column_count = len(self._results_tree_headers[stage])
+        tree_widget.setColumnCount(column_count)
+        tree_widget.setHeaderLabels(self._results_tree_headers[stage])
+        tree_widget.header().setDefaultAlignment(Qt.AlignRight)
 
-        # selected_annotated_peaks = []
+        self._results_tree_items[stage] = []
         for mass_index in self._exp_mass_data.index:
             # generate root item (experimental mass, relative abundance)
-            root_item = SortableTreeWidgetItem(self.twResults)
+            root_item = SortableTreeWidgetItem(tree_widget)
+            self._results_tree_items[stage].append(root_item)
             root_item.setText(
                 0, "{:.2f}".format(self._exp_mass_data
                                    .loc[mass_index, "Average Mass"]))
@@ -1823,7 +1842,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                                    .loc[mass_index, "Relative Abundance"]))
             root_item.setTextAlignment(1, Qt.AlignRight)
 
-            if mass_index not in df_hit.index.levels[0]:
+            if df_hit.loc[mass_index].index.values[0][0] == -1:
                 if mass_index % 2 == 0:
                     root_item.setTotalBackground(
                         QColor(configure.colors["table_root_missing_even"]),
@@ -1841,17 +1860,17 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                     root_item.setTotalBackground(
                         QColor(configure.colors["table_root_annotated_odd"]),
                         column_count)
-                # selected_annotated_peaks.append(mass_index)
-                df_hit.loc[mass_index].pipe(create_child_items,
+                df_hit.loc[mass_index].pipe(self.create_child_items,
+                                            stage,
                                             root_item,
                                             column_count,
                                             mono_columns,
-                                            site_columns)
+                                            cols[2])
 
-        self.twResults.header().setSectionResizeMode(
+        tree_widget.header().setSectionResizeMode(
             QHeaderView.ResizeToContents)
-        self.twResults.header().setStretchLastSection(False)
-        self.twResults.header().setStyleSheet(
+        tree_widget.header().setStretchLastSection(False)
+        tree_widget.header().setStyleSheet(
             """
             QHeaderView::section {
                 padding-top: 2px;
@@ -1859,24 +1878,126 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 padding-left: 12px;
             }
             """)
-        self.twResults.setUpdatesEnabled(True)
-        self.create_filter_widgets()
+        tree_widget.setUpdatesEnabled(True)
+        self.create_filter_widgets(stage, tree_widget, filter_widget, df_hit)
 
 
-    def create_filter_widgets(self):
+    def populate_results_tables(self):
         """
-        Create the filter widgets above the results tree.
+        Populate both results tables with rows.
+        Prepare column labels and then call the actual function that
+        adds rows to eah results table.
 
         :return: nothing
         """
-        if self._monomer_hits is None:
-            return
 
-        for child in self.wdFilters.children():
+        self.update_selection()
+
+        if self._monomer_hits is not None:
+            cols = [
+                ["Exp. Mass", "%", "Theo. Mass", "Da", "ppm"],  # hit
+                [],  # perm
+                []  # site
+            ]
+            self._populate_results_table(
+                stage=0,
+                tree_widget=self.twResults1,
+                cols=cols,
+                filter_widget=self.wdFilters1,
+                df_hit=self._monomer_hits)
+
+        if self._polymer_hits is not None:
+            cols = [
+                ["Exp. Mass", "%", "Hit", "Hit Score", "# Perms",
+                 "Theo. Mass", "Da", "ppm"],
+                ["Perm", "Perm Score"],
+                list(
+                    self._polymer_hits.columns[
+                        self._polymer_hits.columns.get_loc("ppm") + 1:
+                        self._polymer_hits.columns.get_loc(
+                            "Permutation score")]
+                    )
+            ]
+            self._populate_results_table(
+                stage=1,
+                tree_widget=self.twResults2,
+                cols=cols,
+                filter_widget=self.wdFilters2,
+                df_hit=self._polymer_hits)
+
+        self.statusbar.showMessage("Results tables ready!", 5000)
+
+
+    def filter_results_table(self, stage):
+        """
+        Filter the results table.
+
+        :param stage: search stage (0 = stage 1, 1 = stage 2)
+        :return: nothing
+        """
+
+        if stage == 0:
+            tree_widget = self.twResults1
+            filter_widget = self.wdFilters1
+        else:
+            tree_widget = self.twResults2
+            filter_widget = self.wdFilters2
+        start_col = self._results_tree_headers[stage].index("ppm") + 1
+
+        # Generate a list of query conditions for filtering the results trees.
+        # Each condition is a (lower, upper) tuple, indicating the lower
+        # and upper limit for the count of a given monosaccharide.
+        re_filter = re.compile("(\d*)(-?)(\d*)")
+        query = []
+        for child in filter_widget.findChildren(QLineEdit):
+            f = re_filter.match(child.text()).groups()
+            if "".join(f):
+                if f[0] and not f[1] and not f[2]:
+                    query.append((int(f[0]), int(f[0])))  # x == value
+                elif f[0] and f[1] and not f[2]:
+                    query.append((int(f[0]), math.inf))  # x >= lower
+                elif f[0] and f[1] and f[2]:
+                    query.append((int(f[0]), int(f[2])))  # lower <= x <= upper
+                else:
+                    query.append((0, int(f[2])))  # x <= upper
+            else:
+                query.append((0, math.inf))  # accept any value
+
+        # check filter conditions for all level 2 items in the tree widget
+        # if all of its level 2 items are hidden, also hide the parent
+        root = tree_widget.invisibleRootItem()
+        for i in range(root.childCount()):
+            only_hidden_children = True
+            for j in range(root.child(i).childCount()):
+                child = root.child(i).child(j)
+                if item_is_shown(query, child, start_col):
+                    child.setHidden(False)
+                    only_hidden_children = False
+                else:
+                    child.setHidden(True)
+
+            if only_hidden_children:
+                root.child(i).setHidden(True)
+            else:
+                root.child(i).setHidden(False)
+
+
+    def create_filter_widgets(self, stage, tree_widget, filter_widget, df_hit):
+        """
+        Create the filter widgets above a results tree.
+
+        :param int stage: search stage (0 = stage 1, 1 = stage 2)
+        :param QTreeWidget tree_widget: tree widget to which the filter applies
+        :param QWidget filter_widget: container for the filter widgets
+        :param pd.DataFrame df_hit: row data
+        :return: nothing
+        """
+
+        for child in filter_widget.children():
             child.setParent(None)
 
         # create label
-        lb_filters = QLabel(self.wdFilters)
+        lb_filters = QLabel(filter_widget)
         lb_filters.setText("Filters:")
         lb_filters.move(0, 0)
         lb_filters.resize(50, 20)
@@ -1885,75 +2006,56 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         # create line edits
         x_start = 0
         width = 0
-        start_col = self._results_table_labels.index("ppm") + 1
-        for i in range(self._monomer_hits.columns.get_loc("Exp_Mass")):
-            x_start = self.twResults.header().sectionPosition(start_col + i)
-            width = self.twResults.header().sectionSize(start_col + i)
-            monomer = self._monomer_hits.columns[i]
+        start_col = self._results_tree_headers[stage].index("ppm") + 1
+        for i in range(df_hit.columns.get_loc("Exp_Mass")):
+            x_start = tree_widget.header().sectionPosition(start_col + i)
+            width = tree_widget.header().sectionSize(start_col + i)
+            monomer = df_hit.columns[i]
 
-            le_test = QLineEdit(self.wdFilters)
+            le_test = QLineEdit(filter_widget)
             le_test.setObjectName(monomer)
             # noinspection PyUnresolvedReferences
-            le_test.returnPressed.connect(lambda: self.show_results())
-            le_test.setText(self._filter_values.get(monomer, ""))
+            le_test.returnPressed.connect(
+                lambda: self.filter_results_table(stage))
+            le_test.setText("")
             le_test.resize(width, 20)
             le_test.move(x_start, 0)
             le_test.show()
 
         # create buttons
-        bt_apply_filters = QPushButton(self.wdFilters)
+        bt_apply_filters = QPushButton(filter_widget)
         bt_apply_filters.setText("Apply")
         # noinspection PyUnresolvedReferences
-        bt_apply_filters.clicked.connect(lambda: self.show_results())
+        bt_apply_filters.clicked.connect(
+            lambda: self.filter_results_table(stage))
         bt_apply_filters.move(x_start + width, 0)
         bt_apply_filters.resize(50, 20)
         bt_apply_filters.show()
 
-        bt_clear_filters = QPushButton(self.wdFilters)
+        bt_clear_filters = QPushButton(filter_widget)
         bt_clear_filters.setText("Clear")
         # noinspection PyUnresolvedReferences
-        bt_clear_filters.clicked.connect(self.clear_filters)
+        bt_clear_filters.clicked.connect(lambda: self.clear_filters(stage))
         bt_clear_filters.move(x_start + width + 50, 0)
         bt_clear_filters.resize(50, 20)
         bt_clear_filters.show()
 
 
-    def clear_filters(self):
+    def clear_filters(self, stage):
         """
         Clear the contents of the filter line edits.
 
+        :param int stage: search stage (0 = stage 1, 1 = stage 2)
         :return: nothing
         """
-        for child in self.wdFilters.findChildren(QLineEdit):
+
+        if stage == 0:
+            filter_widget = self.wdFilters1
+        else:
+            filter_widget = self.wdFilters2
+        for child in filter_widget.findChildren(QLineEdit):
             child.setText("")
-        self.show_results()
-
-
-    def make_query_string(self):
-        """
-        Generate a string suitable for :meth:`pd.DataFrame.query()`
-        from the results table filter.
-
-        :return str: the query string
-        """
-
-        re_filter = re.compile("(\d*)(-?)(\d*)")
-        query = []
-        for child in self.wdFilters.findChildren(QLineEdit):
-            f = re_filter.match(child.text()).groups()
-            mod = child.objectName()
-            self._filter_values[mod] = child.text()
-            if "".join(f):
-                if f[0] and not f[1] and not f[2]:
-                    query.append("({} == {})".format(mod, f[0]))
-                elif f[0] and f[1] and not f[2]:
-                    query.append("({} >= {})".format(mod, f[0]))
-                elif f[0] and f[1] and f[2]:
-                    query.append("({} <= {} <= {})".format(f[0], mod, f[2]))
-                else:
-                    query.append("({} <= {})".format(mod, f[2]))
-
-        return " and ".join(query)
+        self.filter_results_table(stage)
 
 
     def save_settings(self):
@@ -2037,13 +2139,13 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
             self._monomer_hits = None
             self._polymer_hits = None
-            self.twResults.clear()
+            self.twResults2.clear()
             self._exp_mass_data = io_tools.dataframe_from_xml(
                 root.find("masslist"))
             if not self._exp_mass_data.empty:
                 self.fill_peak_list(self._exp_mass_data["Average Mass"])
                 self.draw_spectrum()
-                self.show_results()
+                self.populate_results_tables()
 
             self.cbTolerance.setCurrentIndex(
                 int(root.find("tolerance-flavor").text))
