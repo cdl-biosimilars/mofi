@@ -41,7 +41,7 @@ def find_monomers(mods, unexplained_masses, mass_tolerance=5.0,
              * Da
              * ppm
 
-             If no hit was found, mod column contain the value -1, others 0.0
+             If no hit was found, all columns contain the value 0
     """
 
     sorted_mods = sorted(mods, key=lambda t: t[1], reverse=True)
@@ -82,12 +82,7 @@ def find_monomers(mods, unexplained_masses, mass_tolerance=5.0,
                     ppm=(delta / theoretical_mass * 1000000))  # Da in ppm
                 combs_per_mass.append(r)
         else:  # no appropriate combination was found
-            combs_per_mass.append(dict(
-                Theo_Mass=0.0,
-                Exp_Mass=0.0,
-                Da=0.0,
-                abs_Da=0.0,
-                ppm=0.0))
+            combs_per_mass.append(dict(Theo_Mass=0.0, abs_Da=0.0))
 
         # (b) create a dataframe from combs_per_mass
         # sort by abs_Da and reindex the frame starting from 1 instead of 0
@@ -112,7 +107,7 @@ def find_monomers(mods, unexplained_masses, mass_tolerance=5.0,
     # replace NaNs in mod columns by -1 and convert those columns to int
     combinations = (
         pd.concat(combinations)
-        .fillna(-1)
+        .fillna(0)
         .astype({m: int for m in mod_names}))
     if not any_combination_found:
         return
@@ -139,7 +134,6 @@ def find_monomers(mods, unexplained_masses, mass_tolerance=5.0,
         .groupby("Isobar")
         .cumcount())
     combinations.loc[combinations["Isobar"] == -1, "Stage1_hit"] = -1
-    print(combinations)
     return combinations.set_index(["Isobar", "Stage1_hit"], append=True)
 
 
