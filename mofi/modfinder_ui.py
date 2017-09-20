@@ -605,7 +605,7 @@ class Ui_ModFinder(object):
         self.twResults1.setMinimumSize(QtCore.QSize(0, 0))
         self.twResults1.setStyleSheet("background-color: rgb(214, 214, 214);")
         self.twResults1.setAlternatingRowColors(True)
-        self.twResults1.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
+        self.twResults1.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
         self.twResults1.setUniformRowHeights(True)
         self.twResults1.setColumnCount(0)
         self.twResults1.setObjectName("twResults1")
@@ -637,7 +637,7 @@ class Ui_ModFinder(object):
         self.twResults2.setMinimumSize(QtCore.QSize(0, 0))
         self.twResults2.setStyleSheet("background-color: rgb(214, 214, 214);")
         self.twResults2.setAlternatingRowColors(True)
-        self.twResults2.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
+        self.twResults2.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
         self.twResults2.setUniformRowHeights(True)
         self.twResults2.setColumnCount(0)
         self.twResults2.setObjectName("twResults2")
@@ -707,7 +707,7 @@ class Ui_ModFinder(object):
         self.menubar.addAction(self.menuHelp.menuAction())
 
         self.retranslateUi(ModFinder)
-        self.tabWidget.setCurrentIndex(0)
+        self.tabWidget.setCurrentIndex(1)
         QtCore.QMetaObject.connectSlotsByName(ModFinder)
 
     def retranslateUi(self, ModFinder):

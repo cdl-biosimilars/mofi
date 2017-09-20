@@ -348,6 +348,18 @@ class SortableTreeWidgetItem(QTreeWidgetItem):
         for i in range(self.columnCount()):
             self.setBackground(i, QBrush(color))
 
+    # noinspection PyPep8Naming
+    def getTopParent(self):
+        """
+        Find the top-level ancestor of self.
+
+        :return: the top-level parent of self
+        """
+        node = self
+        while node.parent():
+            node = node.parent()
+        return node
+
 
 class MainWindow(QMainWindow, Ui_ModFinder):
     def __init__(self, parent=None):
@@ -440,6 +452,13 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.teSequence.textChanged.connect(
             lambda: self.teSequence.setStyleSheet(
                 "QTextEdit { background-color: rgb(255, 225, 225) }"))
+
+        self.twResults1.itemClicked.connect(
+            lambda item: self.update_selection(
+                clicked_item=item, clicked_tree=self.twResults1))
+        self.twResults2.itemClicked.connect(
+            lambda item: self.update_selection(
+                clicked_item=item, clicked_tree=self.twResults2))
 
         # generate mass set selectors from config file
         self.agSelectMassSet = QActionGroup(self.menuAtomicMasses)
@@ -1459,18 +1478,39 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self.update_selection(peak_indices)
 
 
-    def update_selection(self, selected_peaks=None):
+    def update_selection(self, selected_peaks=None,
+                         clicked_item=None, clicked_tree=None):
         """
         Update the spectrum, the list of masses and the single mass spinbox
         after the selection has changed.
 
-        :param selected_peaks: list of indices of selected peaks
+        :param list selected_peaks: list of indices of selected peaks
+        :param SortableTreeWidgetItem clicked_item: item that was clicked
+        :param QTreeWidget clicked_tree: results tree whose item was clicked
         :return: the DataFrame whose contents are shown in the results table
         """
 
         if self._exp_mass_data is None:  # there's no spectrum
             return
 
+        # an item of a results tree was clicked
+        # for top-level items, proceed with selection
+        # for child items, do not change the selection in the clicked table
+        scroll_tree1 = True
+        scroll_tree2 = True
+        if clicked_tree:
+            item_index = (clicked_tree.invisibleRootItem()
+                          .indexOfChild(clicked_item))
+            if item_index == -1:
+                item_index = clicked_tree.invisibleRootItem().indexOfChild(
+                    clicked_item.getTopParent())
+                if clicked_tree == self.twResults1:
+                    scroll_tree1 = False
+                else:
+                    scroll_tree2 = False
+            selected_peaks = [item_index]
+
+        # get selected trees from mass list
         if selected_peaks is None:
             selected_peaks = [i.row() for i in self.lwPeaks.selectedIndexes()]
 
@@ -1495,6 +1535,19 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 float(self.lwPeaks.item(central_peak).text()))
         except AttributeError:  # occurs when second peak file is loaded
             pass
+
+        # (4) scroll to item in results trees
+        for tree, scroll in [(self.twResults1, scroll_tree1),
+                             (self.twResults2, scroll_tree2)]:
+            if scroll:
+                try:
+                    for i in range(tree.invisibleRootItem().childCount()):
+                        tree.invisibleRootItem().child(i).setSelected(False)
+                    item = tree.invisibleRootItem().child(central_peak)
+                    tree.scrollToItem(item)
+                    item.setSelected(True)
+                except AttributeError:
+                    pass
 
 
     def find_delta_peaks(self, query_peak, delta, tolerance, iterations):

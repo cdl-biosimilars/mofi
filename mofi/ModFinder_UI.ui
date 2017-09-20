@@ -1402,7 +1402,7 @@
          <enum>QTabWidget::East</enum>
         </property>
         <property name="currentIndex">
-         <number>0</number>
+         <number>1</number>
         </property>
         <property name="tabBarAutoHide">
          <bool>false</bool>
@@ -1449,7 +1449,7 @@
              <bool>true</bool>
             </property>
             <property name="selectionMode">
-             <enum>QAbstractItemView::ExtendedSelection</enum>
+             <enum>QAbstractItemView::SingleSelection</enum>
             </property>
             <property name="uniformRowHeights">
              <bool>true</bool>
@@ -1518,7 +1518,7 @@
              <bool>true</bool>
             </property>
             <property name="selectionMode">
-             <enum>QAbstractItemView::ExtendedSelection</enum>
+             <enum>QAbstractItemView::SingleSelection</enum>
             </property>
             <property name="uniformRowHeights">
              <bool>true</bool>
