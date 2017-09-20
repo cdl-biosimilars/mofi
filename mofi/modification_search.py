@@ -315,6 +315,7 @@ def calc_polymer_combinations(glycan_library, monomers, progress_bar=None):
     return df_glycan_combinations
 
 
+# noinspection PyUnresolvedReferences
 def find_polymers(stage_1_results, polymer_combinations,
                   monomers, progress_bar=None):
     """
@@ -432,7 +433,20 @@ def find_polymers(stage_1_results, polymer_combinations,
     if progress_bar is not None:
         progress_bar.setValue(100)
 
-    return df_found_polymers
+    # add rows for unannotated peaks
+    missing_rows = pd.DataFrame(
+        0,
+        columns=df_found_polymers.columns,
+        index=stage_1_results.index.levels[0].difference(
+            df_found_polymers.index.levels[0]))
+    missing_rows.index.name = "Mass_ID"
+
+    missing_rows = (
+        missing_rows
+        .assign(Isobar=-1, Stage2_hit=-1, Perm_ID=-1)
+        .set_index(["Isobar", "Stage2_hit", "Perm_ID"], append=True))
+
+    return pd.concat([df_found_polymers, missing_rows]).sort_index()
 
 
 def drop_glycan_permutations(df):
