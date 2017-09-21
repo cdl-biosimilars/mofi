@@ -1951,6 +1951,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 padding-left: 12px;
             }
             """)
+        tree_widget.header().sectionMoved.connect(
+            lambda: self.move_filter_widgets(stage))
         tree_widget.setUpdatesEnabled(True)
         self.create_filter_widgets(stage, tree_widget, filter_widget, df_hit)
 
@@ -2114,7 +2116,36 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         bt_clear_filters.show()
 
 
+    def move_filter_widgets(self, stage):
+        if stage == 0:
+            filter_widget = self.wdFilters1
+            tree_widget = self.twResults1
+        else:
+            filter_widget = self.wdFilters2
+            tree_widget = self.twResults2
+
+        start_col = self._results_tree_headers[stage].index("ppm") + 1
+        i = 0
+        x_start = 0
+        for i, line_edit in enumerate(filter_widget.findChildren(QLineEdit)):
+            x_start = tree_widget.header().sectionPosition(start_col + i)
+            line_edit.move(x_start, 0)
+
+        last_width = tree_widget.header().sectionSize(start_col + i)
+        buttons = list(filter_widget.findChildren(QPushButton))
+        buttons[0].move(x_start + last_width, 0)
+        buttons[1].move(x_start + last_width + 50, 0)
+
+
+
     def expand_results_tree(self, expand=True, depth=0):
+        """
+        Expand or collapse the results trees.
+
+        :param bool expand: Expand (True) or collapse (False) the tree
+        :param int depth: expand to this depth
+        :return: nothing
+        """
         if self.taResults.currentIndex() == 0:
             tree_widget = self.twResults1
         elif self.taResults.currentIndex() == 1:
