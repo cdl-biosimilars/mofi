@@ -32,6 +32,7 @@ from mofi import (configure, mass_tools, modification_search,
                   io_tools, sequence_tools)
 from mofi.paths import data_dir, docs_dir
 from mofi.modfinder_ui import Ui_ModFinder
+from mofi.widgets import FilterHeader
 
 _version_info = """ModFinder v1.0
 
@@ -511,7 +512,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         # original limits of the x axis when the plot is drawn
         self.spectrum_x_limits = None
 
-        # button group for specrum interaction mode
+        # button group for spectrum interaction mode
         self.bgSpectrum = QButtonGroup()
         self.bgSpectrum.addButton(self.btModeDelta)
         self.bgSpectrum.addButton(self.btModeSelection)
@@ -577,6 +578,10 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         menu.addAction("as shown in table ...",
                        lambda: self.save_search_results("table"))
         self.btSaveResults.setMenu(menu)
+
+        # headers with filters for the results trees
+        self.twResults1.setHeader(FilterHeader(self.twResults1))
+        self.twResults2.setHeader(FilterHeader(self.twResults2))
 
         # private members
         self._disulfide_mass = 0  # mass of the current number of disulfides
@@ -1737,12 +1742,16 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                                   .swaplevel(0, 1)
                                   .loc[-1]
                                   .index.labels[0]] = 0
+        except KeyError:
+            pass  # results for all peaks found
         except AttributeError:
             try:
                 peaks_with_result[self._monomer_hits
                                       .swaplevel(0, 1)
                                       .loc[-1]
                                       .index.labels[0]] = 0
+            except KeyError:
+                pass  # results for all peaks found
             except AttributeError:
                 peaks_with_result = np.zeros(self.lwPeaks.count(), dtype=int)
 
@@ -1954,6 +1963,9 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         tree_widget.header().sectionMoved.connect(
             lambda: self.move_filter_widgets(stage))
         tree_widget.setUpdatesEnabled(True)
+        self.taResults.setCurrentIndex(2)  # filters not drawn on current tab
+        tree_widget.header().setFilterBoxes(5)  # TODO correct number and place
+        self.taResults.setCurrentIndex(1)
         self.create_filter_widgets(stage, tree_widget, filter_widget, df_hit)
 
 
@@ -2263,7 +2275,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             if not self._exp_mass_data.empty:
                 self.fill_peak_list(self._exp_mass_data["Average Mass"])
                 self.draw_spectrum()
-                self.populate_results_tables()
 
             self.cbTolerance.setCurrentIndex(
                 int(root.find("tolerance-flavor").text))
