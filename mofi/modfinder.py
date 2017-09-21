@@ -151,9 +151,9 @@ def create_hit_columns(item, hit, monomers, sites):
 
     # hit_item.setCheckState(1, Qt.Unchecked) TODO
 
+    pos = 4
     if sites:  # stage 2 results
         # hit index
-        pos = 2
         item.setText(pos, "{}".format(hit.name[0]))
         item.setTextAlignment(pos, Qt.AlignRight)
         pos += 1
@@ -178,8 +178,6 @@ def create_hit_columns(item, hit, monomers, sites):
         create_site_columns(item, pos, hit, sites)
 
     else:  # stage 1 results
-        pos = 2
-
         # hit properties
         for label, form in [("Theo_Mass", "{:.2f}"),
                             ("Da", "{:.2f}"),
@@ -1815,6 +1813,9 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 hit_item = SortableTreeWidgetItem(root_item)
                 self._results_tree_items[stage].append(hit_item)
                 hit_optimum = hit.loc[hit["Permutation score"].idxmax()]
+                hit_item.setText(
+                    1, "{}-{}".format(root_item.text(1), stage2_id))
+                hit_item.setTextAlignment(1, Qt.AlignLeft)
                 pos = create_hit_columns(hit_item, hit_optimum,
                                          monomers, sites)
 
@@ -1831,10 +1832,15 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 # (2) child items for all permutations per hit
                 # only if there are at least two permutations
                 if hit.shape[0] > 1:
-                    for _, perm in (hit.reset_index("Stage2_hit", drop=True)
-                                       .iterrows()):
+                    for perm_id, perm in (hit.reset_index("Stage2_hit")
+                                             .iterrows()):
                         perm.name = (0, perm.name)
                         perm_item = SortableTreeWidgetItem(hit_item)
+                        perm_item.setText(
+                            1, "{}-{}-{}".format(root_item.text(1),
+                                                 stage2_id,
+                                                 perm_id))
+                        perm_item.setTextAlignment(1, Qt.AlignLeft)
                         self._results_tree_items[stage].append(perm_item)
                         create_site_columns(perm_item, pos, perm, sites)
 
@@ -1844,10 +1850,15 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             except ValueError:  # if df is empty, like due to filtering
                 pass
             # child items for all hits per peak
+            stage1_id = 0
             for hit in df.reset_index().itertuples():
                 hit_item = SortableTreeWidgetItem(root_item)
+                hit_item.setText(
+                    1, "{}-{}".format(root_item.text(1), stage1_id))
+                hit_item.setTextAlignment(1, Qt.AlignLeft)
                 self._results_tree_items[stage].append(hit_item)
                 create_hit_columns(hit_item, hit, monomers, sites)
+                stage1_id += 1
 
                 # background color
                 if hit.Index % 2 == 0:
@@ -1892,14 +1903,16 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             # generate root item (experimental mass, relative abundance)
             root_item = SortableTreeWidgetItem(tree_widget)
             self._results_tree_items[stage].append(root_item)
+            root_item.setText(1, "{}".format(mass_index))
+            root_item.setTextAlignment(1, Qt.AlignLeft)
             root_item.setText(
-                0, "{:.2f}".format(self._exp_mass_data
+                2, "{:.2f}".format(self._exp_mass_data
                                    .loc[mass_index, "Average Mass"]))
-            root_item.setTextAlignment(0, Qt.AlignRight)
+            root_item.setTextAlignment(2, Qt.AlignRight)
             root_item.setText(
-                1, "{:.1f}".format(self._exp_mass_data
+                3, "{:.1f}".format(self._exp_mass_data
                                    .loc[mass_index, "Relative Abundance"]))
-            root_item.setTextAlignment(1, Qt.AlignRight)
+            root_item.setTextAlignment(3, Qt.AlignRight)
 
             if df_hit.loc[mass_index].index.values[0][0] == -1:
                 if mass_index % 2 == 0:
@@ -1928,6 +1941,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         tree_widget.header().setSectionResizeMode(
             QHeaderView.ResizeToContents)
+        tree_widget.header().setSectionResizeMode(0, QHeaderView.Fixed)
         tree_widget.header().setStretchLastSection(False)
         tree_widget.header().setStyleSheet(
             """
@@ -1954,7 +1968,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         if self._monomer_hits is not None:
             cols = [
-                ["Exp. Mass", "%", "Theo. Mass", "Da", "ppm"],  # hit
+                ["", "ID", "Exp. Mass", "%", "Theo. Mass", "Da", "ppm"],  # hit
                 [],  # perm
                 []  # site
             ]
@@ -1967,7 +1981,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         if self._polymer_hits is not None:
             cols = [
-                ["Exp. Mass", "%", "Hit", "Hit Score", "# Perms",
+                ["", "ID", "Exp. Mass", "%", "Hit", "Hit Score", "# Perms",
                  "Theo. Mass", "Da", "ppm"],
                 ["Perm", "Perm Score"],
                 list(

@@ -1463,6 +1463,9 @@
             <attribute name="headerCascadingSectionResizes">
              <bool>true</bool>
             </attribute>
+            <attribute name="headerDefaultSectionSize">
+             <number>50</number>
+            </attribute>
             <attribute name="headerHighlightSections">
              <bool>true</bool>
             </attribute>
@@ -1531,6 +1534,9 @@
             </property>
             <attribute name="headerCascadingSectionResizes">
              <bool>true</bool>
+            </attribute>
+            <attribute name="headerDefaultSectionSize">
+             <number>50</number>
             </attribute>
             <attribute name="headerHighlightSections">
              <bool>true</bool>
