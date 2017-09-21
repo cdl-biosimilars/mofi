@@ -1397,7 +1397,7 @@
     <item>
      <layout class="QHBoxLayout" name="horizontalLayout_15">
       <item>
-       <widget class="QTabWidget" name="tabWidget">
+       <widget class="QTabWidget" name="taResults">
         <property name="tabPosition">
          <enum>QTabWidget::East</enum>
         </property>
@@ -1478,7 +1478,7 @@
         </widget>
         <widget class="QWidget" name="stage2Tab">
          <attribute name="title">
-          <string>Struncture</string>
+          <string>Structure</string>
          </attribute>
          <layout class="QVBoxLayout" name="verticalLayout_9">
           <item>
@@ -1612,7 +1612,7 @@
           </property>
           <property name="icon">
            <iconset resource="mofi.qrc">
-            <normaloff>:/mofi resource/images/ExpandParent.png</normaloff>:/mofi resource/images/ExpandParent.png</iconset>
+            <normaloff>:/mofi resource/images/Expand1.png</normaloff>:/mofi resource/images/Expand1.png</iconset>
           </property>
           <property name="iconSize">
            <size>
@@ -1632,7 +1632,7 @@
           </property>
           <property name="icon">
            <iconset resource="mofi.qrc">
-            <normaloff>:/mofi resource/images/ExpandAll.png</normaloff>:/mofi resource/images/ExpandAll.png</iconset>
+            <normaloff>:/mofi resource/images/Expand2.png</normaloff>:/mofi resource/images/Expand2.png</iconset>
           </property>
           <property name="iconSize">
            <size>

@@ -383,10 +383,16 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             lambda: table_clear(self.tbMonomers))
         self.btClearPolymers.clicked.connect(
             lambda: table_clear(self.tbPolymers))
+        self.btCollapseAll.clicked.connect(
+            lambda: self.expand_results_tree(expand=False))
         self.btDeleteRowMonomers.clicked.connect(
             lambda: table_delete_row(self.tbMonomers))
         self.btDeleteRowPolymers.clicked.connect(
             lambda: table_delete_row(self.tbPolymers))
+        self.btExpandParents.clicked.connect(
+            lambda: self.expand_results_tree(expand=True, depth=0))
+        self.btExpandAll.clicked.connect(
+            lambda: self.expand_results_tree(expand=True, depth=1))
         self.btFindModifications.clicked.connect(self.sample_modifications)
         self.btInsertRowAboveMonomers.clicked.connect(
             lambda: table_insert_row(self.tbMonomers, above=True))
@@ -2092,6 +2098,20 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         bt_clear_filters.move(x_start + width + 50, 0)
         bt_clear_filters.resize(50, 20)
         bt_clear_filters.show()
+
+
+    def expand_results_tree(self, expand=True, depth=0):
+        if self.taResults.currentIndex() == 0:
+            tree_widget = self.twResults1
+        elif self.taResults.currentIndex() == 1:
+            tree_widget = self.twResults2
+        else:
+            return
+
+        if expand:
+            tree_widget.expandToDepth(depth)
+        else:
+            tree_widget.collapseAll()
 
 
     def clear_filters(self, stage):
