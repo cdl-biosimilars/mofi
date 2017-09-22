@@ -26,12 +26,15 @@ def find_monomers(mods, unexplained_masses, mass_tolerance=5.0,
     :param QProgressBar progress_bar: a progress bar that gets updated
                                       during the search
     :return: None if the search completely failed, i.e., no single combination
-             was found; otherwise: a dataframe with multiindex
+             was found; otherwise two dataframes:
+             (1) a dataframe describing the search results;
 
-             (1) Mass_ID (corresponds to index of experimental mass
-                 in input list of peaks),
-             (2) Isobar (0-based consecutive numbering of found masses) and
-             (3) Stage1_hit (0-based numbering of hits per Mass_ID)
+             multiindex:
+
+             a. Mass_ID (corresponds to index of experimental mass
+                in input list of peaks),
+             b. Isobar (0-based consecutive numbering of found masses) and
+             c. Stage1_hit (0-based numbering of hits per Mass_ID)
 
              columns:
 
@@ -42,6 +45,10 @@ def find_monomers(mods, unexplained_masses, mass_tolerance=5.0,
              * ppm
 
              If no hit was found, all columns contain the value 0
+
+             (2) a dataframe describting the search statistics
+                 with one row per unexplained mass
+                 columns: `search_space_size`, `stage1_results`
     """
 
     sorted_mods = sorted(mods, key=lambda t: t[1], reverse=True)
@@ -49,6 +56,7 @@ def find_monomers(mods, unexplained_masses, mass_tolerance=5.0,
     mod_masses = np.array([m[1] for m in sorted_mods])
     sorted_mods = [(m[1], m[2]) for m in sorted_mods]
     combinations = {}
+    statistics = []
     any_combination_found = False  # true as soon as a combination is found
 
     # run the search on each peak
@@ -63,6 +71,7 @@ def find_monomers(mods, unexplained_masses, mass_tolerance=5.0,
                                       / len(unexplained_masses) * 100))
         search_space_size, result = findmods.examine_modifications(
             sorted_mods, unexplained_mass, current_tolerance)
+        statistics.append(search_space_size)
 
         # (a) transform result to combs_per_mass, a list of dicts
         combs_per_mass = []
@@ -134,7 +143,16 @@ def find_monomers(mods, unexplained_masses, mass_tolerance=5.0,
         .groupby("Isobar")
         .cumcount())
     combinations.loc[combinations["Isobar"] == -1, "Stage1_hit"] = -1
-    return combinations.set_index(["Isobar", "Stage1_hit"], append=True)
+
+    # prepare search statistics
+    df_statistics = pd.DataFrame(statistics, columns=["search_space_size"])
+    df_statistics.index.name = "Mass_ID"
+    df_statistics["stage1_results"] = (
+        combinations[combinations["Stage1_hit"] != -1]
+        .groupby(level="Mass_ID")
+        .size())
+    return (combinations.set_index(["Isobar", "Stage1_hit"], append=True),
+            df_statistics.fillna(0).astype(int))
 
 
 # regex for decomposing glycan compositions
@@ -329,7 +347,8 @@ def find_polymers(stage_1_results, polymer_combinations,
                      as returned by get_monomers_from_library
     :param QProgressBar progress_bar: a progress bar that gets updated
                                       during the search
-    :return pd.DataFrame: a dataframe like::
+    :return: two dataframes:
+            (1) a dataframe describing the search results, like::
 
                                              Hex  HexNAc  Neu5Ac  Fuc  [...]
         # Mass_ID Isobar Stage2_hit Perm_ID
@@ -370,6 +389,10 @@ def find_polymers(stage_1_results, polymer_combinations,
         #                           1         45.596703      2   91.193406
         # 2       37     0          0         50.000000      2  100.000000
         #                           1         50.000000      2  100.000000
+
+            (2) a dataframe describing the search statistics
+                one row per mass
+                columns: stage2_results, stage2_uniques
     """
 
     if progress_bar is not None:
@@ -445,8 +468,21 @@ def find_polymers(stage_1_results, polymer_combinations,
         missing_rows
         .assign(Isobar=-1, Stage2_hit=-1, Perm_ID=-1)
         .set_index(["Isobar", "Stage2_hit", "Perm_ID"], append=True))
+    df_stage2_results = (pd.concat([df_found_polymers, missing_rows])
+                         .sort_index())
 
-    return pd.concat([df_found_polymers, missing_rows]).sort_index()
+    # calculate search statistics
+    df_statistics = pd.DataFrame(
+        df_found_polymers.groupby(level="Mass_ID").size(),
+        columns=["stage2_results"])
+    df_statistics["stage2_uniques"] = (
+        df_found_polymers
+        .reset_index("Stage2_hit")
+        .groupby(level="Mass_ID")
+        ["Stage2_hit"]
+        .nunique())
+
+    return df_stage2_results, df_statistics
 
 
 def drop_glycan_permutations(df):

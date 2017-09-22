@@ -28,8 +28,8 @@ from matplotlib.backends.backend_qt5agg import FigureCanvas
 from matplotlib.widgets import SpanSelector, RectangleSelector
 from matplotlib.figure import Figure
 
-from mofi import (configure, mass_tools, modification_search,
-                  io_tools, sequence_tools)
+from mofi import (configure, mass_tools, io_tools,
+                  search_tools, sequence_tools)
 from mofi.paths import data_dir, docs_dir
 from mofi.modfinder_ui import Ui_ModFinder
 from mofi.widgets import FilterHeader
@@ -598,6 +598,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self._protein_mass = 0  # mass of the current Protein object
         self._results_tree_headers = [[], []]  # results tables headers
         self._results_tree_items = [[], []]  # list of the results tree items
+        self._search_statistics = None  # search statistics
 
 
     def _monomer_table_create_row(self, row_id, active=False, name="",
@@ -1000,7 +1001,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 elif mode == "stage2_filter":
                     f.write("# Results from structure search (stage 2), "
                             "filters applied.\n")
-                    df_hits = modification_search.drop_glycan_permutations(
+                    df_hits = search_tools.drop_glycan_permutations(
                         self._polymer_hits)
                     df_hits["Score"] = df_hits["Hit score"]
                     df_hits.drop(["Hash", "Hit score"],
@@ -1224,12 +1225,12 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             df_polymers = (df_polymers[df_polymers["ch"]]
                            .set_index("Name", drop=True))
             monomers_in_library = set(
-                modification_search.get_monomers_from_library(df_polymers))
+                search_tools.get_monomers_from_library(df_polymers))
 
             monomers_for_polymer_search = [m for m in available_monomers
                                            if m in monomers_in_library]
             try:
-                polymer_combs = modification_search.calc_polymer_combinations(
+                polymer_combs = search_tools.calc_polymer_combinations(
                     df_polymers,
                     monomers_for_polymer_search,
                     self.pbSearchProgress)
@@ -1297,7 +1298,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             print(", ".join(monomers_for_polymer_search))
 
         # stage 1: monomer search
-        self._monomer_hits = modification_search.find_monomers(
+        (self._monomer_hits,
+         self._search_statistics) = search_tools.find_monomers(
             modifications,
             list(unknown_masses),
             mass_tolerance=mass_tolerance,
@@ -1318,12 +1320,19 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         if polymers:
             self.statusbar.showMessage(
                 "Performing structure search (stage 2) ...")
-            self._polymer_hits = modification_search.find_polymers(
+            (self._polymer_hits,
+             stage2_statistics) = search_tools.find_polymers(
                 self._monomer_hits,
                 polymer_combinations=polymer_combs,
                 monomers=monomers_for_polymer_search,
                 progress_bar=self.pbSearchProgress)
+            self._search_statistics = (
+                self._search_statistics
+                .join(stage2_statistics)
+                .fillna(0)
+                .astype(int))
         self.populate_results_tables()
+        print(self._search_statistics)
 
 
     def draw_spectrum(self):
