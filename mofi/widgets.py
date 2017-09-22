@@ -1,3 +1,6 @@
+#  from https://stackoverflow.com/questions/44343738/how-to-inject-
+# widgets-between-qheaderview-and-qtableview
+
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtWidgets import QHeaderView, QLineEdit
 
@@ -9,7 +12,7 @@ class FilterHeader(QHeaderView):
 
     def __init__(self, parent):
         super().__init__(Qt.Horizontal, parent)
-        self._editors = []
+        self._editors = []  # list of (col index, QLineEdit) tuples
         self._vertical_padding = 4
         self._horizontal_padding = 4
         self.sectionResized.connect(self.adjustPositions)
@@ -17,35 +20,35 @@ class FilterHeader(QHeaderView):
             self.adjustPositions)
 
 
-    def setFilterBoxes(self, count):
+    def setFilterBoxes(self, sections):
         """
         Add :class:`QLineEdit` widgets below the column headers.
 
-        :param int count: number of line edits
+        :param list(int) sections: column indices for which to create a filter
         :return: nothing
         """
         while self._editors:
             editor = self._editors.pop()
-            editor.deleteLater()
-        for index in range(count):
+            editor[1].deleteLater()
+        for index in sections:
             editor = QLineEdit(self.parent())
             editor.setPlaceholderText("Filter")
             editor.returnPressed.connect(self.filterActivated.emit)
-            self._editors.append(editor)
+            self._editors.append((index, editor))
         self.adjustPositions()
 
 
     def sizeHint(self):
         size = super().sizeHint()
         if self._editors:
-            height = self._editors[0].sizeHint().height()
+            height = self._editors[0][1].sizeHint().height()
             size.setHeight(size.height() + height + self._vertical_padding)
         return size
 
 
     def updateGeometries(self):
         if self._editors:
-            height = self._editors[0].sizeHint().height()
+            height = self._editors[0][1].sizeHint().height()
             self.setViewportMargins(0, 0, 0, height + self._vertical_padding)
         else:
             self.setViewportMargins(0, 0, 0, 0)
@@ -59,7 +62,7 @@ class FilterHeader(QHeaderView):
         :return: nothing
         """
 
-        for index, editor in enumerate(self._editors):
+        for index, editor in self._editors:
             header_height = super().sizeHint().height()
             editor_height = editor.sizeHint().height()
             editor.move(
@@ -72,28 +75,46 @@ class FilterHeader(QHeaderView):
                 - self._horizontal_padding, editor_height)
 
 
-    def filterText(self, index):
+    def filterText(self, col_index):
         """
-        Return the text of a lne edit.
+        Return the text of a line edit.
 
-        :param index: index of the line edit
+        :param int col_index: index of the line edit to be queried
         :return: the line edit's text
+        :rtype: str
+        :raises KeyError: if no filter widget is at :arg:`col_index`
         """
-        if 0 <= index < len(self._editors):
-            return self._editors[index].text()
-        return ""
+
+        for index, editor in self._editors:
+            if index == col_index:
+                return editor.text()
+            raise KeyError("No filter at column index '{}'".format(col_index))
 
 
-    def setFilterText(self, index, text):
+    def allFilters(self):
+        """
+        A generator that returns the contents of :var:`self._editors`.
+
+        :return: a (col_index, :class:`QLineEdit`) tuple generator
+        :rtype: generator
+        """
+        yield from self._editors
+
+
+    def setFilterText(self, col_index, text):
         """
         Set the text of a line edit.
 
-        :param index: the line edit's index
-        :param text: text to be set
+        :param int col_index: the line edit's index
+        :param str text: text to be set
         :return: nothing
+        :raises KeyError: if no filter widget is at :arg:`col_index`
         """
-        if 0 <= index < len(self._editors):
-            self._editors[index].setText(text)
+        for index, editor in self._editors:
+            if index == col_index:
+                editor.setText(text)
+                return
+            raise KeyError("No filter at column index '{}'".format(col_index))
 
 
     def clearFilters(self):
@@ -102,5 +123,5 @@ class FilterHeader(QHeaderView):
 
         :return: nothing
         """
-        for editor in self._editors:
+        for _, editor in self._editors:
             editor.clear()

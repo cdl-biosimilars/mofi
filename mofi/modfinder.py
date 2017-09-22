@@ -15,7 +15,7 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QMenu, QActionGroup,
                              QTreeWidgetItem, QHeaderView, QButtonGroup,
                              QSpinBox, QDoubleSpinBox, QWidget, QHBoxLayout,
                              QAction, QProgressBar, QLabel, QSizePolicy,
-                             QFileDialog, QLineEdit, QPushButton)
+                             QFileDialog, QLineEdit)
 from PyQt5.QtGui import QColor, QBrush
 from PyQt5.QtCore import Qt, QLocale
 
@@ -580,8 +580,12 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.btSaveResults.setMenu(menu)
 
         # headers with filters for the results trees
-        self.twResults1.setHeader(FilterHeader(self.twResults1))
-        self.twResults2.setHeader(FilterHeader(self.twResults2))
+        for tree_widget in (self.twResults1, self.twResults2):
+            header = FilterHeader(tree_widget)
+            header.setDefaultSectionSize(50)
+            header.setHighlightSections(True)
+            header.setMinimumSectionSize(0)
+            tree_widget.setHeader(header)
 
         # private members
         self._disulfide_mass = 0  # mass of the current number of disulfides
@@ -1880,15 +1884,13 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                         column_count)
 
 
-    def _populate_results_table(self, stage, tree_widget, cols,
-                                filter_widget, df_hit):
+    def _populate_results_table(self, stage, tree_widget, cols, df_hit):
         """
         Fills a results table with rows.
 
         :param int stage: search stage (0 = stage 1, 1 = stage 2)
         :param QTreeWidget tree_widget: results table
         :param list cols: column headers
-        :param QWidget filter_widget: widget that should contain the filters
         :param pd.DataFrame df_hit: data for rows
         :return:
         """
@@ -1960,13 +1962,19 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 padding-left: 12px;
             }
             """)
-        tree_widget.header().sectionMoved.connect(
-            lambda: self.move_filter_widgets(stage))
         tree_widget.setUpdatesEnabled(True)
+
+        # create filters
         self.taResults.setCurrentIndex(2)  # filters not drawn on current tab
-        tree_widget.header().setFilterBoxes(5)  # TODO correct number and place
+        filter_index = [self._results_tree_headers[stage].index("ppm") + i + 1
+                        for i in range(df_hit.columns.get_loc("Exp_Mass"))]
+        # monomer = df_hit.columns[i]
+        # le_test.setObjectName(monomer)
+        # noinspection PyUnresolvedReferences
+        tree_widget.header().setFilterBoxes(filter_index)
+        tree_widget.header().filterActivated.connect(
+            lambda: self.filter_results_table(stage))
         self.taResults.setCurrentIndex(1)
-        self.create_filter_widgets(stage, tree_widget, filter_widget, df_hit)
 
 
     def populate_results_tables(self):
@@ -1990,7 +1998,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 stage=0,
                 tree_widget=self.twResults1,
                 cols=cols,
-                filter_widget=self.wdFilters1,
                 df_hit=self._monomer_hits)
 
         if self._polymer_hits is not None:
@@ -2009,10 +2016,30 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 stage=1,
                 tree_widget=self.twResults2,
                 cols=cols,
-                filter_widget=self.wdFilters2,
                 df_hit=self._polymer_hits)
 
         self.statusbar.showMessage("Results tables ready!", 5000)
+
+
+    def expand_results_tree(self, expand=True, depth=0):
+        """
+        Expand or collapse the results trees.
+
+        :param bool expand: Expand (True) or collapse (False) the tree
+        :param int depth: expand to this depth
+        :return: nothing
+        """
+        if self.taResults.currentIndex() == 0:
+            tree_widget = self.twResults1
+        elif self.taResults.currentIndex() == 1:
+            tree_widget = self.twResults2
+        else:
+            return
+
+        if expand:
+            tree_widget.expandToDepth(depth)
+        else:
+            tree_widget.collapseAll()
 
 
     def filter_results_table(self, stage):
@@ -2025,10 +2052,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         if stage == 0:
             tree_widget = self.twResults1
-            filter_widget = self.wdFilters1
         else:
             tree_widget = self.twResults2
-            filter_widget = self.wdFilters2
         start_col = self._results_tree_headers[stage].index("ppm") + 1
 
         # Generate a list of query conditions for filtering the results trees.
@@ -2036,7 +2061,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         # and upper limit for the count of a given monosaccharide.
         re_filter = re.compile("(\d*)(-?)(\d*)")
         query = []
-        for child in filter_widget.findChildren(QLineEdit):
+        for _, child in tree_widget.header().allFilters():
             f = re_filter.match(child.text()).groups()
             if "".join(f):
                 if f[0] and not f[1] and not f[2]:
@@ -2069,108 +2094,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 root.child(i).setHidden(False)
 
 
-    def create_filter_widgets(self, stage, tree_widget, filter_widget, df_hit):
-        """
-        Create the filter widgets above a results tree.
-
-        :param int stage: search stage (0 = stage 1, 1 = stage 2)
-        :param QTreeWidget tree_widget: tree widget to which the filter applies
-        :param QWidget filter_widget: container for the filter widgets
-        :param pd.DataFrame df_hit: row data
-        :return: nothing
-        """
-
-        for child in filter_widget.children():
-            child.setParent(None)
-
-        # create label
-        lb_filters = QLabel(filter_widget)
-        lb_filters.setText("Filters:")
-        lb_filters.move(0, 0)
-        lb_filters.resize(50, 20)
-        lb_filters.show()
-
-        # create line edits
-        x_start = 0
-        width = 0
-        start_col = self._results_tree_headers[stage].index("ppm") + 1
-        for i in range(df_hit.columns.get_loc("Exp_Mass")):
-            x_start = tree_widget.header().sectionPosition(start_col + i)
-            width = tree_widget.header().sectionSize(start_col + i)
-            monomer = df_hit.columns[i]
-
-            le_test = QLineEdit(filter_widget)
-            le_test.setObjectName(monomer)
-            # noinspection PyUnresolvedReferences
-            le_test.returnPressed.connect(
-                lambda: self.filter_results_table(stage))
-            le_test.setText("")
-            le_test.resize(width, 20)
-            le_test.move(x_start, 0)
-            le_test.show()
-
-        # create buttons
-        bt_apply_filters = QPushButton(filter_widget)
-        bt_apply_filters.setText("Apply")
-        # noinspection PyUnresolvedReferences
-        bt_apply_filters.clicked.connect(
-            lambda: self.filter_results_table(stage))
-        bt_apply_filters.move(x_start + width, 0)
-        bt_apply_filters.resize(50, 20)
-        bt_apply_filters.show()
-
-        bt_clear_filters = QPushButton(filter_widget)
-        bt_clear_filters.setText("Clear")
-        # noinspection PyUnresolvedReferences
-        bt_clear_filters.clicked.connect(lambda: self.clear_filters(stage))
-        bt_clear_filters.move(x_start + width + 50, 0)
-        bt_clear_filters.resize(50, 20)
-        bt_clear_filters.show()
-
-
-    def move_filter_widgets(self, stage):
-        if stage == 0:
-            filter_widget = self.wdFilters1
-            tree_widget = self.twResults1
-        else:
-            filter_widget = self.wdFilters2
-            tree_widget = self.twResults2
-
-        start_col = self._results_tree_headers[stage].index("ppm") + 1
-        i = 0
-        x_start = 0
-        for i, line_edit in enumerate(filter_widget.findChildren(QLineEdit)):
-            x_start = tree_widget.header().sectionPosition(start_col + i)
-            line_edit.move(x_start, 0)
-
-        last_width = tree_widget.header().sectionSize(start_col + i)
-        buttons = list(filter_widget.findChildren(QPushButton))
-        buttons[0].move(x_start + last_width, 0)
-        buttons[1].move(x_start + last_width + 50, 0)
-
-
-
-    def expand_results_tree(self, expand=True, depth=0):
-        """
-        Expand or collapse the results trees.
-
-        :param bool expand: Expand (True) or collapse (False) the tree
-        :param int depth: expand to this depth
-        :return: nothing
-        """
-        if self.taResults.currentIndex() == 0:
-            tree_widget = self.twResults1
-        elif self.taResults.currentIndex() == 1:
-            tree_widget = self.twResults2
-        else:
-            return
-
-        if expand:
-            tree_widget.expandToDepth(depth)
-        else:
-            tree_widget.collapseAll()
-
-
     def clear_filters(self, stage):
         """
         Clear the contents of the filter line edits.
@@ -2178,7 +2101,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         :param int stage: search stage (0 = stage 1, 1 = stage 2)
         :return: nothing
         """
-
+        # TODO
         if stage == 0:
             filter_widget = self.wdFilters1
         else:

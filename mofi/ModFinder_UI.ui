@@ -1413,22 +1413,6 @@
          </attribute>
          <layout class="QVBoxLayout" name="verticalLayout_12">
           <item>
-           <widget class="QWidget" name="wdFilters1" native="true">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="minimumSize">
-             <size>
-              <width>0</width>
-              <height>20</height>
-             </size>
-            </property>
-           </widget>
-          </item>
-          <item>
            <widget class="QTreeWidget" name="twResults1">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
@@ -1460,21 +1444,6 @@
             <property name="columnCount">
              <number>0</number>
             </property>
-            <attribute name="headerCascadingSectionResizes">
-             <bool>true</bool>
-            </attribute>
-            <attribute name="headerDefaultSectionSize">
-             <number>50</number>
-            </attribute>
-            <attribute name="headerHighlightSections">
-             <bool>true</bool>
-            </attribute>
-            <attribute name="headerMinimumSectionSize">
-             <number>0</number>
-            </attribute>
-            <attribute name="headerShowSortIndicator" stdset="0">
-             <bool>true</bool>
-            </attribute>
            </widget>
           </item>
          </layout>
@@ -1484,22 +1453,6 @@
           <string>Structure</string>
          </attribute>
          <layout class="QVBoxLayout" name="verticalLayout_9">
-          <item>
-           <widget class="QWidget" name="wdFilters2" native="true">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="minimumSize">
-             <size>
-              <width>0</width>
-              <height>20</height>
-             </size>
-            </property>
-           </widget>
-          </item>
           <item>
            <widget class="QTreeWidget" name="twResults2">
             <property name="sizePolicy">
@@ -1532,21 +1485,6 @@
             <property name="columnCount">
              <number>0</number>
             </property>
-            <attribute name="headerCascadingSectionResizes">
-             <bool>true</bool>
-            </attribute>
-            <attribute name="headerDefaultSectionSize">
-             <number>50</number>
-            </attribute>
-            <attribute name="headerHighlightSections">
-             <bool>true</bool>
-            </attribute>
-            <attribute name="headerMinimumSectionSize">
-             <number>0</number>
-            </attribute>
-            <attribute name="headerShowSortIndicator" stdset="0">
-             <bool>true</bool>
-            </attribute>
            </widget>
           </item>
          </layout>
