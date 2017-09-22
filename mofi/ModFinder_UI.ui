@@ -1496,9 +1496,31 @@
          <layout class="QHBoxLayout" name="horizontalLayout_16">
           <item>
            <widget class="QTableWidget" name="tbStatistics">
+            <property name="sortingEnabled">
+             <bool>true</bool>
+            </property>
+            <attribute name="verticalHeaderVisible">
+             <bool>false</bool>
+            </attribute>
+            <attribute name="verticalHeaderDefaultSectionSize">
+             <number>22</number>
+            </attribute>
+            <attribute name="verticalHeaderMinimumSectionSize">
+             <number>0</number>
+            </attribute>
             <column>
              <property name="text">
-              <string>Mass</string>
+              <string>ID</string>
+             </property>
+            </column>
+            <column>
+             <property name="text">
+              <string>Exp. Mass</string>
+             </property>
+            </column>
+            <column>
+             <property name="text">
+              <string>%</string>
              </property>
             </column>
             <column>
@@ -1518,7 +1540,7 @@
             </column>
             <column>
              <property name="text">
-              <string>Unique</string>
+              <string>Stage 2 uniques</string>
              </property>
             </column>
            </widget>

@@ -392,7 +392,7 @@ def find_polymers(stage_1_results, polymer_combinations,
 
             (2) a dataframe describing the search statistics
                 one row per mass
-                columns: stage2_results, stage2_uniques
+                columns: `stage2_results`, `stage2_uniques`
     """
 
     if progress_bar is not None:

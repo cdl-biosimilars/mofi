@@ -2,7 +2,8 @@
 # widgets-between-qheaderview-and-qtableview
 
 from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtWidgets import QHeaderView, QLineEdit, QTreeWidgetItem
+from PyQt5.QtWidgets import (QHeaderView, QLineEdit,
+                             QTableWidgetItem, QTreeWidgetItem)
 from PyQt5.QtGui import QColor, QBrush
 
 from matplotlib.widgets import RectangleSelector
@@ -132,8 +133,8 @@ class FilterHeader(QHeaderView):
 
 class SortableTreeWidgetItem(QTreeWidgetItem):
     """
-    A QTreeWidget which supports numerical sorting.
-    :meth:`setTotalBackground` set the background of all columns.
+    A :class:`QTreeWidgetItem` which supports numerical sorting
+    and implements :meth:`setTotalBackground()` and :meth:`getTopParent()`.
     """
 
     def __init__(self, parent=None):
@@ -174,6 +175,23 @@ class SortableTreeWidgetItem(QTreeWidgetItem):
         while node.parent():
             node = node.parent()
         return node
+
+
+class SortableTableWidgetItem(QTableWidgetItem):
+    """
+    A :class:`QTableWidgetItem` which supports numerical sorting.
+    """
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+    def __lt__(self, other):
+        key1 = self.text()
+        key2 = other.text()
+        try:
+            return float(key1) < float(key2)
+        except ValueError:
+            return key1 < key2
 
 
 class CollapsingRectangleSelector(RectangleSelector):

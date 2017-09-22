@@ -32,7 +32,7 @@ from mofi import (configure, mass_tools, io_tools,
 from mofi.paths import data_dir, docs_dir
 from mofi.modfinder_ui import Ui_ModFinder
 from mofi.widgets import (FilterHeader, CollapsingRectangleSelector,
-                          SortableTreeWidgetItem)
+                          SortableTreeWidgetItem, SortableTableWidgetItem)
 
 _version_info = """ModFinder v1.0
 
@@ -496,6 +496,14 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             header.setHighlightSections(True)
             header.setMinimumSectionSize(0)
             tree_widget.setHeader(header)
+
+        # statistics table
+        self.tbStatistics.horizontalHeader().setSectionResizeMode(
+            QHeaderView.ResizeToContents)
+        self.tbStatistics.horizontalHeader().setDefaultAlignment(
+            Qt.AlignRight)
+        self.tbPolymers.verticalHeader().setSectionResizeMode(
+            QHeaderView.Fixed)
 
         # private members
         self._disulfide_mass = 0  # mass of the current number of disulfides
@@ -1240,8 +1248,9 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 .join(stage2_statistics)
                 .fillna(0)
                 .astype(int))
-        self.populate_results_tables()
-        print(self._search_statistics)
+        self.fill_results_tables()
+        self.tbStatistics.clearContents()
+        self._search_statistics.apply(self.fill_statistics_table, axis=1)
 
 
     def draw_spectrum(self):
@@ -1798,7 +1807,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                         column_count)
 
 
-    def _populate_results_table(self, stage, tree_widget, cols, df_hit):
+    def _fill_results_table(self, stage, tree_widget, cols, df_hit):
         """
         Fills a results table with rows.
 
@@ -1895,7 +1904,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.taResults.setCurrentIndex(1)
 
 
-    def populate_results_tables(self):
+    def fill_results_tables(self):
         """
         Populate both results tables with rows.
         Prepare column labels and then call the actual function that
@@ -1914,7 +1923,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 [],  # perm
                 []  # site
             ]
-            self._populate_results_table(
+            self._fill_results_table(
                 stage=0,
                 tree_widget=self.twResults1,
                 cols=cols,
@@ -1934,7 +1943,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                             "Permutation score")]
                     )
             ]
-            self._populate_results_table(
+            self._fill_results_table(
                 stage=1,
                 tree_widget=self.twResults2,
                 cols=cols,
@@ -2014,6 +2023,49 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 root.child(i).setHidden(True)
             else:
                 root.child(i).setHidden(False)
+
+
+    def fill_statistics_table(self, row):
+        """
+        Fill the statistics table with data from
+        :var:`self._search_statistics`. This method is called
+        by :meth:`pd.DataFrame.apply()`.
+
+        :param pd.Series row: row of the statistics dataframe
+        :return: nothing
+        """
+
+        row_id = self.tbStatistics.rowCount()
+        self.tbStatistics.insertRow(row_id)
+
+        # (1) running counter
+        item = SortableTableWidgetItem(str(row_id))
+        item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        item.setFlags(Qt.ItemIsEnabled)
+        self.tbStatistics.setItem(row_id, 0, item)
+
+        # (2) peak information
+        for col_id, label, form in [(1, "Average Mass", "{:.2f}"),
+                                    (2, "Relative Abundance", "{:.1f}")]:
+            item = SortableTableWidgetItem(
+                    form.format(self._exp_mass_data.loc[row_id, label]))
+            item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
+            item.setFlags(Qt.ItemIsEnabled)
+            self.tbStatistics.setItem(row_id, col_id, item)
+
+        # (3) peak statistics
+        for col_id, label in [(3, "search_space_size"),
+                              (4, "stage1_results"),
+                              (5, "stage2_results"),
+                              (6, "stage2_uniques")]:
+            try:
+                item = SortableTableWidgetItem(str(row[label]))
+                item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
+                item.setFlags(Qt.ItemIsEnabled)
+                self.tbStatistics.setItem(row_id, col_id, item)
+            except KeyError:
+                pass
+
 
 
     def clear_filters(self):
