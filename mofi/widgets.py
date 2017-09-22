@@ -2,8 +2,10 @@
 # widgets-between-qheaderview-and-qtableview
 
 from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtWidgets import QHeaderView, QLineEdit
+from PyQt5.QtWidgets import QHeaderView, QLineEdit, QTreeWidgetItem
+from PyQt5.QtGui import QColor, QBrush
 
+from matplotlib.widgets import RectangleSelector
 
 # noinspection PyPep8Naming,PyUnresolvedReferences
 class FilterHeader(QHeaderView):
@@ -126,3 +128,94 @@ class FilterHeader(QHeaderView):
         for _, editor in self._editors:
             editor.clear()
         self.filterChanged.emit()
+
+
+class SortableTreeWidgetItem(QTreeWidgetItem):
+    """
+    A QTreeWidget which supports numerical sorting.
+    :meth:`setTotalBackground` set the background of all columns.
+    """
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+    def __lt__(self, other):
+        column = self.treeWidget().sortColumn()
+        key1 = self.text(column)
+        key2 = other.text(column)
+        try:
+            return float(key1) < float(key2)
+        except ValueError:
+            return key1 < key2
+
+    # noinspection PyPep8Naming
+    def setTotalBackground(self, color, column_count=None):
+        """
+        Set the background color for all columns.
+
+        :param QColor color: the color to use
+        :param int column_count: the intended number of columns
+        :return: nothing
+        """
+
+        if column_count and self.columnCount() != column_count:
+            self.setText(column_count - 1, "")
+        for i in range(self.columnCount()):
+            self.setBackground(i, QBrush(color))
+
+    # noinspection PyPep8Naming
+    def getTopParent(self):
+        """
+        Find the top-level ancestor of self.
+
+        :return: the top-level parent of self
+        """
+        node = self
+        while node.parent():
+            node = node.parent()
+        return node
+
+
+class CollapsingRectangleSelector(RectangleSelector):
+    """
+    Select a rectangular region of an axes.
+    The rectangle collapses to a line if a dimension
+    is less than minspanx and minspany.
+
+    .. automethod:: __init__
+    """
+
+    def __init__(self, *args, collapsex=0, collapsey=0, **kwargs):
+        """
+        Introduces the keys ``collapsex`` and ``collapsey``.
+
+        :param args: Positional arguments passed to the superclass.
+        :param collapsex: Minimum height of the rectangle (in data space).
+        :param collapsey: Minimum width of the rectangle (in data space).
+        :param kwargs: Optional arguments passed to the superclass.
+        """
+        super().__init__(*args, **kwargs)
+        self.collapsex = collapsex
+        self.collapsey = collapsey
+
+
+    def draw_shape(self, extents):
+        """
+        Calculate the coordinates of the drawn rectangle
+        (overrides method from parent).
+
+        :param extents: Coordinates of the rectangle selector.
+        :return: nothing
+        """
+        xmin, xmax, ymin, ymax = extents
+
+        # Collapse coordinates if their distance is too small
+        if abs(xmax - xmin) < self.collapsex:
+            xmax = xmin
+        if abs(ymax - ymin) < self.collapsey:
+            ymax = ymin
+
+        self.to_draw.set_x(xmin)
+        self.to_draw.set_y(ymin)
+        self.to_draw.set_width(xmax - xmin)
+        self.to_draw.set_height(ymax - ymin)

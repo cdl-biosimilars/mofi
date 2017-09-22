@@ -12,11 +12,10 @@ import webbrowser
 
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QMenu, QActionGroup,
                              QTableWidgetItem, QCheckBox, QMessageBox,
-                             QTreeWidgetItem, QHeaderView, QButtonGroup,
+                             QHeaderView, QButtonGroup, QFileDialog,
                              QSpinBox, QDoubleSpinBox, QWidget, QHBoxLayout,
-                             QAction, QProgressBar, QLabel, QSizePolicy,
-                             QFileDialog)
-from PyQt5.QtGui import QColor, QBrush
+                             QAction, QProgressBar, QLabel, QSizePolicy)
+from PyQt5.QtGui import QColor
 from PyQt5.QtCore import Qt, QLocale
 
 import numpy as np
@@ -25,14 +24,15 @@ import pandas as pd
 import matplotlib
 import matplotlib.text
 from matplotlib.backends.backend_qt5agg import FigureCanvas
-from matplotlib.widgets import SpanSelector, RectangleSelector
+from matplotlib.widgets import SpanSelector
 from matplotlib.figure import Figure
 
 from mofi import (configure, mass_tools, io_tools,
                   search_tools, sequence_tools)
 from mofi.paths import data_dir, docs_dir
 from mofi.modfinder_ui import Ui_ModFinder
-from mofi.widgets import FilterHeader
+from mofi.widgets import (FilterHeader, CollapsingRectangleSelector,
+                          SortableTreeWidgetItem)
 
 _version_info = """ModFinder v1.0
 
@@ -256,7 +256,7 @@ def item_is_shown(query, item, col):
     after applying a filter.
 
     :param list query: list of query tuples
-    :param QTreeWidgetItem item: the item to check
+    :param SortableTreeWidgetItem item: the item to check
     :param int col: the first column containng a monosaccharide
     :return: True if all columns satisfy the filtering condition
              False otherwise
@@ -267,97 +267,6 @@ def item_is_shown(query, item, col):
             return False
         col += 1
     return True
-
-
-class CollapsingRectangleSelector(RectangleSelector):
-    """
-    Select a rectangular region of an axes.
-    The rectangle collapses to a line if a dimension
-    is less than minspanx and minspany.
-
-    .. automethod:: __init__
-    """
-
-    def __init__(self, *args, collapsex=0, collapsey=0, **kwargs):
-        """
-        Introduces the keys ``collapsex`` and ``collapsey``.
-
-        :param args: Positional arguments passed to the superclass.
-        :param collapsex: Minimum height of the rectangle (in data space).
-        :param collapsey: Minimum width of the rectangle (in data space).
-        :param kwargs: Optional arguments passed to the superclass.
-        """
-        super().__init__(*args, **kwargs)
-        self.collapsex = collapsex
-        self.collapsey = collapsey
-
-
-    def draw_shape(self, extents):
-        """
-        Calculate the coordinates of the drawn rectangle
-        (overrides method from parent).
-
-        :param extents: Coordinates of the rectangle selector.
-        :return: nothing
-        """
-        xmin, xmax, ymin, ymax = extents
-
-        # Collapse coordinates if their distance is too small
-        if abs(xmax - xmin) < self.collapsex:
-            xmax = xmin
-        if abs(ymax - ymin) < self.collapsey:
-            ymax = ymin
-
-        self.to_draw.set_x(xmin)
-        self.to_draw.set_y(ymin)
-        self.to_draw.set_width(xmax - xmin)
-        self.to_draw.set_height(ymax - ymin)
-
-
-class SortableTreeWidgetItem(QTreeWidgetItem):
-    """
-    A QTreeWidget which supports numerical sorting.
-    :meth:`setTotalBackground` set the background of all columns.
-    """
-
-    def __init__(self, parent=None):
-        super().__init__(parent)
-
-    def __lt__(self, other):
-        column = self.treeWidget().sortColumn()
-        key1 = self.text(column)
-        key2 = other.text(column)
-        try:
-            return float(key1) < float(key2)
-        except ValueError:
-            return key1 < key2
-
-    # noinspection PyPep8Naming
-    def setTotalBackground(self, color, column_count=None):
-        """
-        Set the background color for all columns.
-
-        :param QColor color: the color to use
-        :param int column_count: the intended number of columns
-        :return: nothing
-        """
-
-        if column_count and self.columnCount() != column_count:
-            self.setText(column_count - 1, "")
-        for i in range(self.columnCount()):
-            self.setBackground(i, QBrush(color))
-
-    # noinspection PyPep8Naming
-    def getTopParent(self):
-        """
-        Find the top-level ancestor of self.
-
-        :return: the top-level parent of self
-        """
-        node = self
-        while node.parent():
-            node = node.parent()
-        return node
 
 
 class MainWindow(QMainWindow, Ui_ModFinder):
