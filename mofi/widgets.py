@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import QHeaderView, QLineEdit
 
 # noinspection PyPep8Naming,PyUnresolvedReferences
 class FilterHeader(QHeaderView):
-    filterActivated = pyqtSignal()
+    filterChanged = pyqtSignal()
 
 
     def __init__(self, parent):
@@ -33,7 +33,7 @@ class FilterHeader(QHeaderView):
         for index in sections:
             editor = QLineEdit(self.parent())
             editor.setPlaceholderText("Filter")
-            editor.returnPressed.connect(self.filterActivated.emit)
+            editor.returnPressed.connect(self.filterChanged.emit)
             self._editors.append((index, editor))
         self.adjustPositions()
 
@@ -125,3 +125,4 @@ class FilterHeader(QHeaderView):
         """
         for _, editor in self._editors:
             editor.clear()
+        self.filterChanged.emit()

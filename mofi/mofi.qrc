@@ -1,5 +1,6 @@
 <RCC>
   <qresource prefix="mofi resource">
+    <file>../images/ClearFilters.png</file>
     <file>../images/CollapseAll.png</file>
     <file>../images/Expand2.png</file>
     <file>../images/DefaultEntries.png</file>

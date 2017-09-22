@@ -1530,6 +1530,36 @@
       <item>
        <layout class="QVBoxLayout" name="verticalLayout_11">
         <item>
+         <widget class="QToolButton" name="btClearFilters">
+          <property name="icon">
+           <iconset resource="mofi.qrc">
+            <normaloff>:/mofi resource/images/ClearFilters.png</normaloff>:/mofi resource/images/ClearFilters.png</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>24</width>
+            <height>24</height>
+           </size>
+          </property>
+          <property name="autoRaise">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="verticalSpacer_2">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>5</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item>
          <widget class="QToolButton" name="btCollapseAll">
           <property name="toolTip">
            <string>Collapse all</string>
@@ -1597,7 +1627,7 @@
           <property name="sizeHint" stdset="0">
            <size>
             <width>20</width>
-            <height>40</height>
+            <height>5</height>
            </size>
           </property>
          </spacer>

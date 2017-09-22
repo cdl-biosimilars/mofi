@@ -15,7 +15,7 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QMenu, QActionGroup,
                              QTreeWidgetItem, QHeaderView, QButtonGroup,
                              QSpinBox, QDoubleSpinBox, QWidget, QHBoxLayout,
                              QAction, QProgressBar, QLabel, QSizePolicy,
-                             QFileDialog, QLineEdit)
+                             QFileDialog)
 from PyQt5.QtGui import QColor, QBrush
 from PyQt5.QtCore import Qt, QLocale
 
@@ -378,6 +378,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.acQuit.triggered.connect(QApplication.instance().quit)
         self.acSaveSettings.triggered.connect(self.save_settings)
 
+        self.btClearFilters.clicked.connect(self.clear_filters)
         self.btClearMonomers.clicked.connect(
             lambda: table_clear(self.tbMonomers))
         self.btClearPolymers.clicked.connect(
@@ -1972,7 +1973,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         # le_test.setObjectName(monomer)
         # noinspection PyUnresolvedReferences
         tree_widget.header().setFilterBoxes(filter_index)
-        tree_widget.header().filterActivated.connect(
+        tree_widget.header().filterChanged.connect(
             lambda: self.filter_results_table(stage))
         self.taResults.setCurrentIndex(1)
 
@@ -2094,21 +2095,17 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 root.child(i).setHidden(False)
 
 
-    def clear_filters(self, stage):
+    def clear_filters(self):
         """
         Clear the contents of the filter line edits.
 
-        :param int stage: search stage (0 = stage 1, 1 = stage 2)
         :return: nothing
         """
-        # TODO
-        if stage == 0:
-            filter_widget = self.wdFilters1
-        else:
-            filter_widget = self.wdFilters2
-        for child in filter_widget.findChildren(QLineEdit):
-            child.setText("")
-        self.filter_results_table(stage)
+
+        if self.taResults.currentIndex() == 0:
+            self.twResults1.header().clearFilters()
+        elif self.taResults.currentIndex() == 1:
+            self.twResults2.header().clearFilters()
 
 
     def save_settings(self):
