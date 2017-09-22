@@ -1277,7 +1277,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                                  "".join(error_message))
             return
 
-        self.statusbar.showMessage("Starting composition search (stage 1) ...")
+        self.statusbar.showMessage(
+            "Performing composition search (stage 1) ...")
         print("Experimental Masses:",
               self._exp_mass_data["Average Mass"].head(),
               sep="\n")
@@ -1316,18 +1317,12 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         # stage 2: polymer search
         if polymers:
             self.statusbar.showMessage(
-                "Composition search done! "
-                "Starting structure search (stage 2) ...")
+                "Performing structure search (stage 2) ...")
             self._polymer_hits = modification_search.find_polymers(
                 self._monomer_hits,
                 polymer_combinations=polymer_combs,
                 monomers=monomers_for_polymer_search,
                 progress_bar=self.pbSearchProgress)
-            self.statusbar.showMessage(
-                "Structure search done! Preparing results tables ...")
-        else:
-            self.statusbar.showMessage(
-                "Composition search done! Preparing results tables ...")
         self.populate_results_tables()
 
 
@@ -1910,8 +1905,10 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         tree_widget.setHeaderLabels(self._results_tree_headers[stage])
         tree_widget.header().setDefaultAlignment(Qt.AlignRight)
 
+        self.pbSearchProgress.setValue(0)
+        index_length = len(self._exp_mass_data.index)
         self._results_tree_items[stage] = []
-        for mass_index in self._exp_mass_data.index:
+        for index_count, mass_index in enumerate(self._exp_mass_data.index):
             # generate root item (experimental mass, relative abundance)
             root_item = SortableTreeWidgetItem(tree_widget)
             self._results_tree_items[stage].append(root_item)
@@ -1926,6 +1923,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                                    .loc[mass_index, "Relative Abundance"]))
             root_item.setTextAlignment(3, Qt.AlignRight)
 
+            # color root item
             if df_hit.loc[mass_index].index.values[0][0] == -1:
                 if mass_index % 2 == 0:
                     root_item.setTotalBackground(
@@ -1944,12 +1942,16 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                     root_item.setTotalBackground(
                         QColor(configure.colors["table_root_annotated_odd"]),
                         column_count)
+
+                # create child items
                 df_hit.loc[mass_index].pipe(self.create_child_items,
                                             stage,
                                             root_item,
                                             column_count,
                                             mono_columns,
                                             cols[2])
+            self.pbSearchProgress.setValue(int((index_count + 1)
+                                               / index_length * 100))
 
         tree_widget.header().setSectionResizeMode(
             QHeaderView.ResizeToContents)
@@ -1969,9 +1971,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.taResults.setCurrentIndex(2)  # filters not drawn on current tab
         filter_index = [self._results_tree_headers[stage].index("ppm") + i + 1
                         for i in range(df_hit.columns.get_loc("Exp_Mass"))]
-        # monomer = df_hit.columns[i]
-        # le_test.setObjectName(monomer)
-        # noinspection PyUnresolvedReferences
         tree_widget.header().setFilterBoxes(filter_index)
         tree_widget.header().filterChanged.connect(
             lambda: self.filter_results_table(stage))
@@ -1990,6 +1989,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.update_selection()
 
         if self._monomer_hits is not None:
+            self.statusbar.showMessage(
+                "Preparing results table for stage 1 ...")
             cols = [
                 ["", "ID", "Exp. Mass", "%", "Theo. Mass", "Da", "ppm"],  # hit
                 [],  # perm
@@ -2002,6 +2003,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 df_hit=self._monomer_hits)
 
         if self._polymer_hits is not None:
+            self.statusbar.showMessage(
+                "Preparing results table for stage 2 ...")
             cols = [
                 ["", "ID", "Exp. Mass", "%", "Hit", "Hit Score", "# Perms",
                  "Theo. Mass", "Da", "ppm"],
