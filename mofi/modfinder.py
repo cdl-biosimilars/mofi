@@ -345,9 +345,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.chDelta2.clicked.connect(self.toggle_delta_series)
         self.chPngase.clicked.connect(self.calculate_protein_mass)
 
-        self.lwPeaks.itemSelectionChanged.connect(
-            lambda: self.update_selection())
-
         self.sbDeltaRepetition1.valueChanged.connect(
             lambda: self.update_selection())
         self.sbDeltaRepetition2.valueChanged.connect(
@@ -506,6 +503,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             QHeaderView.Fixed)
 
         # private members
+        self._current_selection = [0]  # list of currently selected peaks
         self._disulfide_mass = 0  # mass of the current number of disulfides
         self._exp_mass_data = None  # peak list (mass + relative abundance)
         self._known_mods_mass = 0  # mass of known modification
@@ -808,20 +806,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self.calculate_protein_mass()
 
 
-    def fill_peak_list(self, masses):
-        """
-        Fill the peak list (``self.lwPeaks``).
-
-        :param masses: an iterable of numbers representing masses
-        :return: nothing
-        """
-        self.lwPeaks.blockSignals(True)
-        self.lwPeaks.clear()
-        self.lwPeaks.addItems(["{:.2f}".format(i) for i in masses])
-        self.lwPeaks.setCurrentRow(0)
-        self.lwPeaks.blockSignals(False)
-
-
     def load_mass_file(self):
         """
         Open a mass list and display its contents.
@@ -847,7 +831,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self.twResults2.clear()
             self._monomer_hits = None
             self._polymer_hits = None
-            self.fill_peak_list(self._exp_mass_data["Average Mass"])
             self.draw_spectrum()
 
 
@@ -1099,7 +1082,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 {"Average Mass": self.sbSingleMass.value(),
                  "Relative Abundance": 100.0},
                 index=[0])
-            self.fill_peak_list(self._exp_mass_data["Average Mass"])
             self.draw_spectrum()
 
         if self._exp_mass_data is None:
@@ -1405,22 +1387,22 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         :return: nothing
         """
 
-        peak_indices = []
-        for i in range(self.lwPeaks.count()):
-            if min_mass <= float(self.lwPeaks.item(i).text()) <= max_mass:
-                peak_indices.append(i)
+        peak_indices = self._exp_mass_data.index[
+                (min_mass <= self._exp_mass_data["Average Mass"])
+                & (self._exp_mass_data["Average Mass"] <= max_mass)
+            ].tolist()
 
         if peak_indices:
             self.update_selection(peak_indices)
 
 
-    def update_selection(self, selected_peaks=None,
+    def update_selection(self, new_selection=None,
                          clicked_item=None, clicked_tree=None):
         """
-        Update the spectrum, the list of masses and the single mass spinbox
+        Update the spectrum and the single mass spinbox
         after the selection has changed.
 
-        :param list selected_peaks: list of indices of selected peaks
+        :param list new_selection: list of indices of selected peaks
         :param SortableTreeWidgetItem clicked_item: item that was clicked
         :param QTreeWidget clicked_tree: results tree whose item was clicked
         :return: the DataFrame whose contents are shown in the results table
@@ -1428,6 +1410,10 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         if self._exp_mass_data is None:  # there's no spectrum
             return
+
+        # if the selection did not change, use the old one
+        if new_selection:
+            self._current_selection = new_selection[:]
 
         # an item of a results tree was clicked
         # for top-level items, proceed with selection
@@ -1444,35 +1430,24 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                     scroll_tree1 = False
                 else:
                     scroll_tree2 = False
-            selected_peaks = [item_index]
+            self._current_selection = [item_index]
 
-        # get selected trees from mass list
-        if selected_peaks is None:
-            selected_peaks = [i.row() for i in self.lwPeaks.selectedIndexes()]
 
         # (1) update selection in the spectrum
-        central_peak = selected_peaks[0]
+        central_peak = self._current_selection[0]
         if self.bgSpectrum.checkedButton() == self.btModeSelection:
-            self.highlight_selected_peaks(selected_peaks)
+            self.highlight_selected_peaks(self._current_selection)
         else:
-            selected_peaks = self.highlight_delta_series(central_peak)
+            self._current_selection = self.highlight_delta_series(central_peak)
 
-        # (2) update the selection in the mass list
-        self.lwPeaks.blockSignals(True)
-        for i in range(self.lwPeaks.count()):
-            self.lwPeaks.item(i).setSelected(i in selected_peaks)
-        self.lwPeaks.blockSignals(False)
-
-        self.lwPeaks.scrollToItem(self.lwPeaks.item(central_peak))
-
-        # (3) fill the single mass spin box with the currently selected mass
+        # (2) fill the single mass spin box with the currently selected mass
         try:
             self.sbSingleMass.setValue(
-                float(self.lwPeaks.item(central_peak).text()))
+                self._exp_mass_data.loc[central_peak, "Average Mass"])
         except AttributeError:  # occurs when second peak file is loaded
             pass
 
-        # (4) scroll to item in results trees
+        # (3) scroll to item in results trees
         for tree, scroll in [(self.twResults1, scroll_tree1),
                              (self.twResults2, scroll_tree2)]:
             if scroll:
@@ -1663,7 +1638,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         :return: nothing
         """
 
-        peaks_with_result = np.full(self.lwPeaks.count(), 2, dtype=int)
+        peaks_with_result = np.full(self._exp_mass_data.shape[0], 2, dtype=int)
         try:
             peaks_with_result[self._polymer_hits
                                   .swaplevel(0, 1)
@@ -1680,9 +1655,10 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             except KeyError:
                 pass  # results for all peaks found
             except AttributeError:
-                peaks_with_result = np.zeros(self.lwPeaks.count(), dtype=int)
+                peaks_with_result = np.zeros(
+                    self._exp_mass_data.shape[0], dtype=int)
 
-        selected_peaks = np.zeros(self.lwPeaks.count(), dtype=int)
+        selected_peaks = np.zeros(self._exp_mass_data.shape[0], dtype=int)
         selected_peaks[peak_indices] = 1
 
         # peak colors will be an array with one entry per peak:
@@ -1908,7 +1884,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         """
         Populate both results tables with rows.
         Prepare column labels and then call the actual function that
-        adds rows to eah results table.
+        adds rows to each results table.
 
         :return: nothing
         """
@@ -2166,7 +2142,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self._exp_mass_data = io_tools.dataframe_from_xml(
                 root.find("masslist"))
             if not self._exp_mass_data.empty:
-                self.fill_peak_list(self._exp_mass_data["Average Mass"])
                 self.draw_spectrum()
 
             self.cbTolerance.setCurrentIndex(

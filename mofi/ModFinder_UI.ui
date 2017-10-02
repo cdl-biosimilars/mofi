@@ -935,127 +935,6 @@
          <number>3</number>
         </property>
         <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_14">
-          <item>
-           <widget class="QToolButton" name="btResetZoom">
-            <property name="toolTip">
-             <string>Reset zoom</string>
-            </property>
-            <property name="text">
-             <string>Reset zoom</string>
-            </property>
-            <property name="icon">
-             <iconset resource="mofi.qrc">
-              <normaloff>:/mofi resource/images/ResetZoom.png</normaloff>:/mofi resource/images/ResetZoom.png</iconset>
-            </property>
-            <property name="iconSize">
-             <size>
-              <width>24</width>
-              <height>24</height>
-             </size>
-            </property>
-            <property name="autoRaise">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QToolButton" name="btLabelPeaks">
-            <property name="toolTip">
-             <string>Label peaks</string>
-            </property>
-            <property name="text">
-             <string>Label peaks</string>
-            </property>
-            <property name="icon">
-             <iconset resource="mofi.qrc">
-              <normaloff>:/mofi resource/images/Label.png</normaloff>:/mofi resource/images/Label.png</iconset>
-            </property>
-            <property name="iconSize">
-             <size>
-              <width>24</width>
-              <height>24</height>
-             </size>
-            </property>
-            <property name="checkable">
-             <bool>true</bool>
-            </property>
-            <property name="checked">
-             <bool>true</bool>
-            </property>
-            <property name="autoRaise">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="Line" name="line_4">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QToolButton" name="btModeSelection">
-            <property name="toolTip">
-             <string>Select peaks</string>
-            </property>
-            <property name="text">
-             <string>Select peaks</string>
-            </property>
-            <property name="icon">
-             <iconset resource="mofi.qrc">
-              <normaloff>:/mofi resource/images/SelectMode.png</normaloff>:/mofi resource/images/SelectMode.png</iconset>
-            </property>
-            <property name="iconSize">
-             <size>
-              <width>24</width>
-              <height>24</height>
-             </size>
-            </property>
-            <property name="checkable">
-             <bool>true</bool>
-            </property>
-            <property name="checked">
-             <bool>true</bool>
-            </property>
-            <property name="autoRaise">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QToolButton" name="btModeDelta">
-            <property name="toolTip">
-             <string>Select delta series</string>
-            </property>
-            <property name="text">
-             <string>Select delta series</string>
-            </property>
-            <property name="icon">
-             <iconset resource="mofi.qrc">
-              <normaloff>:/mofi resource/images/DeltaMassMode.png</normaloff>:/mofi resource/images/DeltaMassMode.png</iconset>
-            </property>
-            <property name="iconSize">
-             <size>
-              <width>24</width>
-              <height>24</height>
-             </size>
-            </property>
-            <property name="checkable">
-             <bool>true</bool>
-            </property>
-            <property name="checked">
-             <bool>false</bool>
-            </property>
-            <property name="autoRaise">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
-        <item>
          <widget class="QGroupBox" name="gbDeltaSeries">
           <property name="enabled">
            <bool>false</bool>
@@ -1342,44 +1221,129 @@
       <item>
        <layout class="QVBoxLayout" name="verticalLayout_4">
         <item>
-         <widget class="QLabel" name="label_9">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
+         <widget class="QToolButton" name="btModeSelection">
+          <property name="toolTip">
+           <string>Select peaks</string>
           </property>
           <property name="text">
-           <string>Mass list</string>
+           <string>Select peaks</string>
           </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QListWidget" name="lwPeaks">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
+          <property name="icon">
+           <iconset resource="mofi.qrc">
+            <normaloff>:/mofi resource/images/SelectMode.png</normaloff>:/mofi resource/images/SelectMode.png</iconset>
           </property>
-          <property name="minimumSize">
+          <property name="iconSize">
            <size>
-            <width>100</width>
-            <height>150</height>
+            <width>24</width>
+            <height>24</height>
            </size>
           </property>
-          <property name="sizeAdjustPolicy">
-           <enum>QAbstractScrollArea::AdjustToContents</enum>
+          <property name="checkable">
+           <bool>true</bool>
           </property>
-          <property name="selectionMode">
-           <enum>QAbstractItemView::ExtendedSelection</enum>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+          <property name="autoRaise">
+           <bool>true</bool>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="btSaveSpectrum">
+         <widget class="QToolButton" name="btModeDelta">
+          <property name="toolTip">
+           <string>Select delta series</string>
+          </property>
           <property name="text">
-           <string>Save spectrum ...</string>
+           <string>Select delta series</string>
+          </property>
+          <property name="icon">
+           <iconset resource="mofi.qrc">
+            <normaloff>:/mofi resource/images/DeltaMassMode.png</normaloff>:/mofi resource/images/DeltaMassMode.png</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>24</width>
+            <height>24</height>
+           </size>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <property name="checked">
+           <bool>false</bool>
+          </property>
+          <property name="autoRaise">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QToolButton" name="btResetZoom">
+          <property name="toolTip">
+           <string>Reset zoom</string>
+          </property>
+          <property name="text">
+           <string>Reset zoom</string>
+          </property>
+          <property name="icon">
+           <iconset resource="mofi.qrc">
+            <normaloff>:/mofi resource/images/ResetZoom.png</normaloff>:/mofi resource/images/ResetZoom.png</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>24</width>
+            <height>24</height>
+           </size>
+          </property>
+          <property name="autoRaise">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QToolButton" name="btLabelPeaks">
+          <property name="toolTip">
+           <string>Label peaks</string>
+          </property>
+          <property name="text">
+           <string>Label peaks</string>
+          </property>
+          <property name="icon">
+           <iconset resource="mofi.qrc">
+            <normaloff>:/mofi resource/images/Label.png</normaloff>:/mofi resource/images/Label.png</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>24</width>
+            <height>24</height>
+           </size>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+          <property name="autoRaise">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QToolButton" name="btSaveSpectrum">
+          <property name="icon">
+           <iconset resource="mofi.qrc">
+            <normaloff>:/mofi resource/images/Save.png</normaloff>:/mofi resource/images/Save.png</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>24</width>
+            <height>24</height>
+           </size>
+          </property>
+          <property name="autoRaise">
+           <bool>true</bool>
           </property>
          </widget>
         </item>
