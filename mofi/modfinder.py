@@ -10,11 +10,11 @@ import time
 import xml.etree.ElementTree as ETree
 import webbrowser
 
-from PyQt5.QtWidgets import (QApplication, QMainWindow, QMenu, QActionGroup,
+from PyQt5.QtWidgets import (QApplication, QMainWindow, QMenu,
                              QTableWidgetItem, QCheckBox, QMessageBox,
                              QHeaderView, QButtonGroup, QFileDialog,
                              QSpinBox, QDoubleSpinBox, QWidget, QHBoxLayout,
-                             QAction, QProgressBar, QLabel, QSizePolicy)
+                             QProgressBar, QLabel, QSizePolicy)
 from PyQt5.QtGui import QColor
 from PyQt5.QtCore import Qt, QLocale
 
@@ -380,22 +380,14 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             lambda item: self.update_selection(
                 clicked_item=item, clicked_tree=self.twResults2))
 
-        # generate mass set selectors from config file
-        self.agSelectMassSet = QActionGroup(self.menuAtomicMasses)
+        # fill the mass sets combobox
         for set_id, mass_set in enumerate(configure.mass_sets):
-            ac_select_set = QAction(self)
-            ac_select_set.setCheckable(True)
-            if set_id == 0:
-                ac_select_set.setChecked(True)
-            ac_select_set.setObjectName("acSelectMassSet{:d}".format(set_id))
-            ac_select_set.setText(mass_set)
-            ac_select_set.setToolTip(
-                configure.mass_sets[mass_set].get("description", ""))
-            self.menuAtomicMasses.addAction(ac_select_set)
-            # self.tlMassSet.addAction(ac_select_set)
-            self.agSelectMassSet.addAction(ac_select_set)
-        # noinspection PyUnresolvedReferences
-        self.agSelectMassSet.triggered.connect(self.choose_mass_set)
+            self.cbMassSet.addItem(mass_set)
+            self.cbMassSet.setItemData(
+                set_id,
+                configure.mass_sets[mass_set].get("description", ""),
+                Qt.ToolTipRole)
+        self.cbMassSet.currentTextChanged.connect(self.choose_mass_set)
 
         # status bar
         sb_widget = QWidget(self)
@@ -934,13 +926,15 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 "Error while writing to {}. No output saved.".format(filename))
 
 
-    def choose_mass_set(self):
+    def choose_mass_set(self, mass_set):
         """
-        Chooses the set of atomic weights to use for mass calculations
+        Chooses the set of atomic weights to use for mass calculations.
 
+        :param str mass_set: mass set to choose
         :return: nothing
         """
-        configure.select_mass_set(self.agSelectMassSet.checkedAction().text())
+        
+        configure.select_mass_set(mass_set)
         if self.teSequence.toPlainText():
             self.calculate_protein_mass()
             self.calculate_mod_mass()

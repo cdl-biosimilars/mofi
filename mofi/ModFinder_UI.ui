@@ -247,22 +247,6 @@
              </layout>
             </item>
             <item>
-             <spacer name="horizontalSpacer_5">
-              <property name="orientation">
-               <enum>Qt::Horizontal</enum>
-              </property>
-              <property name="sizeType">
-               <enum>QSizePolicy::Minimum</enum>
-              </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>30</width>
-                <height>0</height>
-               </size>
-              </property>
-             </spacer>
-            </item>
-            <item>
              <widget class="QCheckBox" name="chPngase">
               <property name="enabled">
                <bool>false</bool>
@@ -750,6 +734,29 @@
         <item>
          <layout class="QHBoxLayout" name="horizontalLayout_11">
           <item>
+           <widget class="QLabel" name="label_6">
+            <property name="text">
+             <string>Mass set:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QComboBox" name="cbMassSet"/>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_5">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
            <widget class="QPushButton" name="btFindModifications">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
@@ -759,7 +766,7 @@
             </property>
             <property name="minimumSize">
              <size>
-              <width>160</width>
+              <width>0</width>
               <height>25</height>
              </size>
             </property>
@@ -809,9 +816,12 @@
             <property name="orientation">
              <enum>Qt::Horizontal</enum>
             </property>
+            <property name="sizeType">
+             <enum>QSizePolicy::Preferred</enum>
+            </property>
             <property name="sizeHint" stdset="0">
              <size>
-              <width>40</width>
+              <width>20</width>
               <height>20</height>
              </size>
             </property>
@@ -833,14 +843,14 @@
           <item>
            <widget class="QDoubleSpinBox" name="sbTolerance">
             <property name="sizePolicy">
-             <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
               <horstretch>0</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
             </property>
             <property name="minimumSize">
              <size>
-              <width>50</width>
+              <width>80</width>
               <height>0</height>
              </size>
             </property>
@@ -1852,20 +1862,6 @@
     <addaction name="separator"/>
     <addaction name="acQuit"/>
    </widget>
-   <widget class="QMenu" name="menuOptions">
-    <property name="title">
-     <string>Options</string>
-    </property>
-    <widget class="QMenu" name="menuAtomicMasses">
-     <property name="title">
-      <string>Atomic masses</string>
-     </property>
-     <property name="toolTipsVisible">
-      <bool>true</bool>
-     </property>
-    </widget>
-    <addaction name="menuAtomicMasses"/>
-   </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
      <string>Help</string>
@@ -1874,7 +1870,6 @@
     <addaction name="acAbout"/>
    </widget>
    <addaction name="menuFile"/>
-   <addaction name="menuOptions"/>
    <addaction name="menuHelp"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>

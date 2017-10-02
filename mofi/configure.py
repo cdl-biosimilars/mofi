@@ -27,9 +27,11 @@ with open(os.path.join(config_dir, "mass_sets.ini")) as f:
 mass_sets = OrderedDict()
 for set_name in mass_set_parser.sections():
     mass_sets[set_name] = {}
-    for (atom, weight) in mass_set_parser.items(set_name):
-        if atom != "description":
-            mass_sets[set_name][atom] = float(weight)
+    for k, v in mass_set_parser.items(set_name):
+        try:
+            mass_sets[set_name][k] = float(v)
+        except ValueError:
+            mass_sets[set_name][k] = v
 
 
 def select_mass_set(name):
