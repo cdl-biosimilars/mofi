@@ -912,7 +912,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
                 # add a column "Relative abundance" to the data source
                 df_relative_abundance = (
-                    self._exp_mass_data["Relative Abundance"].to_frame())
+                    self._exp_mass_data.rel_abundance.to_frame())
                 df_relative_abundance.index.names = ["Mass_ID"]
                 df_hits = df_relative_abundance.join(df_hits, how="inner")
 
@@ -1079,8 +1079,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         # (i.e., no peak list was loaded)
         if self.rbSingleMass.isChecked():
             self._exp_mass_data = pd.DataFrame(
-                {"Average Mass": self.sbSingleMass.value(),
-                 "Relative Abundance": 100.0},
+                {"avg_mass": self.sbSingleMass.value(),
+                 "rel_abundance": 100.0},
                 index=[0])
             self.draw_spectrum()
 
@@ -1096,21 +1096,21 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         explained_mass = (self._protein_mass
                           + self._disulfide_mass
                           + self._known_mods_mass)
-        unknown_masses = (self._exp_mass_data["Average Mass"]
+        unknown_masses = (self._exp_mass_data.avg_mass
                           - explained_mass)  # type: pd.DataFrame
 
         if self.cbTolerance.currentIndex() == 0:  # that is, "Da"
             # calculate largest mass plus tolerance
-            max_tol_mass = (max(self._exp_mass_data["Average Mass"])
+            max_tol_mass = (max(self._exp_mass_data.avg_mass)
                             + self.sbTolerance.value())
             mass_tolerance = self.sbTolerance.value()
         else:
             # calculate a mass tolerance for each peak
             # if we're working with ppm tolerance
-            max_tol_mass = (max(self._exp_mass_data["Average Mass"])
+            max_tol_mass = (max(self._exp_mass_data.avg_mass)
                             * (1 + self.sbTolerance.value() / 1000000))
             mass_tolerance = []
-            for _, m in self._exp_mass_data["Average Mass"].iteritems():
+            for _, m in self._exp_mass_data.avg_mass.iteritems():
                 mass_tolerance.append(m * self.sbTolerance.value() / 1000000)
 
         # prepare polymer combinations for search stage 2
@@ -1180,7 +1180,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.statusbar.showMessage(
             "Performing composition search (stage 1) ...")
         print("Experimental Masses:",
-              self._exp_mass_data["Average Mass"].head(),
+              self._exp_mass_data.avg_mass.head(),
               sep="\n")
         print("Explained mass (protein + known modifications):",
               explained_mass)
@@ -1246,9 +1246,9 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.spectrum_axes = self.spectrum_fig.add_subplot(111)
         self.spectrum_axes.set_xmargin(.02)
         self.spectrum_peak_lines = self.spectrum_axes.vlines(
-            x=self._exp_mass_data["Average Mass"],
+            x=self._exp_mass_data.avg_mass,
             ymin=0,
-            ymax=self._exp_mass_data["Relative Abundance"],
+            ymax=self._exp_mass_data.rel_abundance,
             linewidth=1,
             color=configure.colors["unselect_no_annotation"],
             picker=5)
@@ -1388,8 +1388,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         """
 
         peak_indices = self._exp_mass_data.index[
-                (min_mass <= self._exp_mass_data["Average Mass"])
-                & (self._exp_mass_data["Average Mass"] <= max_mass)
+                (min_mass <= self._exp_mass_data.avg_mass)
+                & (self._exp_mass_data.avg_mass <= max_mass)
             ].tolist()
 
         if peak_indices:
@@ -1443,7 +1443,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         # (2) fill the single mass spin box with the currently selected mass
         try:
             self.sbSingleMass.setValue(
-                self._exp_mass_data.loc[central_peak, "Average Mass"])
+                self._exp_mass_data.loc[central_peak, "avg_mass"])
         except AttributeError:  # occurs when second peak file is loaded
             pass
 
@@ -1478,9 +1478,9 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             iterations = int(delta / tolerance / 2)
         intervals = {}  # a {number of differences: (start, end)} dict
 
-        main_mass = float(self._exp_mass_data.iloc[query_peak]["Average Mass"])
-        min_mass = float(min(self._exp_mass_data["Average Mass"]))
-        max_mass = float(max(self._exp_mass_data["Average Mass"]))
+        main_mass = float(self._exp_mass_data.iloc[query_peak]["avg_mass"])
+        min_mass = float(min(self._exp_mass_data.avg_mass))
+        max_mass = float(max(self._exp_mass_data.avg_mass))
 
         # calculate putative intervals
         # increase the interval size by 2 * tolerance in each iteration
@@ -1504,7 +1504,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             current_tolerance += tolerance
             i += 1
 
-        interval_per_peak = (self._exp_mass_data["Average Mass"]
+        interval_per_peak = (self._exp_mass_data.avg_mass
                              .apply(find_in_intervals,
                                     intervals=intervals))
         interval_per_peak[query_peak] = "0"
@@ -1614,11 +1614,11 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             label = df_counts["label"][peak_id]
             if self.btLabelPeaks.isChecked():
                 label += " ({:.2f})".format(
-                    self._exp_mass_data["Average Mass"][peak_id])
+                    self._exp_mass_data["avg_mass"][peak_id])
             self.spectrum_axes.annotate(
                 s=label,
-                xy=(self._exp_mass_data.iloc[peak_id]["Average Mass"],
-                    self._exp_mass_data.iloc[peak_id]["Relative Abundance"]),
+                xy=(self._exp_mass_data.iloc[peak_id]["avg_mass"],
+                    self._exp_mass_data.iloc[peak_id]["rel_abundance"]),
                 xytext=(0, 5),
                 textcoords="offset pixels",
                 horizontalalignment="center",
@@ -1680,11 +1680,11 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             for peak_id in peak_indices:
                 self.spectrum_axes.annotate(
                     s="{:.2f}".format(self._exp_mass_data
-                                      .iloc[peak_id]["Average Mass"]),
+                                      .iloc[peak_id]["avg_mass"]),
                     xy=(self._exp_mass_data
-                            .iloc[peak_id]["Average Mass"],
+                            .iloc[peak_id]["avg_mass"],
                         self._exp_mass_data
-                            .iloc[peak_id]["Relative Abundance"]),
+                            .iloc[peak_id]["rel_abundance"]),
                     xytext=(0, 5),
                     textcoords="offset pixels",
                     horizontalalignment="center",
@@ -1819,11 +1819,11 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             root_item.setTextAlignment(1, Qt.AlignLeft)
             root_item.setText(
                 2, "{:.2f}".format(self._exp_mass_data
-                                   .loc[mass_index, "Average Mass"]))
+                                   .loc[mass_index, "avg_mass"]))
             root_item.setTextAlignment(2, Qt.AlignRight)
             root_item.setText(
                 3, "{:.1f}".format(self._exp_mass_data
-                                   .loc[mass_index, "Relative Abundance"]))
+                                   .loc[mass_index, "rel_abundance"]))
             root_item.setTextAlignment(3, Qt.AlignRight)
 
             # color root item
@@ -2021,8 +2021,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.tbStatistics.setItem(row_id, 0, item)
 
         # (2) peak information
-        for col_id, label, form in [(1, "Average Mass", "{:.2f}"),
-                                    (2, "Relative Abundance", "{:.1f}")]:
+        for col_id, label, form in [(1, "avg_mass", "{:.2f}"),
+                                    (2, "rel_abundance", "{:.1f}")]:
             item = SortableTableWidgetItem(
                     form.format(self._exp_mass_data.loc[row_id, label]))
             item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
