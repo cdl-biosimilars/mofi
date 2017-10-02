@@ -150,8 +150,6 @@ def create_hit_columns(item, hit, monomers, sites):
     :rtype: int
     """
 
-    # hit_item.setCheckState(1, Qt.Unchecked) TODO
-
     pos = 4
     if sites:  # stage 2 results
         # hit index
@@ -489,7 +487,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         # headers with filters for the results trees
         for tree_widget in (self.twResults1, self.twResults2):
             header = FilterHeader(tree_widget)
-            header.setDefaultSectionSize(50)
+            header.setDefaultSectionSize(80)
             header.setHighlightSections(True)
             header.setMinimumSectionSize(0)
             tree_widget.setHeader(header)
@@ -1728,6 +1726,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 hit_item.setText(
                     1, "{}-{}".format(root_item.text(1), stage2_id))
                 hit_item.setTextAlignment(1, Qt.AlignLeft)
+                hit_item.setCheckState(0, Qt.Unchecked)
                 pos = create_hit_columns(hit_item, hit_optimum,
                                          monomers, sites)
 
@@ -1753,6 +1752,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                                                  stage2_id,
                                                  perm_id))
                         perm_item.setTextAlignment(1, Qt.AlignLeft)
+                        perm_item.setCheckState(0, Qt.Unchecked)
                         self._results_tree_items[stage].append(perm_item)
                         create_site_columns(perm_item, pos, perm, sites)
 
@@ -1768,6 +1768,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 hit_item.setText(
                     1, "{}-{}".format(root_item.text(1), stage1_id))
                 hit_item.setTextAlignment(1, Qt.AlignLeft)
+                hit_item.setCheckState(0, Qt.Unchecked)
                 self._results_tree_items[stage].append(hit_item)
                 create_hit_columns(hit_item, hit, monomers, sites)
                 stage1_id += 1
@@ -1814,6 +1815,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         for index_count, mass_index in enumerate(self._exp_mass_data.index):
             # generate root item (experimental mass, relative abundance)
             root_item = SortableTreeWidgetItem(tree_widget)
+            root_item.setCheckState(0, Qt.Unchecked)
             self._results_tree_items[stage].append(root_item)
             root_item.setText(1, "{}".format(mass_index))
             root_item.setTextAlignment(1, Qt.AlignLeft)
