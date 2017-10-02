@@ -1,5 +1,9 @@
 <RCC>
   <qresource prefix="mofi resource">
+    <file>../images/SavePartiallyChecked.png</file>
+    <file>../images/CheckAll.png</file>
+    <file>../images/UnckeckAll.png</file>
+    <file>../images/SaveChecked.png</file>
     <file>../images/ClearFilters.png</file>
     <file>../images/CollapseAll.png</file>
     <file>../images/Expand2.png</file>

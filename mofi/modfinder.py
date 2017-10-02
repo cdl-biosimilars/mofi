@@ -285,6 +285,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.acQuit.triggered.connect(QApplication.instance().quit)
         self.acSaveSettings.triggered.connect(self.save_settings)
 
+        self.btCheckAll.clicked.connect(
+            lambda: self.check_results_tree(check=True))
         self.btClearFilters.clicked.connect(self.clear_filters)
         self.btClearMonomers.clicked.connect(
             lambda: table_clear(self.tbMonomers))
@@ -329,11 +331,19 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             )
         )
         self.btResetZoom.clicked.connect(self.reset_zoom)
+        self.btSaveAllEntries.clicked.connect(
+            lambda: self.save_search_results("all"))
+        self.btSaveCheckedEntries.clicked.connect(
+            lambda: self.save_search_results("checked"))
         self.btSaveMonomers.clicked.connect(
             lambda: self.save_table("Export modifications", "monomers"))
         self.btSavePolymers.clicked.connect(
             lambda: self.save_table("Export glycans", "polymers"))
         self.btSaveSpectrum.clicked.connect(self.save_spectrum)
+        self.btSaveTristateEntries.clicked.connect(
+            lambda: self.save_search_results("checked_parent"))
+        self.btUncheckAll.clicked.connect(
+            lambda: self.check_results_tree(check=False))
         self.btUpdateMass.clicked.connect(self.calculate_protein_mass)
 
         self.cbTolerance.activated.connect(self.choose_tolerance_units)
@@ -471,18 +481,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 )
             )
         self.btDefaultModsPolymers.setMenu(menu)
-
-        # add menu to save results button
-        menu = QMenu()
-        menu.addAction("from composition search (stage 1) ...",
-                       lambda: self.save_search_results("stage1"))
-        menu.addAction("from structure search (stage 2) ...",
-                       lambda: self.save_search_results("stage2"))
-        menu.addAction("from structure search (permutations removed) ...",
-                       lambda: self.save_search_results("stage2_filter"))
-        menu.addAction("as shown in table ...",
-                       lambda: self.save_search_results("table"))
-        self.btSaveResults.setMenu(menu)
 
         # headers with filters for the results trees
         for tree_widget in (self.twResults1, self.twResults2):
@@ -834,21 +832,13 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
     def save_search_results(self, mode):
         """
-        Write the dearch results to a CSV file.
+        Write the search results to a CSV file.
 
         :param str mode: Specifies which results should be exported.
-                         Possible choices: stage1, stage2, stage2_filter
+                         Possible choices: "checked", "checked_parent", "all"
                          and table.
         :return: nothing
         """
-
-        # check whether appropriate results are available
-        if mode == "stage1" or mode == "table":
-            if self._monomer_hits is None:
-                return
-        else:
-            if self._polymer_hits is None:
-                return
 
         filename, filefilter = QFileDialog.getSaveFileName(
             self,
@@ -889,32 +879,54 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                         f.write("sites: {}; ".format(sites))
                         f.write("abundance: {:.2f}\n".format(abundance))
 
-                # choose the appropriate data source
-                if mode == "stage1":
-                    f.write("# Results from composition search (stage 1).\n")
-                    df_hits = self._monomer_hits
-                elif mode == "stage2":
-                    f.write("# Results from structure search (stage 2).\n")
-                    df_hits = self._polymer_hits
-                elif mode == "stage2_filter":
-                    f.write("# Results from structure search (stage 2), "
-                            "filters applied.\n")
-                    df_hits = search_tools.drop_glycan_permutations(
-                        self._polymer_hits)
-                    df_hits["Score"] = df_hits["Hit score"]
-                    df_hits.drop(["Hash", "Hit score"],
-                                 axis=1, inplace=True)
+                # set up the appropriate BFS algorithm
+                if mode == "all":
+                    f.write("# All results ")
+
+                    def explore(node):
+                        yield [node.text(c)
+                               for c in range(1, node.columnCount())]
+                        for i in range(node.childCount()):
+                            yield from explore(node.child(i))
+                elif mode == "checked_parent":
+                    f.write("# Selected results (with parents) ")
+
+                    def explore(node):
+                        if node.checkState(0) != Qt.Unchecked:
+                            yield [node.text(c)
+                                   for c in range(1, node.columnCount())]
+                        for i in range(node.childCount()):
+                            yield from explore(node.child(i))
                 else:
-                    f.write("# Results as displayed in results table.\n")
-                    df_hits = self._polymer_hits()  # TODO new export variants
+                    f.write("# Selected results ")
 
-                # add a column "Relative abundance" to the data source
-                df_relative_abundance = (
-                    self._exp_mass_data.rel_abundance.to_frame())
-                df_relative_abundance.index.names = ["Mass_ID"]
-                df_hits = df_relative_abundance.join(df_hits, how="inner")
+                    def explore(node):
+                        if node.checkState(0) == Qt.Checked:
+                            yield [node.text(c)
+                                   for c in range(1, node.columnCount())]
+                        for i in range(node.childCount()):
+                            yield from explore(node.child(i))
 
-                df_hits.to_csv(f)
+                # choose the appropriate data source
+                if self.taResults.currentIndex() == 0:
+                    f.write("from composition search (stage 1).\n")
+                    results_tree = self.twResults1
+                else:
+                    f.write("from structure search (stage 2).\n")
+                    results_tree = self.twResults2
+
+                # create dataframe from (selected) entries and save as csv
+                header = results_tree.headerItem()
+                df = (
+                    pd.DataFrame(
+                        explore(results_tree.invisibleRootItem()),
+                        columns=[header.text(c)
+                                 for c in range(1, header.columnCount())])
+                    .replace("", np.nan)
+                    .ffill())
+                if not df.empty and df.iloc[0, 0] is None:
+                    df = df.drop(0)
+                df.to_csv(f, index=False)
         except OSError:
             QMessageBox.critical(
                 self,
@@ -1726,6 +1738,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 hit_item.setText(
                     1, "{}-{}".format(root_item.text(1), stage2_id))
                 hit_item.setTextAlignment(1, Qt.AlignLeft)
+                hit_item.setFlags(hit_item.flags() | Qt.ItemIsTristate)
                 hit_item.setCheckState(0, Qt.Unchecked)
                 pos = create_hit_columns(hit_item, hit_optimum,
                                          monomers, sites)
@@ -1815,6 +1828,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         for index_count, mass_index in enumerate(self._exp_mass_data.index):
             # generate root item (experimental mass, relative abundance)
             root_item = SortableTreeWidgetItem(tree_widget)
+            root_item.setFlags(root_item.flags() | Qt.ItemIsTristate)
             root_item.setCheckState(0, Qt.Unchecked)
             self._results_tree_items[stage].append(root_item)
             root_item.setText(1, "{}".format(mass_index))
@@ -1949,6 +1963,26 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             tree_widget.expandToDepth(depth)
         else:
             tree_widget.collapseAll()
+
+
+    def check_results_tree(self, check=True):
+        """
+        Check or uncheck all entries of a results tree.
+
+        :param bool check: whether to check or uncheck the entries
+        :return: nothing
+        """
+        if self.taResults.currentIndex() == 0:
+            tree_widget = self.twResults1
+        elif self.taResults.currentIndex() == 1:
+            tree_widget = self.twResults2
+        else:
+            return
+
+        for i in range(tree_widget.invisibleRootItem().childCount()):
+                tree_widget.invisibleRootItem().child(i).setCheckState(
+                    0, Qt.Checked if check else Qt.Unchecked
+                )
 
 
     def filter_results_table(self, stage):
