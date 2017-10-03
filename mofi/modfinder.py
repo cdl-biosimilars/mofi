@@ -933,7 +933,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         :param str mass_set: mass set to choose
         :return: nothing
         """
-        
+
         configure.select_mass_set(mass_set)
         if self.teSequence.toPlainText():
             self.calculate_protein_mass()
@@ -975,12 +975,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self._protein_mass = protein.mass_without_disulfides
         self._disulfide_mass = (mass_tools.Formula("H-2").mass
                                 * self.sbDisulfides.value())
-        self.lbMassProtein.setText("{:.2f}".format(self._protein_mass))
-        self.lbMassMods.setText("{:.2f}".format(self._known_mods_mass
-                                                + self._disulfide_mass))
-        self.lbMassTotal.setText("{:.2f}".format(self._protein_mass
-                                                 + self._disulfide_mass
-                                                 + self._known_mods_mass))
+        self.update_mass_labels()
 
 
     def calculate_mod_mass(self):
@@ -988,8 +983,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         Calculate the mass of known modifications.
 
         Changes ``self._known_mods_mass`` to the mass of known modifications.
-        Updates the value of ``self.lbMassProtein``, ``self.lbMassMods``
-        and ``self.lbMassTotal``.
 
         :return: list of (checked, name, composition,
                           mass,min count, max count) tuples
@@ -1041,13 +1034,24 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             result.append((ch.isChecked(), name, composition, mass,
                            min_count, max_count))
 
+        self.update_mass_labels()
+        return result
+
+
+    def update_mass_labels(self):
+        """
+        Updates the value of ``self.lbMassProtein``, ``self.lbMassMods``
+        and ``self.lbMassTotal``.
+
+        :return: nothing
+        """
+
         self.lbMassProtein.setText("{:.2f}".format(self._protein_mass))
         self.lbMassMods.setText("{:.2f}".format(self._known_mods_mass
                                                 + self._disulfide_mass))
         self.lbMassTotal.setText("{:.2f}".format(self._protein_mass
                                                  + self._disulfide_mass
                                                  + self._known_mods_mass))
-        return result
 
 
     def get_polymers(self):
