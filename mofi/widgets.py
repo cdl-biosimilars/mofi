@@ -1,8 +1,10 @@
 #  from https://stackoverflow.com/questions/44343738/how-to-inject-
 # widgets-between-qheaderview-and-qtableview
 
+import os
+
 from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtWidgets import (QHeaderView, QLineEdit,
+from PyQt5.QtWidgets import (QHeaderView, QLineEdit, QFileDialog,
                              QTableWidgetItem, QTreeWidgetItem)
 from PyQt5.QtGui import QColor, QBrush
 
@@ -260,3 +262,58 @@ class CollapsingRectangleSelector(RectangleSelector):
         self.to_draw.set_y(ymin)
         self.to_draw.set_width(xmax - xmin)
         self.to_draw.set_height(ymax - ymin)
+
+
+_default_file_types = {
+    "xls": "Excel files",
+    "xlsx": "Excel files",
+    "csv": "CSV files",
+    "fasta": "Sequence files",
+    "xml": "ModFinder XML settings",
+    "": ""
+}
+
+def get_filename(parent, kind="save", caption="", directory="",
+                 extensions=None, file_types=None):
+    """
+    Get a filename by a :class:`QFileDialog`
+    and automatically add extensions.
+
+    :param parent: parent of the dialog
+    :param str kind: `"save"` or `"open"`, chooses the dialog type
+    :param str caption: caption of the dialog
+    :param str directory: initial directory
+    :param list(str) extensions: file extensions
+    :param dict(str, str) file_types: {extension: description} dict
+    :return: the file name with extension and the last path
+    :rtype: tuple(str, str)
+    :raise ValueError: if an invalid value was supplied to :arg:`kind`
+    """
+
+    if extensions is None:
+        extensions = [""]
+    if file_types is None:
+        file_types = _default_file_types
+    ext_list = {k: "{0} [{1}] (*.{1})".format(v, k)
+                for k, v in file_types.items()}
+    reverse_extensions = {v: k for k, v in ext_list.items()}
+
+    if kind == "save":
+        dialog = QFileDialog.getSaveFileName
+    elif kind == "open":
+        dialog = QFileDialog.getOpenFileName
+    else:
+        raise ValueError("Unknown value for 'kind': " + kind)
+    filename, filefilter = dialog(
+        parent,
+        caption,
+        directory,
+        ";;".join([ext_list[ext] for ext in extensions]))
+    new_path = os.path.split(filename)[0]
+
+    if not filename:
+        return None, new_path
+
+    if not filename.endswith(reverse_extensions[filefilter]):
+        filename += "." + reverse_extensions[filefilter]
+    return filename, new_path
