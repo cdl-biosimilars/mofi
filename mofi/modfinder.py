@@ -389,7 +389,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 Qt.ToolTipRole)
         self.cbMassSet.currentTextChanged.connect(self.choose_mass_set)
 
-        # status bar
+        # status bar: (1) progress bar
         sb_widget = QWidget(self)
         sb_layout = QHBoxLayout(sb_widget)
         sb_layout.setContentsMargins(0, 0, 0, 0)
@@ -403,8 +403,20 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         sb_layout.addWidget(self.pbSearchProgress)
         self.statusbar.addPermanentWidget(sb_widget)
 
-        self.lbMasses = QLabel()
-        self.statusbar.addWidget(self.lbMasses)
+        # (2) mass information
+        sb_widget = QWidget(self)
+        sb_layout = QHBoxLayout(sb_widget)
+        sb_layout.setContentsMargins(0, 0, 0, 0)
+        sb_widget.setLayout(sb_layout)
+        self.lbProteinMass = QLabel()
+        self.lbKnownModMass = QLabel()
+        self.lbTotalMass = QLabel()
+        sb_layout.addWidget(self.lbProteinMass)
+        sb_layout.addSpacing(20)
+        sb_layout.addWidget(self.lbKnownModMass)
+        sb_layout.addSpacing(20)
+        sb_layout.addWidget(self.lbTotalMass)
+        self.statusbar.addWidget(sb_widget)
 
         # mass spectrum plot
         self.spectrum_fig = Figure(dpi=100, frameon=False,
@@ -1042,18 +1054,20 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
     def update_mass_in_statusbar(self):
         """
-        Updates the contents of ``self.lbMasses`` in the status bar.
+        Updates the contents of the mass labels in the status bar.
 
         :return: nothing
         """
 
-        protein_mass = "Protein: {:.2f} Da".format(
+        protein_mass = "<b>Protein:</b> {:.2f} Da".format(
             self._protein_mass)
-        mod_mass = "known modifications: {:.2f} Da".format(
+        mod_mass = "<b>known modifications:</b> {:.2f} Da".format(
             self._known_mods_mass + self._disulfide_mass)
-        total_mass = "total: {:.2f} Da".format(
+        total_mass = "<b>total:</b> {:.2f} Da".format(
             self._protein_mass + self._disulfide_mass + self._known_mods_mass)
-        self.lbMasses.setText("\t".join((protein_mass, mod_mass, total_mass)))
+        self.lbProteinMass.setText(protein_mass)
+        self.lbKnownModMass.setText(mod_mass)
+        self.lbTotalMass.setText(total_mass)
 
 
     def get_polymers(self):
