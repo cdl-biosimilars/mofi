@@ -114,12 +114,12 @@ def find_monomers(mods, unexplained_masses, mass_tolerance=5.0,
     #                              (2) theoretical mass
     #                              (3) 1-based counter for hits per exp. mass
     # replace NaNs in mod columns by -1 and convert those columns to int
+    if not any_combination_found:
+        return None, None
     combinations = (
         pd.concat(combinations)
         .fillna(0)
         .astype({m: int for m in mod_names}))
-    if not any_combination_found:
-        return
 
     # sort columns so that they have the original order from the monomer table
     sortlist = [m[0] for m in mods] + ["Exp_Mass", "Theo_Mass", "Da", "ppm"]

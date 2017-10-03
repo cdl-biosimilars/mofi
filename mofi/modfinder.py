@@ -1121,21 +1121,21 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         explained_mass = (self._protein_mass
                           + self._disulfide_mass
                           + self._known_mods_mass)
-        unknown_masses = (self._exp_mass_data.avg_mass
+        unknown_masses = (self._exp_mass_data["avg_mass"]
                           - explained_mass)  # type: pd.DataFrame
 
         if self.cbTolerance.currentIndex() == 0:  # that is, "Da"
             # calculate largest mass plus tolerance
-            max_tol_mass = (max(self._exp_mass_data.avg_mass)
+            max_tol_mass = (max(self._exp_mass_data["avg_mass"])
                             + self.sbTolerance.value())
             mass_tolerance = self.sbTolerance.value()
         else:
             # calculate a mass tolerance for each peak
             # if we're working with ppm tolerance
-            max_tol_mass = (max(self._exp_mass_data.avg_mass)
+            max_tol_mass = (max(self._exp_mass_data["avg_mass"])
                             * (1 + self.sbTolerance.value() / 1000000))
             mass_tolerance = []
-            for _, m in self._exp_mass_data.avg_mass.iteritems():
+            for _, m in self._exp_mass_data["avg_mass"].iteritems():
                 mass_tolerance.append(m * self.sbTolerance.value() / 1000000)
 
         # prepare polymer combinations for search stage 2
@@ -1205,7 +1205,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.statusbar.showMessage(
             "Performing composition search (stage 1) ...")
         print("Experimental Masses:",
-              self._exp_mass_data.avg_mass.head(),
+              self._exp_mass_data["avg_mass"].head(),
               sep="\n")
         print("Explained mass (protein + known modifications):",
               explained_mass)
@@ -1256,7 +1256,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 .fillna(0)
                 .astype(int))
         self.fill_results_tables()
-        self.tbStatistics.clearContents()
         self._search_statistics.apply(self.fill_statistics_table, axis=1)
 
 
@@ -1271,9 +1270,9 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.spectrum_axes = self.spectrum_fig.add_subplot(111)
         self.spectrum_axes.set_xmargin(.02)
         self.spectrum_peak_lines = self.spectrum_axes.vlines(
-            x=self._exp_mass_data.avg_mass,
+            x=self._exp_mass_data["avg_mass"],
             ymin=0,
-            ymax=self._exp_mass_data.rel_abundance,
+            ymax=self._exp_mass_data["rel_abundance"],
             linewidth=1,
             color=configure.colors["unselect_no_annotation"],
             picker=5)
@@ -1413,8 +1412,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         """
 
         peak_indices = self._exp_mass_data.index[
-                (min_mass <= self._exp_mass_data.avg_mass)
-                & (self._exp_mass_data.avg_mass <= max_mass)
+                (min_mass <= self._exp_mass_data["avg_mass"])
+                & (self._exp_mass_data["avg_mass"] <= max_mass)
             ].tolist()
 
         if peak_indices:
@@ -1504,8 +1503,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         intervals = {}  # a {number of differences: (start, end)} dict
 
         main_mass = float(self._exp_mass_data.iloc[query_peak]["avg_mass"])
-        min_mass = float(min(self._exp_mass_data.avg_mass))
-        max_mass = float(max(self._exp_mass_data.avg_mass))
+        min_mass = float(min(self._exp_mass_data["avg_mass"]))
+        max_mass = float(max(self._exp_mass_data["avg_mass"]))
 
         # calculate putative intervals
         # increase the interval size by 2 * tolerance in each iteration
@@ -1529,7 +1528,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             current_tolerance += tolerance
             i += 1
 
-        interval_per_peak = (self._exp_mass_data.avg_mass
+        interval_per_peak = (self._exp_mass_data["avg_mass"]
                              .apply(find_in_intervals,
                                     intervals=intervals))
         interval_per_peak[query_peak] = "0"
@@ -2062,6 +2061,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         :return: nothing
         """
 
+        self.tbStatistics.clearContents()
         row_id = self.tbStatistics.rowCount()
         self.tbStatistics.insertRow(row_id)
 

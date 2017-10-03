@@ -36,25 +36,26 @@ def read_massfile(massfile):
         return None
 
     # find column with average masses
+    massframe = pd.DataFrame()
     try:
-        massframe = pd.DataFrame(inputframe["Average Mass"])
+        massframe["avg_mass"] = inputframe["Average Mass"]
     except KeyError:
         try:
-            massframe = pd.DataFrame(inputframe["Average Mass (mean)"])
+            massframe["avg_mass"] = inputframe["Average Mass (mean)"]
         except KeyError:
             return None
 
     # find column with relative intensities; if absent provide default values
     try:
-        massframe["Relative Abundance"] = inputframe["Relative Abundance"]
+        massframe["rel_abundance"] = inputframe["Relative Abundance"]
     except KeyError:
-        massframe["Relative Abundance"] = 100
+        massframe["rel_abundance"] = 100
 
     # convert to float
     try:
         massframe = (massframe
                      .astype(float)
-                     .sort_values("Average Mass", ascending=True))
+                     .sort_values("avg_mass"))
     except ValueError:
         return None
 
