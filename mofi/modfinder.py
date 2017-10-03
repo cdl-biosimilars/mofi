@@ -403,6 +403,9 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         sb_layout.addWidget(self.pbSearchProgress)
         self.statusbar.addPermanentWidget(sb_widget)
 
+        self.lbMasses = QLabel()
+        self.statusbar.addWidget(self.lbMasses)
+
         # mass spectrum plot
         self.spectrum_fig = Figure(dpi=100, frameon=False,
                                    tight_layout={"pad": 0}, edgecolor="white")
@@ -747,11 +750,12 @@ class MainWindow(QMainWindow, Ui_ModFinder):
     def choose_tolerance_units(self):
         """
         Adjust the settings of the tolerance spin box
-        when PPM or Da are selected.
+        when ppm or Da are selected.
 
         :return: nothing
         """
-        if self.cbTolerance.currentIndex() == 0:  # that is, Da
+
+        if self.cbTolerance.currentText() == "Da":
             self.sbTolerance.setDecimals(2)
             self.sbTolerance.setMinimum(0.0)
             self.sbTolerance.setMaximum(50.0)
@@ -816,6 +820,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 return
 
             self._exp_mass_data = mass_data
+            self.twResults1.clear()
             self.twResults2.clear()
             self._monomer_hits = None
             self._polymer_hits = None
@@ -843,7 +848,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             return
         if not filename.endswith(_reverse_extensions[filefilter]):
             filename += "." + _reverse_extensions[filefilter]
-
+        # TODO export statistics table
         try:
             with open(filename, "w") as f:
                 # write information about the parameters used
@@ -943,10 +948,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
     def calculate_protein_mass(self):
         """
         Calculates the mass of the protein from the current data.
-
         Changes ``self._protein_mass`` and ``self._disulfide_mass``.
-        Updates the value of ``self.lbMassProtein``, ``self.lbMassMods``
-        and ``self.lbMassTotal``.
 
         :return: nothing
         """
@@ -975,7 +977,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self._protein_mass = protein.mass_without_disulfides
         self._disulfide_mass = (mass_tools.Formula("H-2").mass
                                 * self.sbDisulfides.value())
-        self.update_mass_labels()
+        self.update_mass_in_statusbar()
 
 
     def calculate_mod_mass(self):
@@ -1034,24 +1036,24 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             result.append((ch.isChecked(), name, composition, mass,
                            min_count, max_count))
 
-        self.update_mass_labels()
+        self.update_mass_in_statusbar()
         return result
 
 
-    def update_mass_labels(self):
+    def update_mass_in_statusbar(self):
         """
-        Updates the value of ``self.lbMassProtein``, ``self.lbMassMods``
-        and ``self.lbMassTotal``.
+        Updates the contents of ``self.lbMasses`` in the status bar.
 
         :return: nothing
         """
 
-        self.lbMassProtein.setText("{:.2f}".format(self._protein_mass))
-        self.lbMassMods.setText("{:.2f}".format(self._known_mods_mass
-                                                + self._disulfide_mass))
-        self.lbMassTotal.setText("{:.2f}".format(self._protein_mass
-                                                 + self._disulfide_mass
-                                                 + self._known_mods_mass))
+        protein_mass = "Protein: {:.2f} Da".format(
+            self._protein_mass)
+        mod_mass = "known modifications: {:.2f} Da".format(
+            self._known_mods_mass + self._disulfide_mass)
+        total_mass = "total: {:.2f} Da".format(
+            self._protein_mass + self._disulfide_mass + self._known_mods_mass)
+        self.lbMasses.setText("\t".join((protein_mass, mod_mass, total_mass)))
 
 
     def get_polymers(self):
