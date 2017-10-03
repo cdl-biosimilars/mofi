@@ -280,14 +280,13 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.acManual.triggered.connect(
             lambda: webbrowser.open("file://"
                                     + os.path.join(docs_dir, "index.html")))
-        self.acOpenFasta.triggered.connect(self.load_fasta_file)
-        self.acOpenPeaks.triggered.connect(self.load_mass_file)
         self.acQuit.triggered.connect(QApplication.instance().quit)
         self.acSaveSettings.triggered.connect(self.save_settings)
 
         self.btCheckAll.clicked.connect(
             lambda: self.check_results_tree(check=True))
         self.btClearFilters.clicked.connect(self.clear_filters)
+        self.btClearSequence.clicked.connect(self.teSequence.clear)
         self.btClearMonomers.clicked.connect(
             lambda: table_clear(self.tbMonomers))
         self.btClearPolymers.clicked.connect(
@@ -330,6 +329,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 cols=_polymer_table_columns
             )
         )
+        self.btLoadPeaks.clicked.connect(self.load_mass_file)
+        self.btLoadSequence.clicked.connect(self.load_fasta_file)
         self.btResetZoom.clicked.connect(self.reset_zoom)
         self.btSaveAllEntries.clicked.connect(
             lambda: self.save_search_results("all"))

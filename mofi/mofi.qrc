@@ -1,5 +1,7 @@
 <RCC>
   <qresource prefix="mofi resource">
+    <file>../images/UpdateMass.png</file>
+    <file>../images/Clear.png</file>
     <file>../images/SavePartiallyChecked.png</file>
     <file>../images/CheckAll.png</file>
     <file>../images/UnckeckAll.png</file>
