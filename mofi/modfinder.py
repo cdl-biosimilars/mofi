@@ -864,81 +864,100 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             return
         if not filename.endswith(_reverse_extensions[filefilter]):
             filename += "." + _reverse_extensions[filefilter]
-        # TODO export statistics table
-        try:
-            with open(filename, "w") as f:
-                # write information about the parameters used
-                f.write("# Combinatorial search results by ModFinder\n")
-                f.write("# Date: " + time.strftime("%c") + "\n")
-                f.write("#   Tolerance: {:.2f} {}\n".format(
-                    self.sbTolerance.value(),
-                    self.cbTolerance.currentText()))
 
-                f.write("#   Composition:\n")
-                for (is_checked, name, _, mass,
-                     min_count, max_count) in self.calculate_mod_mass():
-                    if is_checked:
-                        if max_count == -1:
-                            max_count = "inf"
-                        f.write("#     {} ({:.2f} Da), ".format(name, mass))
-                        f.write("min {}, ".format(min_count))
-                        f.write("max {}\n".format(max_count))
+        # retrieve general information about the search parameters
+        out = ["# Combinatorial search results by ModFinder\n",
+               "# Date: " + time.strftime("%c") + "\n",
+               "#   Sequence: "
+               + self.teSequence.toPlainText().replace("\n", r"\n")
+               + "\n",
+               "#   Masses: "
+               + ", ".join(list(self._exp_mass_data["avg_mass"].astype(str)))
+               + "\n",
+               "#   Tolerance: {:.2f} {}\n".format(
+                   self.sbTolerance.value(),
+                   self.cbTolerance.currentText()),
+               "#   Composition:\n"]
 
-                f.write("#   Structures:\n")
-                for (is_checked, name, composition,
-                     sites, abundance) in self.get_polymers():
-                    if is_checked:
-                        f.write("#     {} ({}); ".format(name, composition))
-                        f.write("sites: {}; ".format(sites))
-                        f.write("abundance: {:.2f}\n".format(abundance))
+        for (is_checked, name, _, mass,
+             min_count, max_count) in self.calculate_mod_mass():
+            if is_checked:
+                if max_count == -1:
+                    max_count = "inf"
+                out += ["#     {} ({:.2f} Da), ".format(name, mass),
+                        "min {}, ".format(min_count),
+                        "max {}\n".format(max_count)]
 
-                # set up the appropriate BFS algorithm
-                if mode == "all":
-                    f.write("# All results ")
+        out.append("#   Structures:\n")
+        for (is_checked, name, composition,
+             sites, abundance) in self.get_polymers():
+            if is_checked:
+                out += ["#     {} ({}); ".format(name, composition),
+                        "sites: {}; ".format(sites),
+                        "abundance: {:.2f}\n".format(abundance)]
 
-                    def explore(node):
+        if self.taResults.currentIndex() == 2:
+            out.append("# Search statistics:\n")
+
+            df = pd.DataFrame(
+                [[self.tbStatistics.item(row_id, col_id).text()
+                  for col_id in range(self.tbStatistics.columnCount())]
+                 for row_id in range(self.tbStatistics.rowCount())],
+                columns=[self.tbStatistics.horizontalHeaderItem(c).text()
+                         for c in range(self.tbStatistics.columnCount())])
+        else:
+            # set up the appropriate BFS algorithm
+            if mode == "all":
+                out.append("# All results ")
+
+                def explore(node):
+                    yield [node.text(c)
+                           for c in range(1, node.columnCount())]
+                    for i in range(node.childCount()):
+                        yield from explore(node.child(i))
+            elif mode == "checked_parent":
+                out.append("# Selected results (with parents) ")
+
+                def explore(node):
+                    if node.checkState(0) != Qt.Unchecked:
                         yield [node.text(c)
                                for c in range(1, node.columnCount())]
-                        for i in range(node.childCount()):
-                            yield from explore(node.child(i))
-                elif mode == "checked_parent":
-                    f.write("# Selected results (with parents) ")
+                    for i in range(node.childCount()):
+                        yield from explore(node.child(i))
+            else:
+                out.append("# Selected results ")
 
-                    def explore(node):
-                        if node.checkState(0) != Qt.Unchecked:
-                            yield [node.text(c)
-                                   for c in range(1, node.columnCount())]
-                        for i in range(node.childCount()):
-                            yield from explore(node.child(i))
-                else:
-                    f.write("# Selected results ")
+                def explore(node):
+                    if node.checkState(0) == Qt.Checked:
+                        yield [node.text(c)
+                               for c in range(1, node.columnCount())]
+                    for i in range(node.childCount()):
+                        yield from explore(node.child(i))
 
-                    def explore(node):
-                        if node.checkState(0) == Qt.Checked:
-                            yield [node.text(c)
-                                   for c in range(1, node.columnCount())]
-                        for i in range(node.childCount()):
-                            yield from explore(node.child(i))
+            # choose the appropriate data source
+            if self.taResults.currentIndex() == 0:
+                out.append("from composition search (stage 1):\n")
+                results_tree = self.twResults1
+            else:
+                out.append("from structure search (stage 2):\n")
+                results_tree = self.twResults2
 
-                # choose the appropriate data source
-                if self.taResults.currentIndex() == 0:
-                    f.write("from composition search (stage 1).\n")
-                    results_tree = self.twResults1
-                else:
-                    f.write("from structure search (stage 2).\n")
-                    results_tree = self.twResults2
+            # create dataframe from (selected) entries
+            header = results_tree.headerItem()
+            df = (
+                pd.DataFrame(
+                    explore(results_tree.invisibleRootItem()),
+                    columns=[header.text(c)
+                             for c in range(1, header.columnCount())])
+                .replace("", np.nan)
+                .ffill())
+            if not df.empty and df.iloc[0, 0] is None:
+                df = df.drop(0)
 
-                # create dataframe from (selected) entries and save as csv
-                header = results_tree.headerItem()
-                df = (
-                    pd.DataFrame(
-                        explore(results_tree.invisibleRootItem()),
-                        columns=[header.text(c)
-                                 for c in range(1, header.columnCount())])
-                    .replace("", np.nan)
-                    .ffill())
-                if not df.empty and df.iloc[0, 0] is None:
-                    df = df.drop(0)
+        # write to file
+        try:
+            with open(filename, "w") as f:
+                f.write("".join(out))
                 df.to_csv(f, index=False)
         except OSError:
             QMessageBox.critical(
@@ -1259,6 +1278,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 .fillna(0)
                 .astype(int))
         self.fill_results_tables()
+        self.tbStatistics.clearContents()
         self._search_statistics.apply(self.fill_statistics_table, axis=1)
 
 
@@ -2076,7 +2096,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         :return: nothing
         """
 
-        self.tbStatistics.clearContents()
         row_id = self.tbStatistics.rowCount()
         self.tbStatistics.insertRow(row_id)
 
