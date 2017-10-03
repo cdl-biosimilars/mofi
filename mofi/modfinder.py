@@ -75,6 +75,9 @@ _file_extensions = {
 # its reverse
 _reverse_extensions = {v: k for k, v in _file_extensions.items()}
 
+# sorting key for column 1 of the results trees
+_default_col_key = {1: lambda x: [int(i) for i in x.split("-")]}
+
 
 def file_extensions(*args, ext_dict=_file_extensions):
     """
@@ -1746,7 +1749,10 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             # (1) child items for all hits per peak
             for stage2_id, hit in (df.reset_index("Isobar", drop=True)
                                      .groupby("Stage2_hit")):
-                hit_item = SortableTreeWidgetItem(root_item)
+                hit_item = SortableTreeWidgetItem(
+                    root_item,
+                    default_key=float,
+                    col_key=_default_col_key)
                 self._results_tree_items[stage].append(hit_item)
                 hit_optimum = hit.loc[hit["Permutation score"].idxmax()]
                 hit_item.setText(
@@ -1773,7 +1779,10 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                     for perm_id, perm in (hit.reset_index("Stage2_hit")
                                              .iterrows()):
                         perm.name = (0, perm.name)
-                        perm_item = SortableTreeWidgetItem(hit_item)
+                        perm_item = SortableTreeWidgetItem(
+                            hit_item,
+                            default_key=float,
+                            col_key=_default_col_key)
                         perm_item.setText(
                             1, "{}-{}-{}".format(root_item.text(1),
                                                  stage2_id,
@@ -1791,7 +1800,10 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             # child items for all hits per peak
             stage1_id = 0
             for hit in df.reset_index().itertuples():
-                hit_item = SortableTreeWidgetItem(root_item)
+                hit_item = SortableTreeWidgetItem(
+                    root_item,
+                    default_key=float,
+                    col_key=_default_col_key)
                 hit_item.setText(
                     1, "{}-{}".format(root_item.text(1), stage1_id))
                 hit_item.setTextAlignment(1, Qt.AlignLeft)
@@ -1841,7 +1853,10 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self._results_tree_items[stage] = []
         for index_count, mass_index in enumerate(self._exp_mass_data.index):
             # generate root item (experimental mass, relative abundance)
-            root_item = SortableTreeWidgetItem(tree_widget)
+            root_item = SortableTreeWidgetItem(
+                tree_widget,
+                default_key=float,
+                col_key=_default_col_key)
             root_item.setFlags(root_item.flags() | Qt.ItemIsTristate)
             root_item.setCheckState(0, Qt.Unchecked)
             self._results_tree_items[stage].append(root_item)

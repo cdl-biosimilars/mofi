@@ -137,17 +137,39 @@ class SortableTreeWidgetItem(QTreeWidgetItem):
     and implements :meth:`setTotalBackground()` and :meth:`getTopParent()`.
     """
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, default_key=None, col_key=None):
+        """
+
+        :param SortableTreeWidgetItem parent: parent widget in the tree
+        :param func default_key: key function used in sorting
+        :param dict col_key: {column index: key function} mapping
+        """
         super().__init__(parent)
+        if default_key is None:
+            self.default_key = lambda x: x
+        else:
+            self.default_key = default_key
+        self.col_key = col_key
+
 
     def __lt__(self, other):
+        """
+        Used for sorting. Apply the appropriate keyx function.
+
+        :param SortableTreeWidgetItem other: object to which self is compared
+        :return: True if self is less that other
+        """
+
         column = self.treeWidget().sortColumn()
+        key_func = self.col_key.get(column, self.default_key)
+
         key1 = self.text(column)
         key2 = other.text(column)
         try:
-            return float(key1) < float(key2)
+            return key_func(key1) < key_func(key2)
         except ValueError:
             return key1 < key2
+
 
     # noinspection PyPep8Naming
     def setTotalBackground(self, color, column_count=None):
@@ -163,6 +185,7 @@ class SortableTreeWidgetItem(QTreeWidgetItem):
             self.setText(column_count - 1, "")
         for i in range(self.columnCount()):
             self.setBackground(i, QBrush(color))
+
 
     # noinspection PyPep8Naming
     def getTopParent(self):
