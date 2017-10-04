@@ -829,10 +829,10 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         if filename.endswith("csv"):
             df = pd.read_csv(filename, keep_default_na=False)
-        elif filename.endswith("xls") or filename.endswith("xlsx"):
+        else:  # xls(x)
             df = pd.read_excel(filename, keep_default_na=False)
-        else:  # TODO detect BPF results
-            df = io_tools.read_bpf_library(filename)
+            if "Modification" in df.columns:
+                df = io_tools.read_bpf_library(df)
         self.table_from_df(df, table_widget, cols)
 
 
