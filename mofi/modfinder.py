@@ -409,18 +409,12 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.btLoadPeaks.clicked.connect(self.load_spectrum)
         self.btLoadSequence.clicked.connect(self.load_sequence)
         self.btResetZoom.clicked.connect(self.reset_zoom)
-        self.btSaveAllEntries.clicked.connect(
-            lambda: self.save_search_results("all"))
-        self.btSaveCheckedEntries.clicked.connect(
-            lambda: self.save_search_results("checked"))
         self.btSaveMonomers.clicked.connect(
             lambda: self.save_table("Export modifications", "monomers"))
         self.btSavePolymers.clicked.connect(
             lambda: self.save_table("Export glycans", "polymers"))
         self.btSaveSequence.clicked.connect(self.save_sequence)
         self.btSaveSpectrum.clicked.connect(self.save_spectrum)
-        self.btSaveTristateEntries.clicked.connect(
-            lambda: self.save_search_results("checked_parent"))
         self.btUncheckAll.clicked.connect(
             lambda: self.check_results_tree(check=False))
         self.btUpdateMass.clicked.connect(self.calculate_protein_mass)
@@ -583,6 +577,16 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             Qt.AlignRight)
         self.tbPolymers.verticalHeader().setSectionResizeMode(
             QHeaderView.Fixed)
+
+        # menu for save results button
+        menu = QMenu()
+        menu.addAction("Save all entries …",
+                       lambda: self.save_search_results("all"))
+        menu.addAction("Save checked entries …",
+                       lambda: self.save_search_results("checked"))
+        menu.addAction("Save checked entries with parents …",
+                       lambda: self.save_search_results("checked_parent"))
+        self.btSaveResults.setMenu(menu)
 
         # private members
         self._current_selection = [0]  # list of currently selected peaks
