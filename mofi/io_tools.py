@@ -159,7 +159,7 @@ def _parse_bpf_glycan(glycan):
 
 def read_bpf_library(df):
     """
-    Read an N-glycan library as returned by Thermo BioPharma finder.
+    Read an N-glycan library as returned by Thermo Fisher BioPharma Finder.
     A column labeled "Modification" is required; sites and composition
     will be deduced from this column.
 

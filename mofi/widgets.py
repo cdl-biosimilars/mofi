@@ -1,5 +1,6 @@
-#  from https://stackoverflow.com/questions/44343738/how-to-inject-
-# widgets-between-qheaderview-and-qtableview
+"""
+Custom widgets and GUI functions.
+"""
 
 import os
 
@@ -12,12 +13,28 @@ from matplotlib.widgets import RectangleSelector
 
 # noinspection PyPep8Naming,PyUnresolvedReferences
 class FilterHeader(QHeaderView):
+    """
+    A :class:`QHeaderView` with :class:`QLineEdit` widgets below the columns,
+    whose values filter the table's entries.
+
+    :ivar list(QLineEdit) _editors: (column index, line edit widget) tuples
+    :ivar int _vertical_padding: vertical padding of the editors
+    :ivar int _horizontal_padding: horizontal padding of the editors
+
+    .. automethod:: __init__
+    """
     filterChanged = pyqtSignal()
 
 
     def __init__(self, parent):
+        """
+        Create a new filter header.
+
+        :param QWidget parent: parent widget
+        """
+
         super().__init__(Qt.Horizontal, parent)
-        self._editors = []  # list of (col index, QLineEdit) tuples
+        self._editors = []
         self._vertical_padding = 4
         self._horizontal_padding = 4
         self.sectionResized.connect(self.adjustPositions)
@@ -44,6 +61,12 @@ class FilterHeader(QHeaderView):
 
 
     def sizeHint(self):
+        """
+        Calculate a size hinz which takes the filters into account.
+
+        :return: a size hint
+        :rtype: QSizeHint
+        """
         size = super().sizeHint()
         if self._editors:
             height = self._editors[0][1].sizeHint().height()
@@ -52,6 +75,11 @@ class FilterHeader(QHeaderView):
 
 
     def updateGeometries(self):
+        """
+        Takes editors into account for the geometry.
+
+        :return: nothing
+        """
         if self._editors:
             height = self._editors[0][1].sizeHint().height()
             self.setViewportMargins(0, 0, 0, height + self._vertical_padding)
@@ -64,6 +92,7 @@ class FilterHeader(QHeaderView):
     def adjustPositions(self):
         """
         Adjust the position of the filter widgets.
+
         :return: nothing
         """
 
@@ -87,7 +116,7 @@ class FilterHeader(QHeaderView):
         :param int col_index: index of the line edit to be queried
         :return: the line edit's text
         :rtype: str
-        :raises KeyError: if no filter widget is at :arg:`col_index`
+        :raises KeyError: if no filter widget is at ``col_index``
         """
 
         for index, editor in self._editors:
@@ -98,7 +127,8 @@ class FilterHeader(QHeaderView):
 
     def allFilters(self):
         """
-        A generator that returns the contents of :var:`self._editors`.
+        A generator that returns the contents
+        of :attr:`~FilterHeader._editors`.
 
         :return: a (col_index, :class:`QLineEdit`) tuple generator
         :rtype: generator
@@ -113,7 +143,7 @@ class FilterHeader(QHeaderView):
         :param int col_index: the line edit's index
         :param str text: text to be set
         :return: nothing
-        :raises KeyError: if no filter widget is at :arg:`col_index`
+        :raises KeyError: if no filter widget is at ``col_index``
         """
         for index, editor in self._editors:
             if index == col_index:
@@ -136,14 +166,23 @@ class FilterHeader(QHeaderView):
 class SortableTreeWidgetItem(QTreeWidgetItem):
     """
     A :class:`QTreeWidgetItem` which supports numerical sorting
-    and implements :meth:`setTotalBackground()` and :meth:`getTopParent()`.
+    and implements custom methods.
+
+    :ivar function default_key: default function used in sorting;
+      applied if :attr:`~SortableTreeWidgetItem.col_key` does not
+      provide a mapping for a column
+    :ivar dict col_key: {column index: key function} mapping
+
+    .. automethod:: __init__
+    .. automethod:: __lt__
     """
 
     def __init__(self, parent=None, default_key=None, col_key=None):
         """
+        Create a new sortable tree widget item.
 
-        :param SortableTreeWidgetItem parent: parent widget in the tree
-        :param func default_key: key function used in sorting
+        :param QWidget parent: parent widget
+        :param func default_key: default function used in sorting
         :param dict col_key: {column index: key function} mapping
         """
         super().__init__(parent)
@@ -156,10 +195,11 @@ class SortableTreeWidgetItem(QTreeWidgetItem):
 
     def __lt__(self, other):
         """
-        Used for sorting. Apply the appropriate keyx function.
+        Used for sorting. Apply the appropriate key function.
 
         :param SortableTreeWidgetItem other: object to which self is compared
-        :return: True if self is less that other
+        :return: True if self is less than other
+        :rtype: bool
         """
 
         column = self.treeWidget().sortColumn()
@@ -195,6 +235,7 @@ class SortableTreeWidgetItem(QTreeWidgetItem):
         Find the top-level ancestor of self.
 
         :return: the top-level parent of self
+        :rtype: SortableTreeWidgetItem
         """
         node = self
         while node.parent():
@@ -205,12 +246,27 @@ class SortableTreeWidgetItem(QTreeWidgetItem):
 class SortableTableWidgetItem(QTableWidgetItem):
     """
     A :class:`QTableWidgetItem` which supports numerical sorting.
+
+    .. automethod:: __init__
+    .. automethod:: __lt__
     """
 
     def __init__(self, parent=None):
+        """
+        Create a new sortable table widget item.
+
+        :param QWidget parent: parent widget
+        """
         super().__init__(parent)
 
     def __lt__(self, other):
+        """
+        Compare two items.
+
+        :param SortableTableWidgetItem other: item to which self is compared
+        :return: True if self is less than other
+        :rtype: bool
+        """
         key1 = self.text()
         key2 = other.text()
         try:
@@ -222,20 +278,22 @@ class SortableTableWidgetItem(QTableWidgetItem):
 class CollapsingRectangleSelector(RectangleSelector):
     """
     Select a rectangular region of an axes.
-    The rectangle collapses to a line if a dimension
-    is less than minspanx and minspany.
+
+    :ivar float collapsex: The rectangle collapses to a line
+                           if its x-dimension is less than this ...
+    :ivar float collapsey: ... and its y-dimension is less than this variable.
 
     .. automethod:: __init__
     """
 
     def __init__(self, *args, collapsex=0, collapsey=0, **kwargs):
         """
-        Introduces the keys ``collapsex`` and ``collapsey``.
+        Create a new selector.
 
-        :param args: Positional arguments passed to the superclass.
-        :param collapsex: Minimum height of the rectangle (in data space).
-        :param collapsey: Minimum width of the rectangle (in data space).
-        :param kwargs: Optional arguments passed to the superclass.
+        :param args: positional arguments passed to the superclass
+        :param float collapsex: minimum height of the rectangle (in data space)
+        :param float collapsey: minimum width of the rectangle (in data space)
+        :param kwargs: optional arguments passed to the superclass
         """
         super().__init__(*args, **kwargs)
         self.collapsex = collapsex
@@ -247,7 +305,7 @@ class CollapsingRectangleSelector(RectangleSelector):
         Calculate the coordinates of the drawn rectangle
         (overrides method from parent).
 
-        :param extents: Coordinates of the rectangle selector.
+        :param tuple(float) extents: Coordinates of the rectangle selector
         :return: nothing
         """
         xmin, xmax, ymin, ymax = extents
@@ -279,15 +337,15 @@ def get_filename(parent, kind="save", caption="", directory="",
     Get a filename by a :class:`QFileDialog`
     and automatically add extensions.
 
-    :param parent: parent of the dialog
-    :param str kind: `"save"` or `"open"`, chooses the dialog type
+    :param QWidget parent: parent of the dialog
+    :param str kind: ``"save"`` or ``"open"``, chooses the dialog type
     :param str caption: caption of the dialog
     :param str directory: initial directory
     :param list(str) extensions: file extensions
-    :param dict(str, str) file_types: {extension: description} dict
+    :param dict file_types: {extension: description} dict
     :return: the file name with extension and the last path
     :rtype: tuple(str, str)
-    :raise ValueError: if an invalid value was supplied to :arg:`kind`
+    :raise ValueError: if an invalid value was supplied to ``kind``
     """
 
     if extensions is None:

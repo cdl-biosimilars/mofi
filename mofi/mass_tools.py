@@ -19,9 +19,10 @@ def read_massfile(massfile):
     "Relative Abundance", its values will be used for the peak heights.
     Otherwise, all peaks will have the same height.
 
-    :param massfile: name of the file containing the mass list
+    :param str massfile: name of the file containing the mass list
     :return: a dataframe if the import was successful,
              otherwise None
+    :rtype: pd.DataFrame
     """
 
     filename, ext = os.path.splitext(massfile)
@@ -69,8 +70,9 @@ def formstring_to_composition(formstring):
 
     :param str formstring: collection of elements followed by their counts
                            (example: "C50 H100 N-3 Cl")
-    :return: :class:`pandas.Series` labeled by the element
+    :return: a Series labeled by the element
              (example: C: 50, H: 100, N: -3, Cl: 1)
+    :rtype: pd.Series
     :raises ValueError: if the composition string is invalid
     """
 
@@ -93,7 +95,13 @@ class Formula:
     """
     A molecular formula comprising the elements C, H, N, O, P and S.
 
+    :ivar pd.Series _composition: atomic composition
+    :ivar float _mass: atomic mass
+
     .. automethod:: __init__
+    .. automethod:: __add__
+    .. automethod:: __mul__
+    .. automethod:: __repr__
     """
 
     def __init__(self, composition=None):
@@ -102,9 +110,9 @@ class Formula:
 
         :param composition: one of the following:
 
-               * a pandas Series, like ``pd.Series(dict(C=6, H=12, O=6))``
-               * a dict, like ``{"C": 6; "H": 12; "O": 6}``
-               * a string, like ``"C6 H12 O6".``
+               * a pd.Series like ``pd.Series(dict(C=6, H=12, O=6))``
+               * a dict like ``{"C": 6; "H": 12; "O": 6}``
+               * a string like ``"C6 H12 O6".``
         :raises ValueError: if composition is of a different type
         """
         if isinstance(composition, dict):
@@ -125,8 +133,8 @@ class Formula:
         """
         Change the number of a given atom type
 
-        :param atom: The element whose number should be changed
-        :param count: Increase the element's count by this value
+        :param str atom: The element whose number should be changed
+        :param int count: Increase the element's count by this value
         :return: nothing
         """
 
@@ -135,7 +143,7 @@ class Formula:
     def _update_masses(self):
         """
         Update the mass from the composition.
-        Changes ``self._mass``.
+        Changes :attr:`~Formula._mass`.
 
         :return: nothing
         :raises ValueError: if an unknown atom symbol is found.
@@ -156,6 +164,7 @@ class Formula:
         is changed using the current settings from the configure module.
 
         :return: the mass of the Formula
+        :rtype: float
         """
         self._update_masses()
         return self._mass
@@ -167,17 +176,39 @@ class Formula:
         is changed.
 
         :return: the composition of the Formula
+        :rtype: pd.Series
         """
         return self._composition
 
     def __add__(self, other):
+        """
+        Sum two formulas.
+
+        :param Formula other: formula to be added
+        :return: the sum of self and other
+        :rtype: Formula
+        """
         return Formula(self._composition + other.composition)
 
     def __mul__(self, factor):
+        """
+        Multiply each atom by a factor.
+
+        :param int factor: multiplicative factor
+        :return: the multiplied formula
+        :rtype: Formula
+        """
         if type(factor) == int:
             return Formula(self._composition * factor)
 
     def __repr__(self):
+        """
+        Convert the formula to a human-readable string.
+
+        :return: a string representing the formula
+        :rtype: str
+        """
+
         result = []
         for element, count in self._composition.items():
             if count == 1:

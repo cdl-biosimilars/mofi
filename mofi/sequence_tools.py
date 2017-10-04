@@ -62,12 +62,13 @@ amino_acid_compositions = {
 def read_fasta_string(fasta_string):
     """
     Extracts the chain number and sequence from a string in FASTA format.
-    The chain number equals the number of header lines (starting with "<").
+    The chain number equals the number of header lines (starting with ``>``).
     The sequences of all chains are merged.
 
-    :param fasta_string: String in FASTA format
+    :param str fasta_string: String in FASTA format
     :return: (1) number of chains,
              (2) string containing the raw sequence
+    :rtype: tuple(int, str)
     """
     seqences = []
     chains = 0
@@ -81,14 +82,15 @@ def read_fasta_string(fasta_string):
 
 def get_sequence_atoms(sequence, chains=1, disulfide_bonds=0):
     """
-    Calculates the atoms in an amino acid sequence
+    Calculates the atoms in an amino acid sequence.
 
-    :param sequence: String of amino acids in one-letter format
-    :param chains: number of chains; for each chain, the weight of a
-               water molecule must be added to the total weight.
-    :param disulfide_bonds: number of disulfide bonds
-    :return: the elemental composition of the chains, represented as a dict
+    :param str sequence: String of amino acids in one-letter format
+    :param int chains: number of chains; for each chain, the weight of a
+                       water molecule must be added to the total weight
+    :param int disulfide_bonds: number of disulfide bonds
+    :return: the elemental composition of the chains
              (example: ``{"C": 100; "H": 50; "N": 20}``)
+    :rtype: dict
     """
     composition = {a: 0 for a in "CHNOPS"}
     sequence_aa_composition = Counter(sequence)
@@ -105,9 +107,10 @@ def find_glycosylation_sites(sequence):
     """
     Searches a sequence for N or O-linked glycosylation sites.
 
-    :param sequence: String containing an amino acid sequence
+    :param str sequence: String containing an amino acid sequence
     :return: Two lists of N- and O-glycosylation sites, respectively.
              Each site is a tuple (site, (start, end)).
+    :rtype: tuple(list, list)
     """
     n_pattern = re.compile("[ST]|N[^P][ST]")
     matchlist = [(m.group(), m.span()) for m in n_pattern.finditer(sequence)]
@@ -121,9 +124,11 @@ def apply_pngasef(sequence):
     Simulate a digest with PNGase F, that is, change all asparagines
     in N-glycosylation sites to aspartates.
 
-    :param sequence: String of amino acids in one-letter format
+    :param str sequence: String of amino acids in one-letter format
     :return: (1) Sequence after treatment with PNGase F,
-             (2) found N-glycan sites as returned by find_glycosylation_sites
+             (2) found N-glycan sites as returned by
+                 :func:`find_glycosylation_sites()`
+    :rtype: str, list(int)
     """
     site_list = find_glycosylation_sites(sequence)[0]
     if site_list:
@@ -139,11 +144,11 @@ class Protein:
     """
     A class which represents proteins with a single chain.
 
-    Members:
-        ``n_sites``
-        ``mass``
-        ``amino_acid_composition``
-        ``formula``
+    :ivar dict amino_acid_composition: {amino acid: count}
+    :ivar mass_tools.Formula formula: atomic formula of the protein
+    :ivar int n_sites: number of N-glycosylation sites
+    :ivar float mass: the protein's molecular mass
+    :ivar mass_without_disulfides: the reduced protein's molecular mass
 
     .. automethod:: __init__
     """
@@ -152,10 +157,10 @@ class Protein:
         """
         Create a new protein instance.
 
-        :param sequence: sequence of the protein
-        :param chains: number of chains
-        :param disulfides: number of disulfide bonds
-        :param pngasef: true if the protein was treated with PNGase F
+        :param str sequence: sequence of the protein
+        :param int chains: number of chains
+        :param int disulfides: number of disulfide bonds
+        :param bool pngasef: true if the protein was treated with PNGase F
         """
 
         digested_sequence, self.n_sites = apply_pngasef(sequence)

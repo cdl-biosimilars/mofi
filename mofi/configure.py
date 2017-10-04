@@ -1,5 +1,6 @@
 """
 Manage the global configuration.
+
 """
 
 from collections import OrderedDict
@@ -39,8 +40,8 @@ def select_mass_set(name):
     Change mass set (e.g., average, monoisotopic)
     to be used for mass calculations.
 
-    :param name: section name in ``config/mass_sets.ini``
-    :return: nothing, but sets the global variable :data:`current_mass_set`
+    :param str name: section name in ``config/mass_sets.ini``
+    :return: nothing, sets the global variable :data:`current_mass_set`
     """
     global current_mass_set
     current_mass_set = mass_sets[name]
@@ -53,14 +54,15 @@ select_mass_set(mass_set_parser.sections()[0])
 
 def spin_box_flat_style(bg="white", double=False):
     """
-    Returns a style sheet for a Qt spin box in flat style,
-    i.e., without borders.
+    Returns a style sheet for a :class:`QSpinBox` or :class:`QDoubleSpinBox`
+    in flat style, i.e., without borders.
 
     :param str bg: background color (any style sheet color.
-                   Note that 'red' is interpreted as a very faint red.
-    :param bool double: True creates a style sheet for a QDoubleSpinBox.
-                        False creates a style sheet for a QSpinBox.
-    :return str: style sheet
+                   Note that ``"red"`` is interpreted as a very faint red.
+    :param bool double: True: style sheet for a :class:`QDoubleSpinBox`.
+                        False: style sheet for a :class:`QSpinBox`.
+    :return: style sheet
+    :rtype: str
     """
 
     if bg == "red":

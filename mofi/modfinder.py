@@ -27,7 +27,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvas
 from matplotlib.widgets import SpanSelector
 from matplotlib.figure import Figure
 
-from mofi import (configure, mass_tools, io_tools,
+from mofi import (configure, io_tools, mass_tools,
                   search_tools, sequence_tools)
 from mofi.paths import data_dir, docs_dir
 from mofi.modfinder_ui import Ui_ModFinder
@@ -220,7 +220,8 @@ def create_hit_columns(item, hit, monomers, sites):
     in the results table.
 
     :param SortableTreeWidgetItem item: row to fill
-    :param pd.Series/namedtuple hit: hit data
+    :param hit: hit data
+    :type hit: pd.Series or namedtuple
     :param list monomers: list of monosaccharides
     :param list sites: list of glycosylation sites
     :return: the position of the first unused column
@@ -333,7 +334,7 @@ def item_is_shown(query, item, col):
     :param list query: list of query tuples
     :param SortableTreeWidgetItem item: the item to check
     :param int col: the first column containing a monosaccharide
-    :return: True if all columns satisfy the filtering condition
+    :return: True if all columns satisfy the filtering condition;
              False otherwise
     """
 
@@ -345,7 +346,18 @@ def item_is_shown(query, item, col):
 
 
 class MainWindow(QMainWindow, Ui_ModFinder):
+    """
+    The main window.
+
+    .. automethod:: __init__
+    """
+
     def __init__(self, parent=None):
+        """
+        Initialize the main window.
+
+        :param QWidget parent: parent widget
+        """
 
         # initialize the GUI
         super(MainWindow, self).__init__(parent)
@@ -724,10 +736,10 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         """
         Create a dataframe from the contents of the monomer or polymer table.
 
-        :param str which: table to convert, "monomers" or "polymers"
+        :param str which: table to convert, ``"monomers"`` or ``"polymers"``
         :return: a dataframe
         :rtype: pd.DataFrame
-        :raises ValueError: if an unknown string is passed to :arg:`which`
+        :raises ValueError: if an unknown string is passed to ``which``
         """
 
         if which == "monomers":
@@ -749,7 +761,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         Export the contents of the monomer or polymer table.
 
         :param str dialog_title: title of the file dialog
-        :param str which: table to export; "monomers" or "polymers"
+        :param str which: table to export; ``"monomers"`` or ``"polymers"``
         :return: nothing
         """
 
@@ -772,12 +784,13 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         """
         Read monomers/polymers from a dataframe.
 
-        :param df: a :class:`pandas.DataFrame`
-        :param table_widget: :class:`QTableWidget` to fill with values
-        :param cols: list of (column header, default value) tuples,
+        :param pd.DataFrame df: the dataframe to be converted to a table
+        :param QTableWidget table_widget: widget to fill with values
+        :param list(tuple) cols: list of (column header, default value) tuples,
                      sorted according to the order of the arguments to
-                     _[monomer/polymer]_table_create_row.
-                     If the default value is :class:`None`, a column must
+                     :meth:`~MainWindow._monomer_table_create_row()` and
+                     :meth:`~MainWindow._polymer_table_create_row()`.
+                     If the default value is ``None``, a column must
                      exist in the input file; otherwise, it will be filled
                      with the default value if missing in the input file.
         :return: nothing
@@ -806,13 +819,12 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         """
         Import the contents of the monomer/polymer table.
 
-        :param default: true if a default monomer library should be loaded
-                        false if the user should choose a monomer library file
-        :param subdir: directory in config containing the default libraries
-        :param dialog_title: title of the file dialog
-        :param extensions: list of file extensions
-                           for :func:`file_extensions()`
-        :param table_widget: :class:`QTableWidget` to fill with values
+        :param bool default: true: load a default monomer library;
+                             false: the user should choose a library file
+        :param str subdir: directory containing the default libraries
+        :param str dialog_title: title of the file dialog
+        :param list(str) extensions: list of file extensions
+        :param QTableWidget table_widget: table widget to fill with values
         :param cols: see parameter ``cols``
                      in :meth:`~MainWindow.table_from_df`
         :return: nothing
@@ -884,10 +896,11 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
     def load_sequence(self):
         """
-        Opens a FASTA file and displays its contents in ``self.teSequence``.
+        Opens a FASTA file and displays its contents
+        in :attr:`~MainWindow.teSequence`.
 
-        Changes ``self._path`` to directory of selected file
-        and text of ``self.teSequence`` to contents of input file.
+        Changes :attr:`~MainWindow._path` to directory of selected file
+        and text of :attr:`~MainWindow.teSequence` to contents of input file.
 
         :return: nothing
         """
@@ -911,7 +924,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
     def save_sequence(self):
         """
-        Save the contents of ``self.teSequence`` to a FASTA file.
+        Save the contents of :attr:`~MainWindow.teSequence` to a FASTA file.
 
         :return: nothing
         """
@@ -933,7 +946,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
     def load_spectrum(self):
         """
-        Open a mass list and display its contents.
+        Open a mass list.
 
         :return: nothing
         """
@@ -986,14 +999,14 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         Write the search results to a CSV file.
 
         :param str mode: Specifies which results should be exported.
-                         Possible choices:
+          Possible choices:
 
-             * ``"checked"``: checked entries in results tree
-             * ``"checked_parent"``: checked entries in results tree
-                                     with (partially checked) parents
-             * ``"all"``: all entries in results tree
-             * ``"stats_wide"``: statistics table in wide format (as shown)
-             * ``"stats_long"``: statistics table in long (tidy) format
+            * ``"checked"``: checked entries in results tree
+            * ``"checked_parent"``: checked entries in results tree
+              with (partially checked) parents
+            * ``"all"``: all entries in results tree
+            * ``"stats_wide"``: statistics table in wide format (as shown)
+            * ``"stats_long"``: statistics table in long (tidy) format
         :return: nothing
         """
 
@@ -1120,7 +1133,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
     def calculate_protein_mass(self):
         """
         Calculates the mass of the protein from the current data.
-        Changes ``self._protein_mass`` and ``self._disulfide_mass``.
+        Changes :attr:`~MainWindow._protein_mass`
+        and :attr:`~MainWindow._disulfide_mass`.
 
         :return: nothing
         """
@@ -1156,7 +1170,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         """
         Calculate the mass of known modifications.
 
-        Changes ``self._known_mods_mass`` to the mass of known modifications.
+        Changes :attr:`~MainWindow._known_mods_mass` to
+        the mass of known modifications.
 
         :return: list of (checked, name, composition,
                           mass, min count, max count) tuples
@@ -1492,8 +1507,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
     def toggle_spectrum_mode(self):
         """
-        Toggle between peak selection for monomer/polymer analysis
-        and peak selection for mass difference analysis.
+        Toggle between single peak and delta series selection.
 
         :return: nothing
         """
@@ -1875,7 +1889,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         :param int stage: search stage (0 = stage 1, 1 = stage 2)
         :param QTreeWidget tree_widget: results table
-        :param list(list(str), list(str), list(str)) cols: column headers
+        :param list(list)) cols: column headers
         :param pd.DataFrame df_hit: data for rows
         :return: nothing
         """
@@ -1972,8 +1986,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
     def fill_results_tables(self):
         """
         Populate both results tables with rows.
-        Prepare column labels and then call the actual function that
-        adds rows to each results table.
+        Prepare column labels and then call the actual function that adds rows
+        to each results table (:meth:`~MainWindow._fill_results_table()`).
 
         :return: nothing
         """
@@ -2113,7 +2127,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
     def fill_statistics_table(self, row):
         """
         Fill the statistics table with data from
-        :var:`self._search_statistics`. This method is called
+        :attr:`~MainWindow._search_statistics`. This method is called
         by :meth:`pd.DataFrame.apply()`.
 
         :param pd.Series row: row of the statistics dataframe

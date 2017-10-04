@@ -15,40 +15,42 @@ def find_monomers(mods, unexplained_masses, mass_tolerance=5.0,
     Wrapper function that runs the C function
     :func:`findmods.examine_modifications()` on a list of target masses.
 
-    :param mods: list of tuples (name, mass, maxcount)
-    :param unexplained_masses: iterable of unexplained masses (floats)
+    :param list(tuple) mods: list of (name, mass, maxcount) tuples
+    :param list(float) unexplained_masses: iterable of unexplained masses
     :param mass_tolerance: tolerance for the unexplained mass in Da;
                            either a single value, which applies to all
-                           unexplained_masses, or a list of tolerances
+                           unexplained masses, or a list of tolerances
                            (one value per unexplained mass)
-    :param explained_mass: mass explained by the protein sequence
-                           and known modifications
+    :type mass_tolerance: float or list(float)
+    :param float explained_mass: mass explained by the protein sequence
+                                 and known modifications
     :param QProgressBar progress_bar: a progress bar that gets updated
                                       during the search
     :return: None if the search completely failed, i.e., no single combination
              was found; otherwise two dataframes:
+
              (1) a dataframe describing the search results;
+                 multiindex:
 
-             multiindex:
+               a. *Mass_ID* (corresponds to index of experimental mass
+                  in input list of peaks),
+               b. *Isobar* (0-based consecutive numbering of found masses) and
+               c. *Stage1_hit* (0-based numbering of hits per *Mass_ID*)
 
-             a. Mass_ID (corresponds to index of experimental mass
-                in input list of peaks),
-             b. Isobar (0-based consecutive numbering of found masses) and
-             c. Stage1_hit (0-based numbering of hits per Mass_ID)
+                 columns:
 
-             columns:
+               * one column for each modification (e.g., *Hex*, *HexNAc*, ...)
+               * *Exp_Mass*
+               * *Theo_Mass*
+               * *Da*
+               * *ppm*
 
-             * one column for each modification (e.g., Hex, HexNAc, ...)
-             * Exp_Mass
-             * Theo_Mass
-             * Da
-             * ppm
+                 If no hit was found, all columns contain the value 0
 
-             If no hit was found, all columns contain the value 0
-
-             (2) a dataframe describting the search statistics
-                 with one row per unexplained mass
-                 columns: `search_space_size`, `stage1_results`
+             (2) a dataframe describing the search statistics
+                 with one row per unexplained mass;
+                 columns: *search_space_size*, *stage1_results*
+    :rtype: tuple(pd.DataFrame, pd.DataFrame) or None
     """
 
     sorted_mods = sorted(mods, key=lambda t: t[1], reverse=True)
@@ -163,11 +165,12 @@ def _calc_monomer_counts(value, monomers=None):
     """
     Calculate monomer counts for a given complex glycan
 
-    :param value: string indicating the composition of the glycan
-                  (like "1 N-core, 2 Hex")
-    :param monomers: list of monomers in the library
-    :return: numpy array containing the monomer counts
+    :param str value: string indicating the composition of the glycan
+                      (like ``"1 N-core, 2 Hex"``)
+    :param list(str) monomers: list of monomers in the library
+    :return: array containing the monomer counts
              (including absent monomers)
+    :rtype: np.array
     """
     composition = {}  # generate a {name: count} dict
     for (count, monomer) in _re_monomer_list.findall(value):
@@ -187,10 +190,13 @@ def _calc_glycan_composition_abundance(row, glycan_composition=None,
     """
     Sum the monomer counts of several glycans and calculate their abundance.
 
-    :param row: row from a dataframe containing the name of a glycan per cell
-    :param glycan_composition: dataframe indicating the glycan composition
-    :param monomers: list of monomers in the library
+    :param pd.Series row: row from a dataframe
+                          containing the name of a glycan per cell
+    :param pd.DataFrame glycan_composition: dataframe indicating
+                                            the glycan composition
+    :param list(str) monomers: list of monomers in the library
     :return: a tuple containing the numbers of each atom
+    :rtype: tuple(int)
     """
     composition = np.zeros(len(monomers), dtype=np.uint16)
     abundance = 1
@@ -205,8 +211,9 @@ def get_monomers_from_library(glycan_library):
     """
     Find all monomers that appear in the glycan library
 
-    :param glycan_library: dataframe with glycan library
+    :param pd.DataFrame glycan_library: dataframe with glycan library
     :return: alphabetically ordered list of monomers
+    :rtype: list(str)
     """
 
     rows = []
@@ -225,11 +232,11 @@ def calc_polymer_combinations(glycan_library, monomers, progress_bar=None):
     """
     Calculate all possible polymer combinations based on a library.
 
-    :param glycan_library: dataframe containing a glycan library;
-                           index: glycan names;
-                           columns: Composition, Sites, Abundance
-    :param monomers: list of monomers in the library
-                     as returned by :func:`get_monomers_from_library()`
+    :param pd.DataFrame glycan_library: dataframe containing a glycan library;
+                                        index: glycan names;
+                                        columns: Composition, Sites, Abundance
+    :param list(str) monomers: list of monomers in the library
+                               from :func:`get_monomers_from_library()`
     :param QProgressBar progress_bar: a progress bar that gets updated
                                       during the search
     :return: a dataframe like::
@@ -242,6 +249,7 @@ def calc_polymer_combinations(glycan_library, monomers, progress_bar=None):
         #              3   4       A2G2F     M5     A2G0F     A2G0F        0.0
         #                  4          M5  A2G2F     A2G0F     A2G0F        0.0
 
+    :rtype: ~pd.core.frame.DataFrame
     :raises ValueError: if the library contains duplicate glycan/site pairs
     """
 
@@ -339,18 +347,18 @@ def find_polymers(stage_1_results, polymer_combinations,
     """
     Search a polymer library with the results from search stage 1.
 
-    :param stage_1_results: dataframe with results from search stage 1
-    :param polymer_combinations: dataframe with all possible
-                                 polymer combinations as returned by
-                                 :func:`calc_polymer_combinations`
-    :param monomers: list of monomers in the library
-                     as returned by get_monomers_from_library
+    :param pd.DataFrame stage_1_results: dataframe with results
+                                         from search stage 1
+    :param pd.DataFrame polymer_combinations: dataframe with all possible
+                                              polymer combinations from
+                                              :func:`calc_polymer_combinations`
+    :param list(str) monomers: list of monomers in the library
+                               as returned by :func:`get_monomers_from_library`
     :param QProgressBar progress_bar: a progress bar that gets updated
                                       during the search
-    :return: two dataframes:
-            (1) a dataframe describing the search results, like::
+    :return: dataframe (1) describing the search results, like::
 
-                                             Hex  HexNAc  Neu5Ac  Fuc  [...]
+        #                                    Hex  HexNAc  Neu5Ac  Fuc  [...]
         # Mass_ID Isobar Stage2_hit Perm_ID
         # 0       5      0          0          6       8       0    2  [...]
         # 1       27     0          0          8       6       1    1  [...]
@@ -390,9 +398,10 @@ def find_polymers(stage_1_results, polymer_combinations,
         # 2       37     0          0         50.000000      2  100.000000
         #                           1         50.000000      2  100.000000
 
-            (2) a dataframe describing the search statistics
-                one row per mass
-                columns: `stage2_results`, `stage2_uniques`
+             dataframe (2) describing the search statistics;
+             one row per mass;
+             columns: *stage2_results*, *stage2_uniques*
+    :rtype: tuple(pd.DataFrame)
     """
 
     if progress_bar is not None:
@@ -494,6 +503,7 @@ def drop_glycan_permutations(df):
 
     :param pd.DataFrame df: stage 2 search results
     :return: the deduplicated dataframe
+    :rtype: pd.DataFrame
     """
 
     old_columns = df.columns
