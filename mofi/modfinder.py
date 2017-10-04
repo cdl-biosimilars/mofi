@@ -440,6 +440,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             lambda: self.update_selection())
         self.sbDisulfides.valueChanged.connect(self.calculate_protein_mass)
 
+        self.taResults.currentChanged.connect(self.set_save_results_menu)
+
         self.tbMonomers.cellChanged.connect(self.calculate_mod_mass)
 
         self.teSequence.textChanged.connect(
@@ -579,14 +581,23 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             QHeaderView.Fixed)
 
         # menu for save results button
-        menu = QMenu()
-        menu.addAction("Save all entries …",
-                       lambda: self.save_search_results("all"))
-        menu.addAction("Save checked entries …",
-                       lambda: self.save_search_results("checked"))
-        menu.addAction("Save checked entries with parents …",
-                       lambda: self.save_search_results("checked_parent"))
-        self.btSaveResults.setMenu(menu)
+        self.save_results_menu = {"tree": QMenu(), "table": QMenu()}
+        self.save_results_menu["tree"].addAction(
+            "Save all entries …",
+            lambda: self.save_search_results("all"))
+        self.save_results_menu["tree"].addAction(
+            "Save checked entries …",
+            lambda: self.save_search_results("checked"))
+        self.save_results_menu["tree"].addAction(
+            "Save checked entries with parents …",
+            lambda: self.save_search_results("checked_parent"))
+        self.save_results_menu["table"].addAction(
+            "Save statistics table (wide format) …",
+            lambda: self.save_search_results("stats_wide"))
+        self.save_results_menu["table"].addAction(
+            "Save statistics table (long format) …",
+            lambda: self.save_search_results("stats_long"))
+        self.set_save_results_menu(1)
 
         # private members
         self._current_selection = [0]  # list of currently selected peaks
@@ -835,6 +846,20 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         QMessageBox.about(self, "About ModFinder", _version_info)
 
 
+    def set_save_results_menu(self, index):
+        """
+        Set the appropriate context menu of the save results button.
+
+        :param int index: current index of the results tab widget
+        :return: nothing
+        """
+
+        if index == 2:
+            self.btSaveResults.setMenu(self.save_results_menu["table"])
+        else:
+            self.btSaveResults.setMenu(self.save_results_menu["tree"])
+
+
     def choose_tolerance_units(self):
         """
         Adjust the settings of the tolerance spin box
@@ -961,8 +986,14 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         Write the search results to a CSV file.
 
         :param str mode: Specifies which results should be exported.
-                         Possible choices: "checked", "checked_parent", "all"
-                         and table.
+                         Possible choices:
+
+             * ``"checked"``: checked entries in results tree
+             * ``"checked_parent"``: checked entries in results tree
+                                     with (partially checked) parents
+             * ``"all"``: all entries in results tree
+             * ``"stats_wide"``: statistics table in wide format (as shown)
+             * ``"stats_long"``: statistics table in long (tidy) format
         :return: nothing
         """
 
@@ -1002,7 +1033,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                         "sites: {}; ".format(sites),
                         "abundance: {:.2f}\n".format(abundance)]
 
-        if self.taResults.currentIndex() == 2:
+        if mode.startswith("stats"):
             out.append("# Search statistics:\n")
 
             df = pd.DataFrame(
@@ -1011,41 +1042,30 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                  for row_id in range(self.tbStatistics.rowCount())],
                 columns=[self.tbStatistics.horizontalHeaderItem(c).text()
                          for c in range(self.tbStatistics.columnCount())])
+            if mode.endswith("long"):
+                df = df.melt(id_vars=["ID",
+                                      "Exp. Mass",
+                                      "%"],
+                             value_vars=["Search space size",
+                                         "Stage 1 results",
+                                         "Stage 2 results",
+                                         "Stage 2 uniques"],
+                             value_name="Measure",
+                             var_name="Value")
         else:
-            # set up the appropriate BFS algorithm
-            if mode == "all":
-                out.append("# All results ")
-
-                def explore(node):
-                    yield [node.text(c)
-                           for c in range(1, node.columnCount())]
-                    for i in range(node.childCount()):
-                        yield from explore(node.child(i))
-            elif mode == "checked_parent":
-                out.append("# Selected results (with parents) ")
-
-                def explore(node):
-                    if node.checkState(0) != Qt.Unchecked:
-                        yield [node.text(c)
-                               for c in range(1, node.columnCount())]
-                    for i in range(node.childCount()):
-                        yield from explore(node.child(i))
-            else:
-                out.append("# Selected results ")
-
-                def explore(node):
-                    if node.checkState(0) == Qt.Checked:
-                        yield [node.text(c)
-                               for c in range(1, node.columnCount())]
-                    for i in range(node.childCount()):
-                        yield from explore(node.child(i))
+            # set up the BFS algorithm
+            def explore(node):
+                yield ([node.checkState(0)]
+                       + [node.text(c) for c in range(1, node.columnCount())])
+                for i in range(node.childCount()):
+                    yield from explore(node.child(i))
 
             # choose the appropriate data source
             if self.taResults.currentIndex() == 0:
-                out.append("from composition search (stage 1):\n")
+                out.append("# Composition search (stage 1), ")
                 results_tree = self.twResults1
             else:
-                out.append("from structure search (stage 2):\n")
+                out.append("# Structure search (stage 2), ")
                 results_tree = self.twResults2
 
             # create dataframe from (selected) entries
@@ -1053,12 +1073,23 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             df = (
                 pd.DataFrame(
                     explore(results_tree.invisibleRootItem()),
-                    columns=[header.text(c)
-                             for c in range(1, header.columnCount())])
+                    columns=(["checked"]
+                             + [header.text(c)
+                                for c in range(1, header.columnCount())]))
                 .replace("", np.nan)
                 .ffill())
-            if not df.empty and df.iloc[0, 0] is None:
+            if not df.empty and df.iloc[0, 1] is None:
                 df = df.drop(0)
+            df = df.drop("checked", axis=1)
+
+            if mode == "all":
+                out.append("all results.\n")
+            elif mode == "checked_parent":
+                out.append("checked results (with parents).\n")
+                df = df[df.checked != Qt.Unchecked]
+            else:
+                out.append("checked results.\n")
+                df = df[df.checked == Qt.Checked]
 
         # write to file
         try:
@@ -1370,6 +1401,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 .astype(int))
         self.fill_results_tables()
         self.tbStatistics.clearContents()
+        self.tbStatistics.setRowCount(0)
         self._search_statistics.apply(self.fill_statistics_table, axis=1)
 
 
