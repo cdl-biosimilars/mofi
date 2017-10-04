@@ -1575,7 +1575,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         Update the spectrum and the single mass spinbox
         after the selection has changed.
 
-        :param list new_selection: list of indices of selected peaks
+        :param np.array new_selection: list of indices of selected peaks
         :param SortableTreeWidgetItem clicked_item: item that was clicked
         :param QTreeWidget clicked_tree: results tree whose item was clicked
         :return: the DataFrame whose contents are shown in the results table
@@ -1586,7 +1586,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             return
 
         # if the selection did not change, use the old one
-        if new_selection:
+        if new_selection is not None and new_selection.size > 0:
             self._current_selection = new_selection[:]
 
         # an item of a results tree was clicked

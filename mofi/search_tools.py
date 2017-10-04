@@ -438,8 +438,9 @@ def find_polymers(stage_1_results, polymer_combinations,
         progress_bar.setValue(75)
 
     # create columns Perm_ID (index of permutation), Permutations (count)
-    # and Permutation score
-    df_found_polymers.set_index(["Isobar", "Stage2_hit"], inplace=True)
+    # and Hit score
+    df_found_polymers.set_index(["Isobar", "Stage2_hit", "Stage1_hit"],
+                                inplace=True)
     hash_group = df_found_polymers.groupby(df_found_polymers.index.names)
     df_found_polymers["Perm_ID"] = hash_group.cumcount()
     df_found_polymers["Permutations"] = hash_group.size()
@@ -447,7 +448,8 @@ def find_polymers(stage_1_results, polymer_combinations,
 
     df_found_polymers = (
         df_found_polymers
-        .drop(["Stage1_hit", "Hash"], axis=1)
+        .reset_index("Stage1_hit", drop=True)
+        .drop(["Hash"], axis=1)
         .set_index(["Mass_ID", "Perm_ID"], append=True)
         .reorder_levels(["Mass_ID", "Isobar", "Stage2_hit", "Perm_ID"])
         .sort_index()
