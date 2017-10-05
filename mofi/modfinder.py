@@ -1011,43 +1011,44 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         """
 
         filename, self._path = get_filename(
-            self, "save", "Save results", self._path, ["csv"])
+            self, "save", "Save results", self._path, ["csv", "xlsx"])
         if filename is None:
             return
 
         # retrieve general information about the search parameters
-        out = ["# Combinatorial search results by ModFinder\n",
-               "# Date: " + time.strftime("%c") + "\n",
-               "#   Sequence: "
-               + self.teSequence.toPlainText().replace("\n", r"\n")
-               + "\n",
-               "#   Masses: "
-               + ", ".join(list(self._exp_mass_data["avg_mass"].astype(str)))
-               + "\n",
-               "#   Tolerance: {:.2f} {}\n".format(
-                   self.sbTolerance.value(),
-                   self.cbTolerance.currentText()),
-               "#   Composition:\n"]
+        out_general = [
+            ("Combinatorial search results by ModFinder", ),
+            ("Date", time.strftime("%c")),
+            ("Sequence",
+             self.teSequence.toPlainText().replace("\n", r"\n")),
+            ("Masses",
+             ", ".join(list(self._exp_mass_data["avg_mass"].astype(str)))),
+            ("Tolerance",
+             "{:.2f} {}".format(self.sbTolerance.value(),
+                                self.cbTolerance.currentText()))]
 
+        out_composition = [("name", "mass", "min_count", "max_count")]
         for (is_checked, name, _, mass,
              min_count, max_count) in self.calculate_mod_mass():
             if is_checked:
                 if max_count == -1:
                     max_count = "inf"
-                out += ["#     {} ({:.2f} Da), ".format(name, mass),
-                        "min {}, ".format(min_count),
-                        "max {}\n".format(max_count)]
+                out_composition.append((name,
+                                        "{:.2f} Da".format(mass),
+                                        str(min_count),
+                                        str(max_count)))
 
-        out.append("#   Structures:\n")
+        out_structures = [("name", "composition", "sites", "abundance")]
         for (is_checked, name, composition,
              sites, abundance) in self.get_polymers():
             if is_checked:
-                out += ["#     {} ({}); ".format(name, composition),
-                        "sites: {}; ".format(sites),
-                        "abundance: {:.2f}\n".format(abundance)]
+                out_structures.append((name,
+                                       composition,
+                                       sites,
+                                       "{:.2f}".format(abundance)))
 
         if mode.startswith("stats"):
-            out.append("# Search statistics:\n")
+            out_contents = ["Search statistics"]
 
             df = pd.DataFrame(
                 [[self.tbStatistics.item(row_id, col_id).text()
@@ -1075,10 +1076,10 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
             # choose the appropriate data source
             if self.taResults.currentIndex() == 0:
-                out.append("# Composition search (stage 1), ")
+                out_contents = ["Composition search (stage 1)"]
                 results_tree = self.twResults1
             else:
-                out.append("# Structure search (stage 2), ")
+                out_contents = ["Structure search (stage 2)"]
                 results_tree = self.twResults2
 
             # create dataframe from (selected) entries
@@ -1093,22 +1094,49 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 .ffill())
             if not df.empty and df.iloc[0, 1] is None:
                 df = df.drop(0)
-            df = df.drop("checked", axis=1)
 
             if mode == "all":
-                out.append("all results.\n")
+                out_contents.append("all results")
             elif mode == "checked_parent":
-                out.append("checked results (with parents).\n")
+                out_contents.append("checked results (with parents)")
                 df = df[df.checked != Qt.Unchecked]
             else:
-                out.append("checked results.\n")
+                out_contents.append("checked results")
                 df = df[df.checked == Qt.Checked]
+            df = df.drop("checked", axis=1)
+        out_general.insert(1, (", ".join(out_contents), ))
 
-        # write to file
+        # write to csv or xlsx file
         try:
-            with open(filename, "w") as f:
-                f.write("".join(out))
-                df.to_csv(f, index=False)
+            if filename.endswith("csv"):
+                with open(filename, "w") as f:
+                    out_general = [": ".join(i) for i in out_general]
+                    f.write("# ")
+                    f.write("\n# ".join(out_general))
+
+                    f.write("\n# Composition:\n#   ")
+                    out_composition = ["; ".join(i) for i in out_composition]
+                    f.write("\n#   ".join(out_composition))
+
+                    f.write("\n# Structure:\n#   ")
+                    out_structures = ["; ".join(i) for i in out_structures]
+                    f.write("\n#   ".join(out_structures))
+                    f.write("\n")
+
+                    df.to_csv(f, index=False)
+            else:
+                with pd.ExcelWriter(filename, engine="xlsxwriter") as f:
+                    df.to_excel(f, sheet_name="MoFi results", index=False)
+
+                    for sheet, source in [("Parameters", out_general),
+                                          ("Composition", out_composition),
+                                          ("Structures", out_structures)]:
+                        worksheet = f.book.add_worksheet(sheet)
+                        for row_id, row in enumerate(source):
+                            for col_id, value in enumerate(row):
+                                worksheet.write(row_id, col_id, value)
+                    f.save()
+
         except OSError:
             QMessageBox.critical(
                 self,

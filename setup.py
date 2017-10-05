@@ -6,7 +6,8 @@ require = [
     "numpy",
     "pandas",
     "matplotlib",
-    "xlrd"
+    "xlrd",
+    "xlsxwriter"
 ]
 
 c_ext = Extension(
