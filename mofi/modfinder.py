@@ -1628,7 +1628,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             return
 
         # if the selection did not change, use the old one
-        if new_selection is not None and new_selection.size > 0:
+        if new_selection is not None and len(new_selection) > 0:
             self._current_selection = new_selection[:]
 
         # an item of a results tree was clicked
