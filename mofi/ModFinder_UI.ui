@@ -1470,7 +1470,7 @@ QPushButton:pressed {
          <enum>QTabWidget::East</enum>
         </property>
         <property name="currentIndex">
-         <number>1</number>
+         <number>0</number>
         </property>
         <property name="tabBarAutoHide">
          <bool>false</bool>
@@ -1496,9 +1496,6 @@ QPushButton:pressed {
             </property>
             <property name="styleSheet">
              <string notr="true">background-color: rgb(214, 214, 214);</string>
-            </property>
-            <property name="alternatingRowColors">
-             <bool>true</bool>
             </property>
             <property name="selectionMode">
              <enum>QAbstractItemView::SingleSelection</enum>
@@ -1537,9 +1534,6 @@ QPushButton:pressed {
             </property>
             <property name="styleSheet">
              <string notr="true">background-color: rgb(214, 214, 214);</string>
-            </property>
-            <property name="alternatingRowColors">
-             <bool>true</bool>
             </property>
             <property name="selectionMode">
              <enum>QAbstractItemView::SingleSelection</enum>

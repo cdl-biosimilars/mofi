@@ -52,21 +52,18 @@ current_mass_set = {}
 select_mass_set(mass_set_parser.sections()[0])
 
 
-def spin_box_flat_style(bg="white", double=False):
+def spin_box_flat_style(bg="bg_ok", double=False):
     """
     Returns a style sheet for a :class:`QSpinBox` or :class:`QDoubleSpinBox`
     in flat style, i.e., without borders.
 
-    :param str bg: background color (any style sheet color.
-                   Note that ``"red"`` is interpreted as a very faint red.
+    :param str bg: background color as defined in ``config/config.ini``
     :param bool double: True: style sheet for a :class:`QDoubleSpinBox`.
                         False: style sheet for a :class:`QSpinBox`.
     :return: style sheet
     :rtype: str
     """
 
-    if bg == "red":
-        bg = "rgb(255, 225, 225)"
     if double:
         widget = "QDoubleSpinBox"
     else:
@@ -92,4 +89,4 @@ def spin_box_flat_style(bg="white", double=False):
         width: 7px;
         height: 7px
     }}
-    """.format(bg=bg, widget=widget)
+    """.format(bg=colors[bg], widget=widget)

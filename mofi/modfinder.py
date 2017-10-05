@@ -184,6 +184,15 @@ def create_child_items(df, root_item, column_count, monomers, sites):
                     perm_item.setCheckState(0, Qt.Unchecked)
                     create_site_columns(perm_item, pos, perm, sites)
 
+                    if perm_id % 2 == 0:
+                        perm_item.setTotalBackground(
+                            QColor(configure.colors["table_perm_even"]),
+                            column_count)
+                    else:
+                        perm_item.setTotalBackground(
+                            QColor(configure.colors["table_perm_odd"]),
+                            column_count)
+
     else:  # stage 1 results
         try:
             create_hit_columns(root_item, df.iloc[0], monomers, [])
@@ -458,7 +467,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         self.teSequence.textChanged.connect(
             lambda: self.teSequence.setStyleSheet(
-                "QTextEdit { background-color: rgb(255, 225, 225) }"))
+                "QTextEdit {{ background-color: {} }}"
+                .format(configure.colors["bg_error"])))
 
         self.twResults1.itemClicked.connect(
             lambda item: self.update_selection(
@@ -664,7 +674,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         min_spinbox.setMinimum(0)
         min_spinbox.setFrame(False)
         min_spinbox.setValue(min_count)
-        min_spinbox.setStyleSheet(configure.spin_box_flat_style(bg="white"))
+        min_spinbox.setStyleSheet(configure.spin_box_flat_style())
         # noinspection PyUnresolvedReferences
         min_spinbox.valueChanged.connect(self.calculate_mod_mass)
         self.tbMonomers.setCellWidget(row_id, 3, min_spinbox)
@@ -674,7 +684,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         max_spinbox.setSpecialValueText("inf")
         max_spinbox.setFrame(False)
         max_spinbox.setValue(max_count)
-        max_spinbox.setStyleSheet(configure.spin_box_flat_style(bg="white"))
+        max_spinbox.setStyleSheet(configure.spin_box_flat_style())
         # noinspection PyUnresolvedReferences
         max_spinbox.valueChanged.connect(self.calculate_mod_mass)
         self.tbMonomers.setCellWidget(row_id, 4, max_spinbox)
@@ -1187,7 +1197,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.sbDisulfides.setMaximum(
             protein.amino_acid_composition["C"] / 2)
         self.teSequence.setStyleSheet(
-            "QTextEdit { background-color: rgb(240, 251, 240) }")
+            "QTextEdit {{ background-color: {} }}"
+            .format(configure.colors["bg_ok"]))
         self._protein_mass = protein.mass_without_disulfides
         self._disulfide_mass = (mass_tools.Formula("H-2").mass
                                 * self.sbDisulfides.value())
@@ -1233,19 +1244,19 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
             # set the mass tooltip and color the cell
             if error_in_formula or mass == 0:
-                bg_color = QColor(255, 225, 225)
+                bg_color = QColor(configure.colors["bg_error"])
                 tooltip = ""
             else:
-                bg_color = QColor(255, 255, 255)
+                bg_color = QColor(configure.colors["bg_ok"])
                 tooltip = "{:.2f} Da".format(mass)
             self.tbMonomers.item(row_id, 2).setBackground(bg_color)
             self.tbMonomers.item(row_id, 2).setToolTip(tooltip)
 
             # color the Min cell if its value exceeds the one of Max
             if min_count > max_count != -1:
-                style = configure.spin_box_flat_style(bg="red")
+                style = configure.spin_box_flat_style(bg="bg_error")
             else:
-                style = configure.spin_box_flat_style(bg="white")
+                style = configure.spin_box_flat_style()
             self.tbMonomers.cellWidget(row_id, 3).setStyleSheet(style)
 
             if ch.isChecked():
@@ -1462,8 +1473,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             x=self._exp_mass_data["avg_mass"],
             ymin=0,
             ymax=self._exp_mass_data["rel_abundance"],
-            linewidth=1,
-            color=configure.colors["unselect_no_annotation"],
+            linewidth=1.5,
+            color=configure.colors["unselect_before_search"],
             picker=5)
         self.spectrum_axes.set_ylim(0, 110)
         self.spectrum_axes.set_xlabel("Mass (Da)")
@@ -1856,12 +1867,12 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         :return: nothing
         """
 
-        peaks_with_result = np.full(self._exp_mass_data.shape[0], 2, dtype=int)
+        peaks_with_result = np.full(self._exp_mass_data.shape[0], 4, dtype=int)
         try:
             peaks_with_result[self._polymer_hits
                                   .swaplevel(0, 1)
                                   .loc[-1]
-                                  .index.labels[0]] = 0
+                                  .index.labels[0]] = 2
         except KeyError:
             pass  # results for all peaks found
         except AttributeError:
@@ -1869,7 +1880,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 peaks_with_result[self._monomer_hits
                                       .swaplevel(0, 1)
                                       .loc[-1]
-                                      .index.labels[0]] = 0
+                                      .index.labels[0]] = 2
             except KeyError:
                 pass  # results for all peaks found
             except AttributeError:
@@ -1880,15 +1891,19 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         selected_peaks[peak_indices] = 1
 
         # peak colors will be an array with one entry per peak:
-        # no polymers: 0 - not selected, 1 - selected
-        # polymers:    2 - not selected, 3 - selected
+        # before search: 0 - not selected, 1 - selected
+        # no annotation: 2 - not selected, 3 - selected
+        # annotation:    4 - not selected, 5 - selected
         peak_colors = selected_peaks + peaks_with_result
-        color_set = np.array([configure.colors["unselect_no_annotation"],
+        color_set = np.array([configure.colors["unselect_before_search"],
+                              configure.colors["select_before_search"],
+                              configure.colors["unselect_no_annotation"],
                               configure.colors["select_no_annotation"],
                               configure.colors["unselect_annotation"],
                               configure.colors["select_annotation"]])
+        lw_set = np.array([1.5, 1.5, 1.5, 1.5, 1.5, 1.5])
         self.spectrum_peak_lines.set_color(color_set[peak_colors])
-        self.spectrum_peak_lines.set_linewidth(1)
+        self.spectrum_peak_lines.set_linewidth(lw_set[peak_colors])
 
         # label the selection by masses
         for annotation in self.spectrum_axes.findobj(
