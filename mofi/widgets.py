@@ -214,19 +214,35 @@ class SortableTreeWidgetItem(QTreeWidgetItem):
 
 
     # noinspection PyPep8Naming
-    def setTotalBackground(self, color, column_count=None):
+    def setTotalBackground(self, color=None, column_count=None,
+                           alternating=None, even_color=None, odd_color=None):
         """
-        Set the background color for all columns.
+        Set the background color for all columns, possibly depending on
+        whether the widget has an even or odd line number.
 
-        :param QColor color: the color to use
+        :param str color: the color to use
         :param int column_count: the intended number of columns
+        :param int alternating: If this parameter is an even (odd) int,
+          the color specified by ``even_color`` (``odd_color``) will be used.
+        :param str even_color: Color for even widgets.
+                               If None, fall back to the value of ``color``.
+        :param str odd_color: Color for odd widgets.
+                              If None, fall back to the value of ``color``.
         :return: nothing
         """
 
-        if column_count and self.columnCount() != column_count:
+        if column_count is not None and self.columnCount() != column_count:
             self.setText(column_count - 1, "")
+        if alternating is not None:
+            if alternating % 2 == 0:
+                if even_color is not None:
+                    color = even_color
+            else:
+                if odd_color is not None:
+                    color = odd_color
+
         for i in range(self.columnCount()):
-            self.setBackground(i, QBrush(color))
+            self.setBackground(i, QBrush(QColor(color)))
 
 
     # noinspection PyPep8Naming

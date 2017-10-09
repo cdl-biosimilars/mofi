@@ -8,15 +8,16 @@ from configparser import ConfigParser
 import os.path
 from mofi.paths import config_dir
 
-# (1) general parameters
+# (1) general parameters and colors
 config = ConfigParser()
 with open(os.path.join(config_dir, "config.ini")) as f:
     config.read_file(f)
-default_da = float(config.get("Defaults", "da"))
-default_ppm = int(config.get("Defaults", "ppm"))
-maxmods = int(config.get("Defaults", "maxmods"))
-path = config.get("Defaults", "path")
-colors = dict(config.items("Colors"))
+
+defaults = dict(config.items("defaults"))
+
+colors = {}
+for subsection in ["widgets", "spectrum", "delta", "table"]:
+    colors[subsection] = dict(config.items("colors." + subsection))
 
 
 # (2) mass sets
@@ -89,4 +90,4 @@ def spin_box_flat_style(bg="bg_ok", double=False):
         width: 7px;
         height: 7px
     }}
-    """.format(bg=colors[bg], widget=widget)
+    """.format(bg=colors["widgets"][bg], widget=widget)

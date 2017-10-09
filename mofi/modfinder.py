@@ -157,14 +157,11 @@ def create_child_items(df, root_item, column_count, monomers, sites):
                                      monomers, sites)
 
             # background color
-            if stage2_id % 2 == 0:
-                hit_item.setTotalBackground(
-                    QColor(configure.colors["table_hit_even"]),
-                    column_count)
-            else:
-                hit_item.setTotalBackground(
-                    QColor(configure.colors["table_hit_odd"]),
-                    column_count)
+            hit_item.setTotalBackground(
+                even_color=configure.colors["table"]["child_even"],
+                odd_color=configure.colors["table"]["child_odd"],
+                column_count=column_count,
+                alternating=stage2_id)
 
             # (2) child items for all permutations per hit
             # only if there are at least two permutations
@@ -184,14 +181,12 @@ def create_child_items(df, root_item, column_count, monomers, sites):
                     perm_item.setCheckState(0, Qt.Unchecked)
                     create_site_columns(perm_item, pos, perm, sites)
 
-                    if perm_id % 2 == 0:
-                        perm_item.setTotalBackground(
-                            QColor(configure.colors["table_perm_even"]),
-                            column_count)
-                    else:
-                        perm_item.setTotalBackground(
-                            QColor(configure.colors["table_perm_odd"]),
-                            column_count)
+                    perm_item.setTotalBackground(
+                        even_color=configure.colors["table"][
+                            "grandchild_even"],
+                        odd_color=configure.colors["table"]["grandchild_odd"],
+                        column_count=column_count,
+                        alternating=perm_id)
 
     else:  # stage 1 results
         try:
@@ -213,14 +208,11 @@ def create_child_items(df, root_item, column_count, monomers, sites):
             stage1_id += 1
 
             # background color
-            if hit.Index % 2 == 0:
-                hit_item.setTotalBackground(
-                    QColor(configure.colors["table_hit_even"]),
-                    column_count)
-            else:
-                hit_item.setTotalBackground(
-                    QColor(configure.colors["table_hit_odd"]),
-                    column_count)
+            hit_item.setTotalBackground(
+                even_color=configure.colors["table"]["child_even"],
+                odd_color=configure.colors["table"]["child_odd"],
+                column_count=column_count,
+                alternating=hit.Index)
 
 
 def create_hit_columns(item, hit, monomers, sites):
@@ -468,7 +460,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.teSequence.textChanged.connect(
             lambda: self.teSequence.setStyleSheet(
                 "QTextEdit {{ background-color: {} }}"
-                .format(configure.colors["bg_error"])))
+                .format(configure.colors["widgets"]["bg_error"])))
 
         self.twResults1.itemClicked.connect(
             lambda item: self.update_selection(
@@ -614,10 +606,10 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             "Save checked entries with parents …",
             lambda: self.save_search_results("checked_parent"))
         self.save_results_menu["table"].addAction(
-            "Save statistics table (wide format) …",
+            "Save in wide format …",
             lambda: self.save_search_results("stats_wide"))
         self.save_results_menu["table"].addAction(
-            "Save statistics table (long format) …",
+            "Save in long format …",
             lambda: self.save_search_results("stats_long"))
         self.set_save_results_menu(1)
 
@@ -627,7 +619,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self._exp_mass_data = None  # peak list (mass + relative abundance)
         self._known_mods_mass = 0  # mass of known modification
         self._monomer_hits = None  # results from the monomer search
-        self._path = configure.path  # last path selected in a file dialog
+        self._path = configure.defaults["path"]  # last selected path
         self._polymer_hits = None  # results from the polymer search
         self._protein_mass = 0  # mass of the current Protein object
         self._results_tree_headers = [[], []]  # results tables headers
@@ -895,13 +887,13 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self.sbTolerance.setMinimum(0.0)
             self.sbTolerance.setMaximum(50.0)
             self.sbTolerance.setSingleStep(0.1)
-            self.sbTolerance.setValue(configure.default_da)
+            self.sbTolerance.setValue(configure.defaults["da"])
         else:
             self.sbTolerance.setDecimals(0)
             self.sbTolerance.setMinimum(0)
             self.sbTolerance.setMaximum(150)
             self.sbTolerance.setSingleStep(1)
-            self.sbTolerance.setValue(configure.default_ppm)
+            self.sbTolerance.setValue(configure.defaults["ppm"])
 
 
     def load_sequence(self):
@@ -1072,12 +1064,12 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                                       "%"],
                              value_vars=["Search space size",
                                          "Stage 1 results",
-                                         "Stage 2 results",
-                                         "Stage 2 uniques"],
-                             value_name="Measure",
-                             var_name="Value")
+                                         "Stage 2 permutations",
+                                         "Stage 2 hits"],
+                             value_name="Value",
+                             var_name="Measure")
         else:
-            # set up the BFS algorithm
+            # set up the depth-first search algorithm
             def explore(node):
                 yield ([node.checkState(0)]
                        + [node.text(c) for c in range(1, node.columnCount())])
@@ -1198,7 +1190,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             protein.amino_acid_composition["C"] / 2)
         self.teSequence.setStyleSheet(
             "QTextEdit {{ background-color: {} }}"
-            .format(configure.colors["bg_ok"]))
+            .format(configure.colors["widgets"]["bg_ok"]))
         self._protein_mass = protein.mass_without_disulfides
         self._disulfide_mass = (mass_tools.Formula("H-2").mass
                                 * self.sbDisulfides.value())
@@ -1244,10 +1236,10 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
             # set the mass tooltip and color the cell
             if error_in_formula or mass == 0:
-                bg_color = QColor(configure.colors["bg_error"])
+                bg_color = QColor(configure.colors["widgets"]["bg_error"])
                 tooltip = ""
             else:
-                bg_color = QColor(configure.colors["bg_ok"])
+                bg_color = QColor(configure.colors["widgets"]["bg_ok"])
                 tooltip = "{:.2f} Da".format(mass)
             self.tbMonomers.item(row_id, 2).setBackground(bg_color)
             self.tbMonomers.item(row_id, 2).setToolTip(tooltip)
@@ -1395,7 +1387,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                              - self._protein_mass
                              - self._disulfide_mass)
                             / mass),
-                        configure.maxmods)
+                        configure.defaults["maxmods"])
             modifications.append((name, mass, max_count - min_count))
 
         if not modifications:
@@ -1474,7 +1466,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             ymin=0,
             ymax=self._exp_mass_data["rel_abundance"],
             linewidth=1.5,
-            color=configure.colors["unselect_before_search"],
+            color=configure.colors["spectrum"]["unselected"],
             picker=5)
         self.spectrum_axes.set_ylim(0, 110)
         self.spectrum_axes.set_xlabel("Mass (Da)")
@@ -1823,11 +1815,11 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         df_counts.loc[central_peak, "color"] = 4
 
         # color the peaks in the delta series and increase their line width
-        color_set = np.array([configure.colors["delta_other"],
-                              configure.colors["delta_1"],
-                              configure.colors["delta_2"],
-                              configure.colors["delta_both"],
-                              configure.colors["delta_main"]])
+        color_set = np.array([configure.colors["delta"]["other"],
+                              configure.colors["delta"]["series_1"],
+                              configure.colors["delta"]["series_2"],
+                              configure.colors["delta"]["both"],
+                              configure.colors["delta"]["main"]])
 
         lw_set = np.array([1, 2, 2, 2, 3])
         self.spectrum_peak_lines.set_color(color_set[df_counts["color"]])
@@ -1895,12 +1887,13 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         # no annotation: 2 - not selected, 3 - selected
         # annotation:    4 - not selected, 5 - selected
         peak_colors = selected_peaks + peaks_with_result
-        color_set = np.array([configure.colors["unselect_before_search"],
-                              configure.colors["select_before_search"],
-                              configure.colors["unselect_no_annotation"],
-                              configure.colors["select_no_annotation"],
-                              configure.colors["unselect_annotation"],
-                              configure.colors["select_annotation"]])
+        color_set = np.array(
+            [configure.colors["spectrum"]["unselected"],
+             configure.colors["spectrum"]["selected"],
+             configure.colors["spectrum"]["unselected_no_hit"],
+             configure.colors["spectrum"]["selected_no_hit"],
+             configure.colors["spectrum"]["unselected_hit"],
+             configure.colors["spectrum"]["selected_hit"]])
         lw_set = np.array([1.5, 1.5, 1.5, 1.5, 1.5, 1.5])
         self.spectrum_peak_lines.set_color(color_set[peak_colors])
         self.spectrum_peak_lines.set_linewidth(lw_set[peak_colors])
@@ -1975,23 +1968,17 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
             # color root item
             if df_hit.loc[mass_index].index.values[0][0] == -1:
-                if mass_index % 2 == 0:
-                    root_item.setTotalBackground(
-                        QColor(configure.colors["table_root_missing_even"]),
-                        column_count)
-                else:
-                    root_item.setTotalBackground(
-                        QColor(configure.colors["table_root_missing_odd"]),
-                        column_count)
+                root_item.setTotalBackground(
+                    even_color=configure.colors["table"]["parent_no_hit_even"],
+                    odd_color=configure.colors["table"]["parent_no_hit_odd"],
+                    column_count=column_count,
+                    alternating=mass_index)
             else:
-                if mass_index % 2 == 0:
-                    root_item.setTotalBackground(
-                        QColor(configure.colors["table_root_annotated_even"]),
-                        column_count)
-                else:
-                    root_item.setTotalBackground(
-                        QColor(configure.colors["table_root_annotated_odd"]),
-                        column_count)
+                root_item.setTotalBackground(
+                    even_color=configure.colors["table"]["parent_hit_even"],
+                    odd_color=configure.colors["table"]["parent_hit_odd"],
+                    column_count=column_count,
+                    alternating=mass_index)
 
                 # create child items
                 df_hit.loc[mass_index].pipe(create_child_items,

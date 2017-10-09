@@ -1470,7 +1470,7 @@ QPushButton:pressed {
          <enum>QTabWidget::East</enum>
         </property>
         <property name="currentIndex">
-         <number>0</number>
+         <number>1</number>
         </property>
         <property name="tabBarAutoHide">
          <bool>false</bool>
@@ -1597,12 +1597,12 @@ QPushButton:pressed {
             </column>
             <column>
              <property name="text">
-              <string>Stage 2 results</string>
+              <string>Stage 2 permutations</string>
              </property>
             </column>
             <column>
              <property name="text">
-              <string>Stage 2 uniques</string>
+              <string>Stage 2 hits</string>
              </property>
             </column>
            </widget>
@@ -1752,7 +1752,7 @@ QPushButton:pressed {
           </property>
           <property name="icon">
            <iconset resource="mofi.qrc">
-            <normaloff>:/mofi resource/images/UnckeckAll.png</normaloff>:/mofi resource/images/UnckeckAll.png</iconset>
+            <normaloff>:/mofi resource/images/UncheckAll.png</normaloff>:/mofi resource/images/UncheckAll.png</iconset>
           </property>
           <property name="iconSize">
            <size>

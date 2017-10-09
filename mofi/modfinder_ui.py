@@ -677,7 +677,7 @@ class Ui_ModFinder(object):
         self.verticalLayout_2.addWidget(self.btCheckAll)
         self.btUncheckAll = QtWidgets.QToolButton(self.centralwidget)
         icon18 = QtGui.QIcon()
-        icon18.addPixmap(QtGui.QPixmap(":/mofi resource/images/UnckeckAll.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon18.addPixmap(QtGui.QPixmap(":/mofi resource/images/UncheckAll.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.btUncheckAll.setIcon(icon18)
         self.btUncheckAll.setIconSize(QtCore.QSize(24, 24))
         self.btUncheckAll.setAutoRaise(True)
@@ -720,7 +720,7 @@ class Ui_ModFinder(object):
         self.menubar.addAction(self.menuHelp.menuAction())
 
         self.retranslateUi(ModFinder)
-        self.taResults.setCurrentIndex(0)
+        self.taResults.setCurrentIndex(1)
         QtCore.QMetaObject.connectSlotsByName(ModFinder)
 
     def retranslateUi(self, ModFinder):
@@ -811,9 +811,9 @@ class Ui_ModFinder(object):
         item = self.tbStatistics.horizontalHeaderItem(4)
         item.setText(_translate("ModFinder", "Stage 1 results"))
         item = self.tbStatistics.horizontalHeaderItem(5)
-        item.setText(_translate("ModFinder", "Stage 2 results"))
+        item.setText(_translate("ModFinder", "Stage 2 permutations"))
         item = self.tbStatistics.horizontalHeaderItem(6)
-        item.setText(_translate("ModFinder", "Stage 2 uniques"))
+        item.setText(_translate("ModFinder", "Stage 2 hits"))
         self.taResults.setTabText(self.taResults.indexOf(self.tab), _translate("ModFinder", "Statistics"))
         self.btSaveResults.setToolTip(_translate("ModFinder", "Save results"))
         self.btSaveResults.setText(_translate("ModFinder", "..."))
