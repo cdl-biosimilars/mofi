@@ -1845,6 +1845,64 @@ QPushButton:pressed {
    </property>
   </action>
  </widget>
+ <tabstops>
+  <tabstop>btLoadSequence</tabstop>
+  <tabstop>btSaveSequence</tabstop>
+  <tabstop>btClearSequence</tabstop>
+  <tabstop>btUpdateMass</tabstop>
+  <tabstop>teSequence</tabstop>
+  <tabstop>sbDisulfides</tabstop>
+  <tabstop>chPngase</tabstop>
+  <tabstop>cbMassSet</tabstop>
+  <tabstop>btLoadMonomers</tabstop>
+  <tabstop>btSaveMonomers</tabstop>
+  <tabstop>btDefaultModsMonomers</tabstop>
+  <tabstop>btInsertRowAboveMonomers</tabstop>
+  <tabstop>btInsertRowBelowMonomers</tabstop>
+  <tabstop>btDeleteRowMonomers</tabstop>
+  <tabstop>btClearMonomers</tabstop>
+  <tabstop>tbMonomers</tabstop>
+  <tabstop>btLoadPolymers</tabstop>
+  <tabstop>btSavePolymers</tabstop>
+  <tabstop>btDefaultModsPolymers</tabstop>
+  <tabstop>btInsertRowAbovePolymers</tabstop>
+  <tabstop>btInsertRowBelowPolymers</tabstop>
+  <tabstop>btDeleteRowPolymers</tabstop>
+  <tabstop>btClearPolymers</tabstop>
+  <tabstop>tbPolymers</tabstop>
+  <tabstop>chDelta1</tabstop>
+  <tabstop>sbDeltaValue1</tabstop>
+  <tabstop>sbDeltaTolerance1</tabstop>
+  <tabstop>sbDeltaRepetition1</tabstop>
+  <tabstop>chDelta2</tabstop>
+  <tabstop>sbDeltaValue2</tabstop>
+  <tabstop>sbDeltaTolerance2</tabstop>
+  <tabstop>sbDeltaRepetition2</tabstop>
+  <tabstop>chCombineDelta</tabstop>
+  <tabstop>btLoadPeaks</tabstop>
+  <tabstop>btSaveSpectrum</tabstop>
+  <tabstop>btResetZoom</tabstop>
+  <tabstop>btLabelPeaks</tabstop>
+  <tabstop>btModeSelection</tabstop>
+  <tabstop>btModeDelta</tabstop>
+  <tabstop>btFindModifications</tabstop>
+  <tabstop>rbAllPeaks</tabstop>
+  <tabstop>rbSingleMass</tabstop>
+  <tabstop>sbSingleMass</tabstop>
+  <tabstop>sbTolerance</tabstop>
+  <tabstop>cbTolerance</tabstop>
+  <tabstop>taResults</tabstop>
+  <tabstop>twResults1</tabstop>
+  <tabstop>twResults2</tabstop>
+  <tabstop>tbStatistics</tabstop>
+  <tabstop>btSaveResults</tabstop>
+  <tabstop>btClearFilters</tabstop>
+  <tabstop>btCollapseAll</tabstop>
+  <tabstop>btExpandParents</tabstop>
+  <tabstop>btExpandAll</tabstop>
+  <tabstop>btCheckAll</tabstop>
+  <tabstop>btUncheckAll</tabstop>
+ </tabstops>
  <resources>
   <include location="mofi.qrc"/>
  </resources>

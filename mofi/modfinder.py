@@ -368,8 +368,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.acAbout.triggered.connect(self.show_about)
         self.acLoadSettings.triggered.connect(self.load_settings)
         self.acManual.triggered.connect(
-            lambda: webbrowser.open("file://"
-                                    + os.path.join(docs_dir, "index.html")))
+            lambda: webbrowser.open(
+                "file://" + os.path.join(docs_dir, "html", "index.html")))
         self.acQuit.triggered.connect(QApplication.instance().quit)
         self.acSaveSettings.triggered.connect(self.save_settings)
 

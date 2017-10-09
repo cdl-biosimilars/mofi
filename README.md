@@ -37,7 +37,6 @@ You may either run ModFinder directly from source or execute the frozen version 
 * Run `python3 setup.py build` to create the `findmods` library
 * Copy the library (`findmods[...].so` on Unix, `findmods[...].pyd` on Windows) from `build/lib[...]/mofi/` to `mofi/`
 * Run `make html` (Unix) or `make.bat html` (Windows) in the `docs/` directory to create the documentation
-* Copy the documentation from `docs/_build/html/` to `mofi/docs/` (or create an appropriate symlink)
 * Start ModFinder via `run.py`
 
 
@@ -57,7 +56,6 @@ You may either run ModFinder directly from source or execute the frozen version 
 #### General
 
 * Create and copy the library as described above
-* Create the html documentation as described above
 
 
 #### Windows)
@@ -77,6 +75,6 @@ You may either run ModFinder directly from source or execute the frozen version 
 ### Debian package
 
 * Add new message in `debian/changelog`. Ensure that a key with the appropriate user ID exists.
-* Tag that version using `git tag v1.0`
+* Tag that version using `git tag -a v1.0`
 * Commit the changes
 * Run `gpb buildpackage`

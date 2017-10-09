@@ -6,7 +6,7 @@ SPHINXOPTS    =
 SPHINXBUILD   = python3 -msphinx
 SPHINXPROJ    = ModFinder
 SOURCEDIR     = .
-BUILDDIR      = _build
+BUILDDIR      = ../mofi/docs
 
 # Put it first so that "make" without argument is like "make help".
 help:
@@ -17,4 +17,5 @@ help:
 # Catch-all target: route all unknown targets to Sphinx using the new
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
 %: Makefile
-	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O); \
+    cp -r "sample data" "../mofi/docs/sample data"
