@@ -44,6 +44,8 @@ The layout of ModFinder's main window encourages the following workflow:
 
 
 
+.. _load-seq:
+
 ===================================
 (1) Load a sequence in FASTA format
 ===================================
@@ -57,6 +59,8 @@ Specify whether the protein was treated with PNGase F. The asparagine residue in
 .. image:: images/sequence.png
            :alt: Sequence input
            :align: center
+
+.. _mass-sets:
 
 You can select different mass sets in the combobox below the protein sequence. ModFinder includes the following mass sets (see entries in file ``config/mass_sets.ini``):
 
@@ -83,6 +87,7 @@ Click |bt_save| *Save sequence* to save the contents of the sequence editor, |bt
 
    Using IUPAC average masses, the sequence has a molecular mass of 145199.44 Da. Including the mass of known modifications (i.e., the disulfide briges), which is –32.26 Da, the total mass of the protein is 145167.18 Da.
 
+.. _mod-list:
 
 ==============================================================
 (2) Specify a list of modifications for the composition search
@@ -123,6 +128,8 @@ Manipulate the table via the buttons next to it:
    :DM1: The drug emtansine, coupled to the antibody via a linker. Although its molecular formula is known (C\ :sub:`47` H\ :sub:`61` Cl N\ :sub:`4` O\ :sub:`13` S), we specified the average mass in order to demonstate MoFi's capability of handling both formulas and masses.
    :MCC: The linker maleimidylmethyl cyclohexane-1-carboxylate (C\ :sub:`12` H\ :sub:`15` O\ :sub:`3` N). We expect that Kadyla also contains 'dead' linkers without any attached drug molecule.
 
+
+.. _glycan-library:
 
 =====================================================
 (3) Specify a glycan library for the structure search
@@ -166,6 +173,7 @@ Manipulate the table via the buttons next to it:
    NB: Since each heavy chain harbors a glycosylation site at N300, you have to change the values in column 'Site' of the table of glycans to 'ch_A, ch_B' or similar.
 
 
+.. _spectrum:
 
 ========================
 (4) Load a mass spectrum
@@ -190,6 +198,8 @@ If |bt_select_peaks| *Select peaks* is active, you may interact with the spectru
 .. image:: images/selection.png
            :alt: Interaction with the spectrum
            :align: center
+
+.. _delta-series:
 
 |bt_select_delta_series| *Select delta series* enters delta series selection mode: Select a single peak to mark it as the main peak (highlighted in red). All peaks that are separated from the main peak by equal distances are highlighted in yellow. The main peak is numbered 0, the other peaks in the series are consecutively numbered 1, 2, … (increasing masses) and –1, –2, … (decreasing masses).
 
@@ -230,6 +240,8 @@ The following table summarizes the color scheme for delta series:
    Within each group, the major peaks also differ by equal masses. Highlight those peaks by activating the second delta series, entering a mass difference of 162.14 Da (i.e., one hexose) and two maximum repetitions, and finally checking *Combine*.
 
 
+.. _perform-search:
+
 ======================
 (5) Perform the search
 ======================
@@ -255,10 +267,25 @@ The tolerance for acceptable annotations can be given in Da or ppm.
 Menus
 =====
 
-.. image:: images/menu.png
-           :alt: Menu
+.. rubric:: File menu
+
+.. image:: images/menu_file.png
+           :alt: File menu
            :align: center
 
-Click *File → Save settings …* (Ctrl+S) to save the current settings (sequence, list of modifications, glycan library, spectrum) as an XML file. Load settings from a previously generated XML file by clicking *File → Load settings …* (Ctrl+O).
+* *Save settings …* (Ctrl+S) saves the current settings (sequence, list of modifications, glycan library, spectrum) as an XML file.
+* *Load settings …* (Ctrl+O) loads settings from a previously generated XML file.
+* *Quit* (Ctrl+Q) closes ModFinder.
 
 
+.. rubric:: Help menu
+
+.. image:: images/menu_help.png
+           :alt: Help menu
+           :align: center
+
+* *Manual* opens this manual.
+* *What is …* (Shift+F1) enters context help mode. In this mode, clicking on any widget opens the section of the manual that describes this widget.
+* *About* shows a dialog with general information about ModFinder.
+
+You may also press F1 at any time to open the section of the manual that describes the currently active widget.

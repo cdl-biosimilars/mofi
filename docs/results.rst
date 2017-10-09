@@ -48,6 +48,8 @@ The hierarchical tables at the bottom of the main window display results of both
 
 
 
+.. _stage-1-results:
+
 ---------------
 Stage 1 results
 ---------------
@@ -67,6 +69,8 @@ A child row (light green) with the following columns appears for each possible a
 For child rows, the format of the row index is ``[peak ID]-[hit ID]``.
 
 
+
+.. _stage-2-results:
 
 ---------------
 Stage 2 results
@@ -125,6 +129,8 @@ Likewise, since each set of permutations :math:`v_h` contains a different subset
    \sum_{h=1}^H S^\mathrm{hit}_h = 1 \ .
 
 
+.. _statistics:
+
 ----------
 Statistics
 ----------
@@ -153,6 +159,7 @@ Sorting
 
 Click on a column header to sort the table by this column. Sorting by ID restores the original order of the rows.
 
+.. _filter-results:
 
 --------
 Fitering
@@ -171,6 +178,8 @@ Constraints must have one of the following forms:
            :alt: Results filter
            :align: center
 
+.. _expand-results:
+
 ---------
 Expanding
 ---------
@@ -182,6 +191,8 @@ Click on the triangle to the left of any row with children to expand this row. A
 * |bt_expand_all| *Expand all* expands all peak and hit rows.
 
 
+
+.. _save-results:
 
 ==============
 Saving results
