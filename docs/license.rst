@@ -6,6 +6,8 @@ Licenses
 ModFinder
 =========
 
+!!! License pending !!!
+!!! A 3-clause BSD would look like:!!!
 Copyright (c) 2017, Christian Doppler Laboratory for Innovative Tools for Biosimilar Characterization
 
 All rights reserved.

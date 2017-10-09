@@ -1,0 +1,16 @@
+Checked,Name,Composition,Sites,Abundance
+True,A2G0F,"3 Hex, 4 HexNAc, 1 Fuc","ch_A, ch_B",35.22
+True,A2G1F,"4 Hex, 4 HexNAc, 1 Fuc","ch_A, ch_B",31.77
+True,A1G0F,"3 Hex, 3 HexNAc, 1 Fuc","ch_A, ch_B",9.31
+True,A2G2F,"5 Hex, 4 HexNAc, 1 Fuc","ch_A, ch_B",5.54
+True,A2G0,"3 Hex, 4 HexNAc","ch_A, ch_B",4.79
+True,M5,"5 Hex, 2 HexNAc","ch_A, ch_B",4.72
+True,A1G1F,"4 Hex, 3 HexNAc, 1 Fuc","ch_A, ch_B",3.53
+True,A1G0,"3 Hex, 3 HexNAc","ch_A, ch_B",2.35
+True,A2G1,"4 Hex, 4 HexNAc","ch_A, ch_B",2.32
+True,no_glycan,,"ch_A, ch_B",1.97
+True,A2S1G1F,"5 Hex, 4 HexNAc, 1 Neu5Ac, 1 Fuc","ch_A, ch_B",0.82
+True,A1G1,"4 Hex, 3 HexNAc","ch_A, ch_B",0.59
+True,M6,"6 Hex, 2 HexNAc","ch_A, ch_B",0.59
+True,A2S1G0F,"4 Hex, 4 HexNAc, 1 Neu5Ac, 1 Fuc","ch_A, ch_B",0.4
+True,M4,"4 Hex, 2 HexNAc","ch_A, ch_B",0.39

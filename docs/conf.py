@@ -47,9 +47,9 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'ModFinder'
-copyright = '2017 Christian Doppler Laboratory for Innovative Tools for Biosimilar Characterization. This work is licensed under the BSD 3-Clause License'
+copyright = '2017 Christian Doppler Laboratory for Innovative Tools for Biosimilar Characterization. License not yet chosen'
 author = 'Wolfgang Skala'
-date = 'Preliminary version, 24.08.2017'
+date = '05.10.2017'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the

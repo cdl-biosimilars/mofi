@@ -27,19 +27,25 @@ Code documentation
 .. automodule:: mofi.mass_tools
 
 
-``modification_search.py``
-==========================
-
-.. automodule:: mofi.modification_search
-
-
 ``paths.py``
 ============
 
 .. automodule:: mofi.paths
 
 
+``search_tools.py``
+==========================
+
+.. automodule:: mofi.search_tools
+
+
 ``sequence_tools.py``
 =====================
 
 .. automodule:: mofi.sequence_tools
+
+
+``widgets.py``
+=====================
+
+.. automodule:: mofi.widgets
