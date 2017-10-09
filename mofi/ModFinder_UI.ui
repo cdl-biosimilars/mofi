@@ -353,7 +353,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QToolButton" name="btDefaultModsMonomers">
+            <widget class="QToolButton" name="btDefaultMonomers">
              <property name="toolTip">
               <string>Load default modifications</string>
              </property>
@@ -574,7 +574,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QToolButton" name="btDefaultModsPolymers">
+            <widget class="QToolButton" name="btDefaultPolymers">
              <property name="toolTip">
               <string>Load default glycans</string>
              </property>
@@ -1551,7 +1551,7 @@ QPushButton:pressed {
           </item>
          </layout>
         </widget>
-        <widget class="QWidget" name="tab">
+        <widget class="QWidget" name="statisticsTab">
          <attribute name="title">
           <string>Statistics</string>
          </attribute>
@@ -1801,6 +1801,8 @@ QPushButton:pressed {
      <string>Help</string>
     </property>
     <addaction name="acManual"/>
+    <addaction name="acWhatIs"/>
+    <addaction name="separator"/>
     <addaction name="acAbout"/>
    </widget>
    <addaction name="menuFile"/>
@@ -1840,8 +1842,13 @@ QPushButton:pressed {
    <property name="text">
     <string>Manual</string>
    </property>
+  </action>
+  <action name="acWhatIs">
+   <property name="text">
+    <string>What is ...</string>
+   </property>
    <property name="shortcut">
-    <string>F1</string>
+    <string>Shift+F1</string>
    </property>
   </action>
  </widget>
@@ -1856,7 +1863,7 @@ QPushButton:pressed {
   <tabstop>cbMassSet</tabstop>
   <tabstop>btLoadMonomers</tabstop>
   <tabstop>btSaveMonomers</tabstop>
-  <tabstop>btDefaultModsMonomers</tabstop>
+  <tabstop>btDefaultMonomers</tabstop>
   <tabstop>btInsertRowAboveMonomers</tabstop>
   <tabstop>btInsertRowBelowMonomers</tabstop>
   <tabstop>btDeleteRowMonomers</tabstop>
@@ -1864,7 +1871,7 @@ QPushButton:pressed {
   <tabstop>tbMonomers</tabstop>
   <tabstop>btLoadPolymers</tabstop>
   <tabstop>btSavePolymers</tabstop>
-  <tabstop>btDefaultModsPolymers</tabstop>
+  <tabstop>btDefaultPolymers</tabstop>
   <tabstop>btInsertRowAbovePolymers</tabstop>
   <tabstop>btInsertRowBelowPolymers</tabstop>
   <tabstop>btDeleteRowPolymers</tabstop>

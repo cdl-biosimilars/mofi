@@ -8,6 +8,7 @@ import re
 import sys
 import time
 import xml.etree.ElementTree as ETree
+from urllib.request import pathname2url
 import webbrowser
 
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QMenu,
@@ -15,8 +16,8 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QMenu,
                              QHeaderView, QButtonGroup,
                              QSpinBox, QDoubleSpinBox, QWidget, QHBoxLayout,
                              QProgressBar, QLabel, QSizePolicy)
-from PyQt5.QtGui import QColor
-from PyQt5.QtCore import Qt, QLocale
+from PyQt5.QtGui import QColor, QCursor
+from PyQt5.QtCore import Qt, QLocale, QEvent
 
 import numpy as np
 import pandas as pd
@@ -65,6 +66,7 @@ _polymer_table_columns = [
 
 # sorting key for column 1 of the results trees
 _default_col_key = {1: lambda x: [int(i) for i in x.split("-")]}
+
 
 
 def find_in_intervals(value, intervals):
@@ -363,15 +365,15 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         # initialize the GUI
         super(MainWindow, self).__init__(parent)
         self.setupUi(self)
+        QApplication.instance().installEventFilter(self)
 
         # connect signals to slots
         self.acAbout.triggered.connect(self.show_about)
         self.acLoadSettings.triggered.connect(self.load_settings)
-        self.acManual.triggered.connect(
-            lambda: webbrowser.open(
-                "file://" + os.path.join(docs_dir, "html", "index.html")))
+        self.acManual.triggered.connect(self.show_context_help)
         self.acQuit.triggered.connect(QApplication.instance().quit)
         self.acSaveSettings.triggered.connect(self.save_settings)
+        self.acWhatIs.triggered.connect(self.enter_context_help_mode)
 
         self.btCheckAll.clicked.connect(
             lambda: self.check_results_tree(check=True))
@@ -552,7 +554,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                     cols=_monomer_table_columns
                 )
             )
-        self.btDefaultModsMonomers.setMenu(menu)
+        self.btDefaultMonomers.setMenu(menu)
 
         # polymer table and associated buttons
         self.tbPolymers.horizontalHeader().setSectionResizeMode(
@@ -576,7 +578,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                     cols=_polymer_table_columns
                 )
             )
-        self.btDefaultModsPolymers.setMenu(menu)
+        self.btDefaultPolymers.setMenu(menu)
 
         # headers with filters for the results trees
         for tree_widget in (self.twResults1, self.twResults2):
@@ -617,6 +619,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self._current_selection = [0]  # list of currently selected peaks
         self._disulfide_mass = 0  # mass of the current number of disulfides
         self._exp_mass_data = None  # peak list (mass + relative abundance)
+        self._in_context_help_mode = False  # True if in context help mode
         self._known_mods_mass = 0  # mass of known modification
         self._monomer_hits = None  # results from the monomer search
         self._path = configure.defaults["path"]  # last selected path
@@ -624,6 +627,41 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self._protein_mass = 0  # mass of the current Protein object
         self._results_tree_headers = [[], []]  # results tables headers
         self._search_statistics = None  # search statistics
+
+
+    # noinspection PyUnusedLocal,PyPep8Naming
+    def eventFilter(self, obj, event):
+        """
+        Filter any mouseclick if in context help mode
+        and report the widget that was clicked.
+
+        :param QObject obj: watched object
+        :param QEvent event: filtered event
+        :return: True if the event was filtered, False otherwise
+        :rtype: bool
+        """
+
+        if event.type() == QEvent.MouseButtonRelease:
+            if self._in_context_help_mode:
+                widget = QApplication.instance().widgetAt(QCursor.pos())
+                self._in_context_help_mode = False
+                QApplication.instance().restoreOverrideCursor()
+                self.show_context_help(widget)
+                return True
+        return False
+
+
+    def keyPressEvent(self, event):
+        """
+        Get the widget that currently has focus if the F1 key is pressed.
+
+        :param QKeyEvent event: catched event
+        :return: nothing
+        """
+        if event.key() == Qt.Key_F1:
+            widget = QApplication.instance().focusWidget()
+            self.show_context_help(widget)
+
 
 
     def _monomer_table_create_row(self, row_id, active=False, name="",
@@ -848,6 +886,97 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             if "Modification" in df.columns:
                 df = io_tools.read_bpf_library(df)
         self.table_from_df(df, table_widget, cols)
+
+
+    def enter_context_help_mode(self):
+        """
+        Enter context help mode.
+
+        :return: nothing
+        """
+        self._in_context_help_mode = True
+        QApplication.instance().setOverrideCursor(QCursor(Qt.WhatsThisCursor))
+
+
+    def show_context_help(self, widget):
+        """
+        Open the manual in a browser and jump to the appropriate anchor.
+
+        :param QWidget widget: widget about which help was requested
+        :return: nothing
+        """
+
+        if widget in [self.btLoadSequence, self.btSaveSequence,
+                      self.btClearSequence, self.btUpdateMass,
+                      self.teSequence, self.sbDisulfides, self.chPngase]:
+            site = "workflow"
+            anchor = "load-seq"
+        elif widget == self.cbMassSet:
+            site = "workflow"
+            anchor = "mass-sets"
+        elif widget in [self.btLoadMonomers, self.btSaveMonomers,
+                        self.btDefaultMonomers,
+                        self.btInsertRowAboveMonomers,
+                        self.btInsertRowBelowMonomers,
+                        self.btClearMonomers, self.btDeleteRowMonomers,
+                        self.tbMonomers]:
+            site = "workflow"
+            anchor = "mod-list"
+        elif widget in [self.btLoadPolymers, self.btSavePolymers,
+                        self.btDefaultPolymers,
+                        self.btInsertRowAbovePolymers,
+                        self.btInsertRowBelowPolymers,
+                        self.btClearPolymers, self.btDeleteRowPolymers,
+                        self.tbPolymers]:
+            site = "workflow"
+            anchor = "glycan-library"
+        elif widget in [self.btLoadPeaks, self.btSaveSpectrum,
+                        self.btResetZoom, self.btLabelPeaks,
+                        self.spectrum_canvas]:
+            site = "workflow"
+            anchor = "spectrum"
+        elif widget in [self.btModeSelection, self.btModeDelta,
+                        self.chDelta1, self.sbDeltaValue1,
+                        self.sbDeltaTolerance1, self.sbDeltaRepetition1,
+                        self.chDelta2, self.sbDeltaValue2,
+                        self.sbDeltaTolerance2, self.sbDeltaRepetition2,
+                        self.chCombineDelta]:
+            site = "workflow"
+            anchor = "delta-series"
+        elif widget in [self.btFindModifications, self.rbAllPeaks,
+                        self.rbSingleMass, self.sbSingleMass,
+                        self.sbTolerance, self.cbTolerance]:
+            site = "workflow"
+            anchor = "perform-search"
+        elif widget in [self.twResults1, self.stage1Tab]:
+            site = "results"
+            anchor = "stage-1-results"
+        elif widget in [self.twResults1, self.stage2Tab]:
+            site = "results"
+            anchor = "stage-2-results"
+        elif widget in [self.tbStatistics, self.statisticsTab]:
+            site = "results"
+            anchor = "statistics"
+        elif widget == self.btClearFilters:
+            site = "results"
+            anchor = "filter-results"
+        elif widget in [self.btCollapseAll, self.btExpandParents,
+                        self.btExpandAll]:
+            site = "results"
+            anchor = "expand-results"
+        elif widget in [self.btSaveResults, self.btCheckAll,
+                        self.btUncheckAll]:
+            site = "results"
+            anchor = "save-results"
+        else:
+            site = "index"
+            anchor = ""
+
+        # create the URL of the manual including the anchor
+        site += ".html"
+        path = os.path.abspath(os.path.join(docs_dir, "html", site))
+        url = "#".join([pathname2url(path), anchor])
+        webbrowser.open("file:{}".format(url))
 
 
     def show_about(self):
@@ -1594,6 +1723,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         """
         if event.mouseevent.button == 1:
             self.update_selection(event.ind)
+            self.btLoadPeaks.setFocus()
 
 
     def select_peaks_by_span(self, min_mass, max_mass):
