@@ -12,6 +12,7 @@ A tool to find molecular modifications (like glycans) in mass spectra of intact 
 * matplotlib
 * PyQt5
 * xlrd
+* xlsxwriter
 * Sphinx (for creating the documentation)
 * sphinx_rtd_theme (for creating the documentation)
 

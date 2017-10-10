@@ -8,7 +8,7 @@ build_exe_options = {
     "include_files": [
         ("mofi/config", "config"),
         ("mofi/data", "data"),
-        ("docs/_build/html", "docs"),
+        ("mofi/docs", "docs"),
     ]
 }
 

@@ -8,7 +8,7 @@ if "%SPHINXBUILD%" == "" (
 	set SPHINXBUILD=python -msphinx
 )
 set SOURCEDIR=.
-set BUILDDIR=_build
+set BUILDDIR=..\mofi\docs
 set SPHINXPROJ=ModFinder
 
 if "%1" == "" goto help
@@ -27,6 +27,7 @@ if errorlevel 9009 (
 )
 
 %SPHINXBUILD% -M %1 %SOURCEDIR% %BUILDDIR% %SPHINXOPTS%
+robocopy "sample data" "..\mofi\docs\sample data" /e
 goto end
 
 :help

@@ -586,6 +586,10 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             header.setDefaultSectionSize(80)
             header.setHighlightSections(True)
             header.setMinimumSectionSize(0)
+            if (QApplication.style().metaObject()
+                            .className() == "QWindowsVistaStyle"):
+                header.setFixedHeight(50)
+                header._vertical_padding = 8
             tree_widget.setHeader(header)
 
         # statistics table

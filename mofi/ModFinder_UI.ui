@@ -30,6 +30,9 @@
           <property name="title">
            <string>Sequence</string>
           </property>
+          <property name="flat">
+           <bool>true</bool>
+          </property>
           <layout class="QHBoxLayout" name="horizontalLayout_3">
            <property name="leftMargin">
             <number>0</number>

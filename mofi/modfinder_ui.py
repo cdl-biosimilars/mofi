@@ -23,6 +23,7 @@ class Ui_ModFinder(object):
         self.verticalLayout.setSpacing(9)
         self.verticalLayout.setObjectName("verticalLayout")
         self.groupBox = QtWidgets.QGroupBox(self.centralwidget)
+        self.groupBox.setFlat(True)
         self.groupBox.setObjectName("groupBox")
         self.horizontalLayout_3 = QtWidgets.QHBoxLayout(self.groupBox)
         self.horizontalLayout_3.setContentsMargins(0, 6, 0, 0)
