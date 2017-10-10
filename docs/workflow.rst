@@ -263,11 +263,9 @@ The tolerance for acceptable annotations can be given in Da or ppm.
 
 
 
-=====
-Menus
-=====
-
-.. rubric:: File menu
+========
+Settings
+========
 
 .. image:: images/menu_file.png
            :alt: File menu
@@ -276,16 +274,3 @@ Menus
 * *Save settings …* (Ctrl+S) saves the current settings (sequence, list of modifications, glycan library, spectrum) as an XML file.
 * *Load settings …* (Ctrl+O) loads settings from a previously generated XML file.
 * *Quit* (Ctrl+Q) closes ModFinder.
-
-
-.. rubric:: Help menu
-
-.. image:: images/menu_help.png
-           :alt: Help menu
-           :align: center
-
-* *Manual* opens this manual.
-* *What is …* (Shift+F1) enters context help mode. In this mode, clicking on any widget opens the section of the manual that describes this widget.
-* *About* shows a dialog with general information about ModFinder.
-
-You may also press F1 at any time to open the section of the manual that describes the currently active widget.

@@ -29,7 +29,7 @@ After ModFinder has finished the search for modifications, the spectrum gives an
            :align: center
 
 
-The peak colors indicate whether a peak is selected and if MoFi found any annotations.
+The color of each peak indicates whether this peak is selected (lightness) and if MoFi was able to annotate it (hue). Hue derives from the search stage whose results are currently visible. Hence, click on the “Structure” (“Composition”) tab to quickly identify peaks for which MoFi found at least one annotation during structure (composition) search.
 
 .. image:: images/colortable_spectrum.png
            :alt: Spectrum color scheme

@@ -14,6 +14,20 @@ The second search stage, termed the *structure search*, reduces the large number
 
 .. image:: images/main_window.png
 
+
+============
+Getting help
+============
+
+.. image:: images/menu_help.png
+           :alt: Help menu
+           :align: center
+
+ModFinder provides context-sensitive help: You may open the relevant section of this manual by
+
+* pressing F1 while you enter values via the keybord or
+* entering context help mode (*Help → What is …* or Shift+F1) and then clicking on any widget.
+
 .. admonition:: Example
    :class: note
    
