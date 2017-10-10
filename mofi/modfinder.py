@@ -367,6 +367,19 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.setupUi(self)
         QApplication.instance().installEventFilter(self)
 
+        # initialize private members
+        self._current_selection = [0]  # list of currently selected peaks
+        self._disulfide_mass = 0  # mass of the current number of disulfides
+        self._exp_mass_data = None  # peak list (mass + relative abundance)
+        self._in_context_help_mode = False  # True if in context help mode
+        self._known_mods_mass = 0  # mass of known modification
+        self._monomer_hits = None  # results from the monomer search
+        self._path = configure.defaults["path"]  # last selected path
+        self._polymer_hits = None  # results from the polymer search
+        self._protein_mass = 0  # mass of the current Protein object
+        self._results_tree_headers = [[], []]  # results tables headers
+        self._search_statistics = None  # search statistics
+
         # connect signals to slots
         self.acAbout.triggered.connect(self.show_about)
         self.acLoadSettings.triggered.connect(self.load_settings)
@@ -455,6 +468,9 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             lambda: self.update_selection())
         self.sbDisulfides.valueChanged.connect(self.calculate_protein_mass)
 
+        # self.taResults.currentChanged.connect(
+        #     lambda index:
+        #     self.set_save_results_menu(index), self.update_selection())
         self.taResults.currentChanged.connect(self.set_save_results_menu)
 
         self.tbMonomers.cellChanged.connect(self.calculate_mod_mass)
@@ -618,19 +634,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             "Save in long format …",
             lambda: self.save_search_results("stats_long"))
         self.set_save_results_menu(1)
-
-        # private members
-        self._current_selection = [0]  # list of currently selected peaks
-        self._disulfide_mass = 0  # mass of the current number of disulfides
-        self._exp_mass_data = None  # peak list (mass + relative abundance)
-        self._in_context_help_mode = False  # True if in context help mode
-        self._known_mods_mass = 0  # mass of known modification
-        self._monomer_hits = None  # results from the monomer search
-        self._path = configure.defaults["path"]  # last selected path
-        self._polymer_hits = None  # results from the polymer search
-        self._protein_mass = 0  # mass of the current Protein object
-        self._results_tree_headers = [[], []]  # results tables headers
-        self._search_statistics = None  # search statistics
 
 
     # noinspection PyUnusedLocal,PyPep8Naming
@@ -995,7 +998,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
     def set_save_results_menu(self, index):
         """
-        Set the appropriate context menu of the save results button.
+        Set the appropriate context menu of the save results button
+        and initiate recoloring of the peaks.
 
         :param int index: current index of the results tab widget
         :return: nothing
@@ -1005,6 +1009,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self.btSaveResults.setMenu(self.save_results_menu["table"])
         else:
             self.btSaveResults.setMenu(self.save_results_menu["tree"])
+        self.update_selection()
 
 
     def choose_tolerance_units(self):
@@ -1994,16 +1999,20 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         """
 
         peaks_with_result = np.full(self._exp_mass_data.shape[0], 4, dtype=int)
-        try:
-            peaks_with_result[self._polymer_hits
-                                  .swaplevel(0, 1)
-                                  .loc[-1]
-                                  .index.labels[0]] = 2
-        except KeyError:
-            pass  # results for all peaks found
-        except AttributeError:
+        if self.taResults.currentIndex() == 0:
             try:
                 peaks_with_result[self._monomer_hits
+                                      .swaplevel(0, 1)
+                                      .loc[-1]
+                                      .index.labels[0]] = 2
+            except KeyError:
+                pass  # results for all peaks found
+            except AttributeError:
+                peaks_with_result = np.zeros(
+                    self._exp_mass_data.shape[0], dtype=int)
+        else:
+            try:
+                peaks_with_result[self._polymer_hits
                                       .swaplevel(0, 1)
                                       .loc[-1]
                                       .index.labels[0]] = 2
