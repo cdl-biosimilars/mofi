@@ -4,7 +4,7 @@
 # You can set these variables from the command line.
 SPHINXOPTS    =
 SPHINXBUILD   = python3 -msphinx
-SPHINXPROJ    = ModFinder
+SPHINXPROJ    = MoFi
 SOURCEDIR     = .
 BUILDDIR      = ../mofi/docs
 

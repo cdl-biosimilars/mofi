@@ -2,9 +2,9 @@
 Licenses
 ************
 
-=========
-ModFinder
-=========
+====
+MoFi
+====
 
 !!! License pending !!!
 !!! A 3-clause BSD would look like:!!!

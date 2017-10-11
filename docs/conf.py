@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
-# ModFinder documentation build configuration file, created by
+# MoFi documentation build configuration file, created by
 # sphinx-quickstart on Thu Aug 24 09:20:42 2017.
 #
 # This file is execfile()d with the current directory set to its
@@ -46,8 +46,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = 'ModFinder'
-copyright = '2017 Christian Doppler Laboratory for Innovative Tools for Biosimilar Characterization. License not yet chosen'
+project = 'MoFi'
+copyright = '2017 Christian Doppler Laboratory for Innovative Tools for Biosimilar Characterization. License pending.'
 author = 'Wolfgang Skala'
 date = '05.10.2017'
 
@@ -116,7 +116,7 @@ html_sidebars = {
 # -- Options for HTMLHelp output ------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'ModFinderdoc'
+htmlhelp_basename = 'MoFi_doc'
 
 
 # -- Options for LaTeX output ---------------------------------------------
@@ -143,7 +143,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'ModFinder.tex', 'ModFinder Documentation',
+    (master_doc, 'MoFi.tex', 'MoFi Documentation',
      'Wolfgang Skala', 'manual'),
 ]
 
@@ -153,7 +153,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'modfinder', 'ModFinder Documentation',
+    (master_doc, 'mofi', 'MoFi Documentation',
      [author], 1)
 ]
 
@@ -164,8 +164,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'ModFinder', 'ModFinder Documentation',
-     author, 'ModFinder', 'One line description of project.',
+    (master_doc, 'MoFi', 'MoFi Documentation',
+     author, 'MoFi', 'One line description of project.',
      'Miscellaneous'),
 ]
 

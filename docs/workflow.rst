@@ -30,7 +30,7 @@
 Workflow
 ********
 
-The layout of ModFinder's main window encourages the following workflow:
+The layout of MoFi's main window encourages the following workflow:
 
 1. Load a *sequence* in FASTA format.
 2. Specify a list of *modifications* for the composition search.
@@ -62,14 +62,14 @@ Specify whether the protein was treated with PNGase F. The asparagine residue in
 
 .. _mass-sets:
 
-You can select different mass sets in the combobox below the protein sequence. ModFinder includes the following mass sets (see entries in file ``config/mass_sets.ini``):
+You can select different mass sets in the combobox below the protein sequence. MoFi includes the following mass sets (see entries in file ``config/mass_sets.ini``):
 
 * Average IUPAC masses (data from Meija, J. *et al.* Atomic weights of the elements 2013 (IUPAC Technical Report). *Pure Appl. Chem.* **88**\ (3), 265–291 (2016))
 * Average masses for organic sources (data from Zhang, Z. *et al.* Mass spectrometry for structural characterization of therapeutic proteins. *Mass Spec. Rev.* **28**, 147–176 (2009))
 * Average masses as used in *Thermo Fisher BioPharma Finder*
 * Monoisotopic masses (data from Wang, M. *et al.* The Ame2012 atomic mass evaluation. (II). Tables, graphs and references. *Chin. Phys. C* **36**\ (12), 1603–2014 (2012))
 
-ModFinder uses the selected atomic masses for calculating the mass of the protein, the mass of known modifications, and the total mass. These masses always appear in the left corner of the status bar.
+MoFi uses the selected atomic masses for calculating the mass of the protein, the mass of known modifications, and the total mass. These masses always appear in the left corner of the status bar.
 
 .. image:: images/statusbar.png
            :alt: Masses in status bar
@@ -135,7 +135,7 @@ Manipulate the table via the buttons next to it:
 (3) Specify a glycan library for the structure search
 =====================================================
 
-Load a glycan library from a CSV or Excel file via |bt_load| *Load glycans*. ModFinder accepts Excel files with two different kinds of contents:
+Load a glycan library from a CSV or Excel file via |bt_load| *Load glycans*. MoFi accepts Excel files with two different kinds of contents:
 
 * A *plain* Excel file (and also a CSV file) must contain at least two columns labeled "Name" and "Composition". The remaining columns are optional; if missing, MoFi assumes the following default values: "Checked" (True), "Sites" (empty), and "Abundance" (0.0).
 * An Excel file as exported from *Thermo Fisher BioPharma Finder* must contain a column labeled "Modification", from which MoFi calculates the name, the composition and the site of each glycan. Columns "Checked" and "Abundance" are optional (as above).
@@ -168,7 +168,7 @@ Manipulate the table via the buttons next to it:
    
    Load the glycan library from ``sample data/3_glycan_library.csv`` by clicking on |bt_load| *Load glycans* next to the table of glycans. Note that MoFi also accepts unglycosylated sites (here, the structure 'no_glycan'). We arbitrarily named the glycosylation sites 'ch_A' and 'ch_B', but any other name will also work.
 
-   Alternatively, load the glycan library in ``sample data/3_glycan_library_BPF.xls``. This file contains the results of a peptide mapping analysis in Thermo BioPharma Finder and was directly exported from this program. ModFinder automatically extracts the name of the glycoslation site (here, 'N300') and the glycan composition from the column 'Modification' in the XLS file. (For instance, the abbreviation 'A2S1G1F' denotes a glycan comprising 5 Hex, 4 HexNAc, 1 Neu5Ac and 1 Fuc. Refer to the BioPharma Finder manual for an explanation of these abbreviations.)
+   Alternatively, load the glycan library in ``sample data/3_glycan_library_BPF.xls``. This file contains the results of a peptide mapping analysis in Thermo BioPharma Finder and was directly exported from this program. MoFi automatically extracts the name of the glycoslation site (here, 'N300') and the glycan composition from the column 'Modification' in the XLS file. (For instance, the abbreviation 'A2S1G1F' denotes a glycan comprising 5 Hex, 4 HexNAc, 1 Neu5Ac and 1 Fuc. Refer to the BioPharma Finder manual for an explanation of these abbreviations.)
 
    NB: Since each heavy chain harbors a glycosylation site at N300, you have to change the values in column 'Site' of the table of glycans to 'ch_A, ch_B' or similar.
 
@@ -273,4 +273,4 @@ Settings
 
 * *Save settings …* (Ctrl+S) saves the current settings (sequence, list of modifications, glycan library, spectrum) as an XML file.
 * *Load settings …* (Ctrl+O) loads settings from a previously generated XML file.
-* *Quit* (Ctrl+Q) closes ModFinder.
+* *Quit* (Ctrl+Q) closes MoFi.

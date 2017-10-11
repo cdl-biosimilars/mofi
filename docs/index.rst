@@ -1,6 +1,6 @@
-=======================================================================
-ModFinder -- A software for the annotation of glycoprotein mass spectra
-=======================================================================
+******************************************************************
+MoFi -- A software for the annotation of glycoprotein mass spectra
+******************************************************************
 
 .. toctree::
    :maxdepth: 2
@@ -14,8 +14,9 @@ ModFinder -- A software for the annotation of glycoprotein mass spectra
    license
 
 
+==================
 Indices and tables
-------------------
+==================
 
 * :ref:`genindex`
 * :ref:`modindex`

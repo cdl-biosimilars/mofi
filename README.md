@@ -1,6 +1,6 @@
-# ModFinder
+# MoFi
 
-A tool to find molecular modifications (like glycans) in mass spectra of intact proteins.
+A software for the annotation of glycoprotein mass spectra.
 
 
 
@@ -30,7 +30,7 @@ For freezing:
 
 ## Installation
 
-You may either run ModFinder directly from source or execute the frozen version from a stand-alone distribution.
+You may either run MoFi directly from source or execute the frozen version from a stand-alone distribution.
 
 
 ### Running in source (Unix/Windows)
@@ -38,7 +38,7 @@ You may either run ModFinder directly from source or execute the frozen version 
 * Run `python3 setup.py build` to create the `findmods` library
 * Copy the library (`findmods[...].so` on Unix, `findmods[...].pyd` on Windows) from `build/lib[...]/mofi/` to `mofi/`
 * Run `make html` (Unix) or `make.bat html` (Windows) in the `docs/` directory to create the documentation
-* Start ModFinder via `run.py`
+* Start MoFi via `run.py`
 
 
 
@@ -46,7 +46,7 @@ You may either run ModFinder directly from source or execute the frozen version 
 ### Running from frozen distribution
 
 * Extract the contents of the archive
-* Start ModFinder by executing `ModFinder` (on Windows) or `run` (on Unix).
+* Start MoFi by executing `MoFi` (on Windows) or `run` (on Unix).
 
 
 
@@ -62,14 +62,14 @@ You may either run ModFinder directly from source or execute the frozen version 
 #### Windows)
 
 * Run `./package.sh`
-* The folder `build/mofi-windows/` is now a self-contained ModFinder installation, which can be compressed (if desired) and distributed.
-* Start the program by double-clicking `ModFinder`.
+* The folder `build/mofi-windows/` is now a self-contained MoFi installation, which can be compressed (if desired) and distributed.
+* Start the program by double-clicking `MoFi`.
 
 
 #### Unix
 
 * Run `pyinstaller run.spec`
-* The folder `dist/run/` is now a self-contained ModFinder installation, which can be compressed (if desired) and distributed.
+* The folder `dist/run/` is now a self-contained MoFi installation, which can be compressed (if desired) and distributed.
 * Start the program by double-clicking `run`.
 
 

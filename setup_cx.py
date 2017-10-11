@@ -20,7 +20,7 @@ else:
 setup(
     name="mofi",
     version="1.0",
-    description="finds modifications",
+    description="a software for the annotation of glycoprotein mass spectra",
     options={"build_exe": build_exe_options},
     executables=[Executable("run.py", base=base)]
 )

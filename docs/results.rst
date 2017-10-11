@@ -22,7 +22,7 @@ Results
 Spectrum
 ========
 
-After ModFinder has finished the search for modifications, the spectrum gives an overview of the search results:
+After MoFi has finished the search for modifications, the spectrum gives an overview of the search results:
 
 .. image:: images/results_spectrum.png
            :alt: Spectrum after combinatorial search
