@@ -369,14 +369,14 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         # initialize private members
         self._current_selection = [0]  # list of currently selected peaks
-        self._disulfide_mass = 0  # mass of the current number of disulfides
         self._exp_mass_data = None  # peak list (mass + relative abundance)
         self._in_context_help_mode = False  # True if in context help mode
+        self._known_mods_formula = None  # formula of known modifications
         self._known_mods_mass = 0  # mass of known modification
         self._monomer_hits = None  # results from the monomer search
         self._path = configure.defaults["path"]  # last selected path
         self._polymer_hits = None  # results from the polymer search
-        self._protein_mass = 0  # mass of the current Protein object
+        self._protein_formula = mass_tools.Formula()  # f. of the sequence
         self._results_tree_headers = [[], []]  # results tables headers
         self._search_statistics = None  # search statistics
 
@@ -466,11 +466,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             lambda: self.update_selection())
         self.sbDeltaValue2.valueChanged.connect(
             lambda: self.update_selection())
-        self.sbDisulfides.valueChanged.connect(self.calculate_protein_mass)
+        self.sbDisulfides.valueChanged.connect(self.calculate_mod_mass)
 
-        # self.taResults.currentChanged.connect(
-        #     lambda index:
-        #     self.set_save_results_menu(index), self.update_selection())
         self.taResults.currentChanged.connect(self.set_save_results_menu)
 
         self.tbMonomers.cellChanged.connect(self.calculate_mod_mass)
@@ -858,7 +855,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         table_clear(table_widget)
         for row_id, data in df.iterrows():
             table_widget.create_row(row_id, *[data[c[0]] for c in cols])
-        self.calculate_mod_mass()
 
 
     def load_table(self, default=False, subdir=None, dialog_title=None,
@@ -893,6 +889,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             if "Modification" in df.columns:
                 df = io_tools.read_bpf_library(df)
         self.table_from_df(df, table_widget, cols)
+        self.calculate_mod_mass()
 
 
     def enter_context_help_mode(self):
@@ -1301,8 +1298,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
     def calculate_protein_mass(self):
         """
         Calculates the mass of the protein from the current data.
-        Changes :attr:`~MainWindow._protein_mass`
-        and :attr:`~MainWindow._disulfide_mass`.
+        Changes :attr:`~MainWindow._protein_formula`.
 
         :return: nothing
         """
@@ -1310,10 +1306,10 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         chains, sequence = sequence_tools.read_fasta_string(
             self.teSequence.toPlainText())
         try:
-            protein = sequence_tools.Protein(sequence,
-                                             chains,
-                                             self.sbDisulfides.value(),
-                                             self.chPngase.isChecked())
+            protein = sequence_tools.Protein(
+                sequence,
+                chains=chains,
+                pngasef=self.chPngase.isChecked())
         except KeyError as e:
             QMessageBox.critical(
                 self,
@@ -1324,14 +1320,11 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         self.sbDisulfides.setEnabled(True)
         self.chPngase.setEnabled(True)
-        self.sbDisulfides.setMaximum(
-            protein.amino_acid_composition["C"] / 2)
+        self.sbDisulfides.setMaximum(protein.amino_acid_composition["C"] / 2)
         self.teSequence.setStyleSheet(
             "QTextEdit {{ background-color: {} }}"
             .format(configure.colors["widgets"]["bg_ok"]))
-        self._protein_mass = protein.mass_without_disulfides
-        self._disulfide_mass = (mass_tools.Formula("H-2").mass
-                                * self.sbDisulfides.value())
+        self._protein_formula = protein.formula
         self.update_mass_in_statusbar()
 
 
@@ -1339,15 +1332,17 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         """
         Calculate the mass of known modifications.
 
-        Changes :attr:`~MainWindow._known_mods_mass` to
-        the mass of known modifications.
+        Changes :attr:`~MainWindow._known_mods_mass`
+        and, if possible, :attr:`~MainWindow._known_mods_formula`.
 
         :return: list of (checked, name, composition,
                           mass, min count, max count) tuples
         :rtype: list(tuple(bool, str, str, float, int, int))
         """
 
-        self._known_mods_mass = 0
+        total_mass = 0
+        total_formula = mass_tools.Formula()
+        only_formulas = True
         result = []
 
         # add min counts for monomers to the theoretical mass
@@ -1358,19 +1353,21 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             composition = self.tbMonomers.item(row_id, 2).text().strip()
             min_count = self.tbMonomers.cellWidget(row_id, 3).value()
             max_count = self.tbMonomers.cellWidget(row_id, 4).value()
+            formula = mass_tools.Formula()
             mass = 0
+            is_formula = True
 
             # get the mass from the formula cell
             error_in_formula = False
-            try:  # composition could be a mass ...
-                mass = float(composition)
-            except ValueError:  # ... or a formula
-                try:
-                    formula = mass_tools.Formula(composition)
+            try:  # composition could be a formula ...
+                formula = mass_tools.Formula(composition)
+                mass = formula.mass
+            except ValueError:
+                try:  # ... or a mass in Da
+                    mass = float(composition)
+                    is_formula = False
                 except ValueError:
                     error_in_formula = True
-                else:
-                    mass = formula.mass
 
             # set the mass tooltip and color the cell
             if error_in_formula or mass == 0:
@@ -1390,10 +1387,23 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self.tbMonomers.cellWidget(row_id, 3).setStyleSheet(style)
 
             if ch.isChecked():
-                self._known_mods_mass += mass * min_count
+                total_mass += mass * min_count
+                total_formula += formula * min_count
+                if not is_formula:
+                    only_formulas = False
             result.append((ch.isChecked(), name, composition, mass,
                            min_count, max_count))
 
+        # include disulfides
+        ss_hydrogens = mass_tools.Formula("H2") * self.sbDisulfides.value()
+        total_mass -= ss_hydrogens.mass
+        total_formula -= ss_hydrogens
+
+        self._known_mods_mass = total_mass
+        if only_formulas:
+            self._known_mods_formula = total_formula
+        else:
+            self._known_mods_formula = mass_tools.Formula()
         self.update_mass_in_statusbar()
         return result
 
@@ -1405,14 +1415,38 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         :return: nothing
         """
 
-        protein_mass = "<b>Protein:</b> {:.2f} Da".format(
-            self._protein_mass)
-        mod_mass = "<b>known modifications:</b> {:.2f} Da".format(
-            self._known_mods_mass + self._disulfide_mass)
-        total_mass = "<b>total:</b> {:.2f} Da".format(
-            self._protein_mass + self._disulfide_mass + self._known_mods_mass)
+        # (1) protein mass and formula
+        if self._protein_formula:
+            protein_formula = self._protein_formula
+        else:
+            protein_formula = "N/A"
+        protein_mass = ("<b>Protein:</b> {:.2f} Da "
+                        "<font color='#808080'>({})</font>"
+                        .format(
+                            self._protein_formula.mass,
+                            protein_formula))
         self.lbProteinMass.setText(protein_mass)
+
+        # (2) known modifications mass and (if available) formula
+        if self._known_mods_formula:
+            known_mods_formula = self._known_mods_formula
+            total_formula = self._protein_formula + self._known_mods_formula
+        else:
+            known_mods_formula = "N/A"
+            total_formula = "N/A"
+        mod_mass = ("<b>known modifications:</b> {:.2f} Da "
+                    "<font color='#808080'>({})</font>"
+                    .format(
+                        self._known_mods_mass,
+                        known_mods_formula))
         self.lbKnownModMass.setText(mod_mass)
+
+        # (3) total mass and (if available) formula
+        total_mass = ("<b>total:</b> {:.2f} Da "
+                      "<font color='#808080'>({})</font>"
+                      .format(
+                          self._protein_formula.mass + self._known_mods_mass,
+                          total_formula))
         self.lbTotalMass.setText(total_mass)
 
 
@@ -1464,8 +1498,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                     for m in self.calculate_mod_mass()
                     if m[0]]
         modifications = []  # list of modifications for search stage 1
-        explained_mass = (self._protein_mass
-                          + self._disulfide_mass
+        explained_mass = (self._protein_formula.mass
                           + self._known_mods_mass)
         unknown_masses = (self._exp_mass_data["avg_mass"]
                           - explained_mass)  # type: pd.DataFrame
@@ -1521,9 +1554,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                     max_count = max(polymer_combs.index.get_level_values(name))
                 else:  # only search stage 1
                     max_count = min(
-                        int((max_tol_mass
-                             - self._protein_mass
-                             - self._disulfide_mass)
+                        int((max_tol_mass - self._protein_formula.mass)
                             / mass),
                         configure.defaults["maxmods"])
             modifications.append((name, mass, max_count - min_count))
@@ -2416,9 +2447,6 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             return
 
         self.teSequence.setText(root.find("sequence").text)
-        disulfides = int(root.find("disulfides").text)
-        self.sbDisulfides.setMaximum(disulfides)
-        self.sbDisulfides.setValue(disulfides)
         self.chPngase.setChecked(root.find("pngasef").text == "True")
         self.calculate_protein_mass()
 
@@ -2443,6 +2471,9 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             io_tools.dataframe_from_xml(root.find("polymers")),
             self.tbPolymers,
             _polymer_table_columns)
+        disulfides = int(root.find("disulfides").text)
+        self.sbDisulfides.setMaximum(disulfides)
+        self.sbDisulfides.setValue(disulfides)
         self.calculate_mod_mass()
 
 
