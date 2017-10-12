@@ -13,7 +13,12 @@ config = ConfigParser()
 with open(os.path.join(config_dir, "config.ini")) as f:
     config.read_file(f)
 
-defaults = dict(config.items("defaults"))
+defaults = {
+    "da": config.getfloat("defaults", "da"),
+    "ppm": config.getint("defaults", "ppm"),
+    "maxmods": config.getint("defaults", "maxmods"),
+    "path": config.get("defaults", "path")
+}
 
 colors = {}
 for subsection in ["widgets", "spectrum", "delta", "table"]:
