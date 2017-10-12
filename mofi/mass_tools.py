@@ -100,7 +100,10 @@ class Formula:
 
     .. automethod:: __init__
     .. automethod:: __add__
+    .. automethod:: __sub__
     .. automethod:: __mul__
+    .. automethod:: __rmul__
+    .. automethod:: __bool__
     .. automethod:: __repr__
     """
 
@@ -188,7 +191,21 @@ class Formula:
         :return: the sum of self and other
         :rtype: Formula
         """
-        return Formula(self._composition + other.composition)
+        return Formula(self._composition
+                       .add(other.composition, fill_value=0)
+                       .astype(int))
+
+    def __sub__(self, other):
+        """
+        Subtract two formulas.
+
+        :param Formula other: formula to be subtracted
+        :return: self minus other
+        :rtype: Formula
+        """
+        return Formula(self._composition
+                       .sub(other.composition, fill_value=0)
+                       .astype(int))
 
     def __mul__(self, factor):
         """
@@ -200,6 +217,28 @@ class Formula:
         """
         if type(factor) == int:
             return Formula(self._composition * factor)
+
+
+    def __rmul__(self, factor):
+        """
+        Allow the formula to be the right operand in a multiplication.
+
+        :param int factor: multiplicative factor
+        :return: the multiplied formula
+        :rtype: Formula
+        """
+        return self.__mul__(factor)
+
+    def __bool__(self):
+        """
+        Implement truth value testing.
+
+        :return: True if the formula contains at least one atom;
+                 False otherwise
+        :rtype: bool
+        """
+
+        return bool(self._composition.sum())
 
     def __repr__(self):
         """
@@ -213,6 +252,6 @@ class Formula:
         for element, count in self._composition.items():
             if count == 1:
                 result.append(element)
-            elif count > 1:
+            elif count != 0:
                 result.append("{:s}{:d}".format(element, count))
         return " ".join(result)
