@@ -918,6 +918,10 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         elif widget == self.cbMassSet:
             site = "workflow"
             anchor = "mass-sets"
+        elif widget in [self.statusbar, self.lbProteinMass,
+                        self.lbKnownModMass, self.lbTotalMass]:
+            site = "workflow"
+            anchor = "status-bar"
         elif widget in [self.btLoadMonomers, self.btSaveMonomers,
                         self.btDefaultMonomers,
                         self.btInsertRowAboveMonomers,

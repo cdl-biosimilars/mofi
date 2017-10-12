@@ -69,11 +69,15 @@ You can select different mass sets in the combobox below the protein sequence. M
 * Average masses as used in *Thermo Fisher BioPharma Finder*
 * Monoisotopic masses (data from Wang, M. *et al.* The Ame2012 atomic mass evaluation. (II). Tables, graphs and references. *Chin. Phys. C* **36**\ (12), 1603–2014 (2012))
 
-MoFi uses the selected atomic masses for calculating the mass of the protein, the mass of known modifications, and the total mass. These masses always appear in the left corner of the status bar.
+.. _status-bar:
+
+MoFi uses the selected atomic masses for calculating the mass of the protein, the mass of known modifications, and the total mass. These masses and the respective formulas always appear in the status bar.
 
 .. image:: images/statusbar.png
            :alt: Masses in status bar
            :align: center
+
+“N/A” denotes formulas which MoFi could not calculate. This happens, for instance, if you enter the mass of a modification instead of its formula.
 
 Click |bt_save| *Save sequence* to save the contents of the sequence editor, |bt_clear| *Clear sequence* to clear its contents, and |bt_update| *Update masses* to update the masses in the status bar.
 
