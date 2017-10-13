@@ -133,7 +133,9 @@ def find_monomers(mods, unexplained_masses, mass_tolerance=5.0,
                              drop=True, inplace=True)
     # (a) "Isobar" should be a zero-based consecutive (integer) numbering
     #     except for unannotated peaks, where it should be -1
-    isodict = {v: i for i, v in enumerate(combinations["Theo_Mass"].unique())}
+    isodict = {
+        v: i
+        for i, v in enumerate(np.sort(combinations["Theo_Mass"].unique()))}
     combinations["Isobar"] = combinations["Theo_Mass"].map(isodict)
     if isodict.get(0.0) is not None:
         combinations["Isobar"] -= 1
