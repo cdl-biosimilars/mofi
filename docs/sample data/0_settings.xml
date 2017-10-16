@@ -11,6 +11,7 @@ EVQLVESGGGLVQPGGSLRLSCAASGFNIKDTYIHWVRQAPGKGLEWVARIYPTNGYTRYADSVKGRFTISADTSKNTAY
 </sequence>
   <disulfides>16</disulfides>
   <pngasef>False</pngasef>
+  <mass-set>Average (IUPAC)</mass-set>
   <tolerance-value>5.0</tolerance-value>
   <tolerance-flavor>0</tolerance-flavor>
   <masslist>

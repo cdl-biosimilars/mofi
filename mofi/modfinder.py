@@ -2404,6 +2404,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         settings = [("sequence", self.teSequence.toPlainText()),
                     ("disulfides", self.sbDisulfides.value()),
                     ("pngasef", self.chPngase.isChecked()),
+                    ("mass-set", self.cbMassSet.currentText()),
                     ("tolerance-value", self.sbTolerance.value()),
                     ("tolerance-flavor", self.cbTolerance.currentIndex())]
         for child, text in settings:
@@ -2452,6 +2453,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         self.teSequence.setText(root.find("sequence").text)
         self.chPngase.setChecked(root.find("pngasef").text == "True")
+        self.cbMassSet.setCurrentText(root.find("mass-set").text)
         self.calculate_protein_mass()
 
         self._monomer_hits = None
