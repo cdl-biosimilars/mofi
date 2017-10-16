@@ -1168,14 +1168,21 @@ class MainWindow(QMainWindow, Ui_ModFinder):
              "{:.2f} {}".format(self.sbTolerance.value(),
                                 self.cbTolerance.currentText()))]
 
-        out_composition = [("name", "mass", "min_count", "max_count")]
-        for (is_checked, name, _, mass,
+        out_mass_set = [("atom", "atomic weight")]
+        for (atom, weight) in configure.current_mass_set.items():
+            if atom != "description":
+                out_mass_set.append((atom, str(weight)))
+
+        out_composition = [("name", "formula", "mass",
+                            "min_count", "max_count")]
+        for (is_checked, name, formula, mass,
              min_count, max_count) in self.calculate_mod_mass():
             if is_checked:
                 if max_count == -1:
                     max_count = "inf"
                 out_composition.append((name,
-                                        "{:.2f} Da".format(mass),
+                                        formula,
+                                        "{:.2f}".format(mass),
                                         str(min_count),
                                         str(max_count)))
 
@@ -1255,6 +1262,12 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                     f.write("# ")
                     f.write("\n# ".join(out_general))
 
+                    f.write("\n# Mass set: ")
+                    f.write(self.cbMassSet.currentText())
+                    f.write("\n#   ")
+                    out_mass_set = ["; ".join(i) for i in out_mass_set]
+                    f.write("\n#   ".join(out_mass_set))
+
                     f.write("\n# Composition:\n#   ")
                     out_composition = ["; ".join(i) for i in out_composition]
                     f.write("\n#   ".join(out_composition))
@@ -1270,6 +1283,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                     df.to_excel(f, sheet_name="MoFi results", index=False)
 
                     for sheet, source in [("Parameters", out_general),
+                                          ("Mass set", out_mass_set),
                                           ("Composition", out_composition),
                                           ("Structures", out_structures)]:
                         worksheet = f.book.add_worksheet(sheet)
