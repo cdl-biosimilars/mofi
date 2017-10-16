@@ -2384,12 +2384,11 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                               (6, "stage2_uniques")]:
             try:
                 item = SortableTableWidgetItem(str(row[label]))
-                item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
-                item.setFlags(Qt.ItemIsEnabled)
-                self.tbStatistics.setItem(row_id, col_id, item)
             except KeyError:
-                pass
-
+                item = SortableTableWidgetItem("")
+            item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
+            item.setFlags(Qt.ItemIsEnabled)
+            self.tbStatistics.setItem(row_id, col_id, item)
 
 
     def clear_filters(self):
