@@ -493,6 +493,9 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 Qt.ToolTipRole)
         self.cbMassSet.currentTextChanged.connect(self.choose_mass_set)
 
+        # spinbox with upper limit for each modification
+        self.sbMaxMods.setValue(configure.defaults["maxmods"])
+
         # status bar: (1) progress bar
         sb_widget = QWidget(self)
         sb_layout = QHBoxLayout(sb_widget)
@@ -1574,7 +1577,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                     max_count = min(
                         int((max_tol_mass - self._protein_formula.mass)
                             / mass),
-                        configure.defaults["maxmods"])
+                        self.sbMaxMods.value())
             modifications.append((name, mass, max_count - min_count))
 
         if not modifications:
