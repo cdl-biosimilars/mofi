@@ -582,7 +582,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         # delta series symbols
         for cb, start_id in [(self.cbDeltaSymbol1, 3),
-                             (self.cbDeltaSymbol2, 1)]:
+                             (self.cbDeltaSymbol2, 0)]:
             cb.blockSignals(True)
             cb.addItem("off")
             cb.setItemData(0, "series disabled", Qt.ToolTipRole)
