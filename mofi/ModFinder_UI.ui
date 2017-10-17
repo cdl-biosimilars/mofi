@@ -805,13 +805,20 @@
          <item row="12" column="0">
           <layout class="QHBoxLayout" name="horizontalLayout_13">
            <item>
+            <widget class="QCheckBox" name="chIndexDelta">
+             <property name="text">
+              <string>Index</string>
+             </property>
+            </widget>
+           </item>
+           <item>
             <spacer name="horizontalSpacer_7">
              <property name="orientation">
               <enum>Qt::Horizontal</enum>
              </property>
              <property name="sizeHint" stdset="0">
               <size>
-               <width>40</width>
+               <width>5</width>
                <height>20</height>
               </size>
              </property>
@@ -843,6 +850,9 @@
                <height>20</height>
               </size>
              </property>
+             <property name="decimals">
+              <number>1</number>
+             </property>
              <property name="minimum">
               <double>0.100000000000000</double>
              </property>
@@ -861,6 +871,9 @@
                <width>75</width>
                <height>20</height>
               </size>
+             </property>
+             <property name="decimals">
+              <number>1</number>
              </property>
              <property name="minimum">
               <double>0.100000000000000</double>
@@ -895,11 +908,14 @@
                <height>20</height>
               </size>
              </property>
+             <property name="decimals">
+              <number>1</number>
+             </property>
              <property name="minimum">
               <double>1.000000000000000</double>
              </property>
              <property name="maximum">
-              <double>999.990000000000009</double>
+              <double>1000.000000000000000</double>
              </property>
              <property name="singleStep">
               <double>0.100000000000000</double>
@@ -917,17 +933,20 @@
                <height>20</height>
               </size>
              </property>
+             <property name="decimals">
+              <number>1</number>
+             </property>
              <property name="minimum">
               <double>1.000000000000000</double>
              </property>
              <property name="maximum">
-              <double>999.990000000000009</double>
+              <double>1000.000000000000000</double>
              </property>
              <property name="singleStep">
               <double>0.100000000000000</double>
              </property>
              <property name="value">
-              <double>162.139999999999986</double>
+              <double>162.099999999999994</double>
              </property>
             </widget>
            </item>
@@ -1016,17 +1035,23 @@
             </spacer>
            </item>
            <item>
-            <widget class="QCheckBox" name="chDelta1">
-             <property name="text">
-              <string>1</string>
+            <widget class="QComboBox" name="cbDeltaSymbol1">
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>0</height>
+              </size>
              </property>
-             <property name="checked">
-              <bool>true</bool>
+             <property name="iconSize">
+              <size>
+               <width>20</width>
+               <height>20</height>
+              </size>
              </property>
             </widget>
            </item>
            <item>
-            <spacer name="horizontalSpacer_4">
+            <spacer name="horizontalSpacer_2">
              <property name="orientation">
               <enum>Qt::Horizontal</enum>
              </property>
@@ -1039,14 +1064,17 @@
             </spacer>
            </item>
            <item>
-            <widget class="QCheckBox" name="chDelta2">
-             <property name="text">
-              <string>2</string>
+            <widget class="QComboBox" name="cbDeltaSymbol2">
+             <property name="iconSize">
+              <size>
+               <width>20</width>
+               <height>20</height>
+              </size>
              </property>
             </widget>
            </item>
            <item>
-            <spacer name="horizontalSpacer_6">
+            <spacer name="horizontalSpacer_4">
              <property name="orientation">
               <enum>Qt::Horizontal</enum>
              </property>
@@ -1897,11 +1925,9 @@ QPushButton:pressed {
   <tabstop>btDeleteRowPolymers</tabstop>
   <tabstop>btClearPolymers</tabstop>
   <tabstop>tbPolymers</tabstop>
-  <tabstop>chDelta1</tabstop>
   <tabstop>sbDeltaValue1</tabstop>
   <tabstop>sbDeltaTolerance1</tabstop>
   <tabstop>sbDeltaRepetition1</tabstop>
-  <tabstop>chDelta2</tabstop>
   <tabstop>sbDeltaValue2</tabstop>
   <tabstop>sbDeltaTolerance2</tabstop>
   <tabstop>sbDeltaRepetition2</tabstop>

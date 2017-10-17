@@ -16,13 +16,15 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QMenu,
                              QHeaderView, QButtonGroup,
                              QSpinBox, QDoubleSpinBox, QWidget, QHBoxLayout,
                              QProgressBar, QLabel, QSizePolicy)
-from PyQt5.QtGui import QColor, QCursor
+from PyQt5.QtGui import QColor, QCursor, QIcon, QPixmap
 from PyQt5.QtCore import Qt, QLocale, QEvent
 
 import numpy as np
 import pandas as pd
 
 import matplotlib
+import matplotlib.collections
+import matplotlib.markers
 import matplotlib.text
 from matplotlib.backends.backend_qt5agg import FigureCanvas
 from matplotlib.widgets import SpanSelector
@@ -67,7 +69,34 @@ _polymer_table_columns = [
 # sorting key for column 1 of the results trees
 _default_col_key = {1: lambda x: [int(i) for i in x.split("-")]}
 
-
+# matplotlib markers used in the spectrum
+_delta_symbols = pd.DataFrame.from_records([
+    ("off", ""),
+    ("Point", "."),
+    ("Circle", "o"),
+    ("TriangleDown", "v"),
+    ("TriangleUp", "^"),
+    ("TriangleLeft", "<"),
+    ("TriangleRight", ">"),
+    ("TriDown", "1"),
+    ("TriUp", "2"),
+    ("TriLeft", "3"),
+    ("TriRight", "4"),
+    ("Octagon", "8"),
+    ("Square", "s"),
+    ("Pentagon", "p"),
+    ("PlusFilled", "P"),
+    ("Star", "*"),
+    ("Hexagon1", "h"),
+    ("Hexagon2", "H"),
+    ("Plus", "+"),
+    ("Cross", "x"),
+    ("CrossFilled", "X"),
+    ("Diamond", "D"),
+    ("ThinDiamond", "d"),
+    ("VLine", "|"),
+    ("HLine", "_")
+], columns=["name", "marker"])
 
 def find_in_intervals(value, intervals):
     """
@@ -447,11 +476,14 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             lambda: self.check_results_tree(check=False))
         self.btUpdateMass.clicked.connect(self.calculate_protein_mass)
 
+        self.cbDeltaSymbol1.currentIndexChanged.connect(
+            self.toggle_delta_series)
+        self.cbDeltaSymbol2.currentIndexChanged.connect(
+            self.toggle_delta_series)
         self.cbTolerance.activated.connect(self.choose_tolerance_units)
 
         self.chCombineDelta.clicked.connect(lambda: self.update_selection())
-        self.chDelta1.clicked.connect(self.toggle_delta_series)
-        self.chDelta2.clicked.connect(self.toggle_delta_series)
+        self.chIndexDelta.clicked.connect(lambda: self.update_selection())
         self.chPngase.clicked.connect(self.calculate_protein_mass)
 
         self.sbDeltaRepetition1.valueChanged.connect(
@@ -547,6 +579,19 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.bgSpectrum.addButton(self.btModeSelection)
         # noinspection PyUnresolvedReferences
         self.bgSpectrum.buttonClicked.connect(self.toggle_spectrum_mode)
+
+        # delta series symbols
+        for cb, start_id in [(self.cbDeltaSymbol1, 3),
+                             (self.cbDeltaSymbol2, 1)]:
+            cb.blockSignals(True)
+            cb.addItem("off")
+            cb.setItemData(0, "series disabled", Qt.ToolTipRole)
+            for i, symb in _delta_symbols["name"][1:].iteritems():
+                resource = ":/mofi resource/images/Symbol-{}.png".format(symb)
+                cb.addItem(QIcon(QPixmap(resource)), "")
+                cb.setItemData(i, symb, Qt.ToolTipRole)
+            cb.setCurrentIndex(start_id)
+            cb.blockSignals(False)
 
         # monomer table and associated buttons
         self.tbMonomers.horizontalHeader().setSectionResizeMode(
@@ -947,11 +992,11 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             site = "workflow"
             anchor = "spectrum"
         elif widget in [self.btModeSelection, self.btModeDelta,
-                        self.chDelta1, self.sbDeltaValue1,
+                        self.cbDeltaSymbol1, self.sbDeltaValue1,
                         self.sbDeltaTolerance1, self.sbDeltaRepetition1,
-                        self.chDelta2, self.sbDeltaValue2,
+                        self.cbDeltaSymbol2, self.sbDeltaValue2,
                         self.sbDeltaTolerance2, self.sbDeltaRepetition2,
-                        self.chCombineDelta]:
+                        self.chCombineDelta, self.chIndexDelta]:
             site = "workflow"
             anchor = "delta-series"
         elif widget in [self.btFindModifications, self.rbAllPeaks,
@@ -1658,12 +1703,13 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             linewidth=1.5,
             color=configure.colors["spectrum"]["unselected"],
             picker=5)
-        self.spectrum_axes.set_ylim(0, 110)
+        self.spectrum_axes.set_ylim(0, 115)
         self.spectrum_axes.set_xlabel("Mass (Da)")
         self.spectrum_axes.set_ylabel("Relative Abundance (%)")
         self.spectrum_axes.yaxis.set_ticks_position("left")
         self.spectrum_axes.xaxis.set_ticks_position("bottom")
         self.spectrum_axes.tick_params(direction="out")
+        self.spectrum_axes.autoscale(enable=False)
         self.spectrum_x_limits = self.spectrum_axes.get_xlim()
         self.spectrum_canvas.draw()
 
@@ -1753,12 +1799,12 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         :return: nothing
         """
 
-        for ch, sb_delta, sb_tolerance, sb_repetitions in [
-                (self.chDelta1, self.sbDeltaValue1,
+        for cb, sb_delta, sb_tolerance, sb_repetitions in [
+                (self.cbDeltaSymbol1, self.sbDeltaValue1,
                  self.sbDeltaTolerance1, self.sbDeltaRepetition1),
-                (self.chDelta2, self.sbDeltaValue2,
+                (self.cbDeltaSymbol2, self.sbDeltaValue2,
                  self.sbDeltaTolerance2, self.sbDeltaRepetition2)]:
-            if ch.isChecked():
+            if cb.currentIndex() != 0:
                 sb_delta.setEnabled(True)
                 sb_tolerance.setEnabled(True)
                 sb_repetitions.setEnabled(True)
@@ -1767,7 +1813,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 sb_tolerance.setEnabled(False)
                 sb_repetitions.setEnabled(False)
 
-        if self.chDelta1.isChecked() and self.chDelta2.isChecked():
+        if (self.cbDeltaSymbol1.currentIndex() != 0
+                and self.cbDeltaSymbol2.currentIndex() != 0):
             self.chCombineDelta.setEnabled(True)
         else:
             self.chCombineDelta.setEnabled(False)
@@ -1783,7 +1830,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         :return: nothing
         """
         if event.mouseevent.button == 1:
-            self.update_selection(event.ind)
+            self.update_selection(new_selection=event.ind)
             self.btLoadPeaks.setFocus()
 
 
@@ -1802,7 +1849,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             ].tolist()
 
         if peak_indices:
-            self.update_selection(peak_indices)
+            self.update_selection(new_selection=peak_indices)
 
 
     def update_selection(self, new_selection=None,
@@ -1814,8 +1861,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         :param np.array new_selection: list of indices of selected peaks
         :param SortableTreeWidgetItem clicked_item: item that was clicked
         :param QTreeWidget clicked_tree: results tree whose item was clicked
-        :return: the DataFrame whose contents are shown in the results table
-        :rtype: pd.DataFrame
+        :return: nothing
         """
 
         if self._exp_mass_data is None:  # there's no spectrum
@@ -1848,7 +1894,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         if self.bgSpectrum.checkedButton() == self.btModeSelection:
             self.highlight_selected_peaks(self._current_selection)
         else:
-            self._current_selection = self.highlight_delta_series(central_peak)
+            self.highlight_delta_series(central_peak)
 
         # (2) fill the single mass spin box with the currently selected mass
         try:
@@ -1927,12 +1973,11 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         Highlights a series of peaks that differ by a given mass.
 
         :param int central_peak: index of the central peak
-        :return: list of peak indices in the delta series
-        :rtype: list(int)
+        :return: nothing
         """
 
         if self._exp_mass_data is None:  # there's no spectrum
-            return []
+            return
 
         # a dataframe that shares its index with self._exp_mass_data
         # columns 1 and 2 indicate how many delta masses each peak is away
@@ -1942,7 +1987,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             dtype=str)
 
         # column "1" is straight forward
-        if self.chDelta1.isChecked():
+        if self.cbDeltaSymbol1.currentIndex() != 0:
             df_counts["1"] = self.find_delta_peaks(
                 central_peak,
                 self.sbDeltaValue1.value(),
@@ -1953,8 +1998,9 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         # column "2" has to take into account whether the second delta series
         # should start at each peak of the first one
-        if self.chDelta2.isChecked():
-            if self.chDelta1.isChecked() and self.chCombineDelta.isChecked():
+        if self.cbDeltaSymbol2.currentIndex() != 0:
+            if (self.cbDeltaSymbol1.currentIndex() != 0
+                    and self.chCombineDelta.isChecked()):
                 delta_series = []
                 for peak_id in np.flatnonzero(df_counts["1"]):
                     subseries = self.find_delta_peaks(
@@ -1985,8 +2031,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         # 4 - selected (central) peak
         df_counts["label"] = df_counts.apply(
             lambda x: "/".join(filter(None, x)), axis=1)
-        if (self.chDelta1.isChecked()
-                and self.chDelta2.isChecked()
+        if (self.cbDeltaSymbol1.currentIndex() != 0
+                and self.cbDeltaSymbol2.currentIndex() != 0
                 and self.chCombineDelta.isChecked()):
             # calculate colors for main and sub delta series
             df_counts["color"] = (
@@ -2016,29 +2062,50 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.spectrum_peak_lines.set_color(color_set[df_counts["color"]])
         self.spectrum_peak_lines.set_linewidth(lw_set[df_counts["color"]])
 
-        # annotate the peaks in the delta series
-        for annotation in self.spectrum_axes.findobj(
-                matplotlib.text.Annotation):
-            annotation.remove()
+        # annotate the peaks in the delta series:
+        # remove previous annotations and markers
+        for obj in self.spectrum_axes.findobj(
+            lambda o:
+                isinstance(o, matplotlib.text.Annotation) or
+                isinstance(o, matplotlib.collections.PathCollection)):
+            obj.remove()
 
-        peaks_in_series = list(np.flatnonzero(df_counts["color"]))
-        for peak_id in peaks_in_series:
-            label = df_counts["label"][peak_id]
-            if self.btLabelPeaks.isChecked():
-                label += " ({:.2f})".format(
-                    self._exp_mass_data["avg_mass"][peak_id])
-            self.spectrum_axes.annotate(
-                s=label,
-                xy=(self._exp_mass_data.iloc[peak_id]["avg_mass"],
-                    self._exp_mass_data.iloc[peak_id]["rel_abundance"]),
-                xytext=(0, 5),
-                textcoords="offset pixels",
-                horizontalalignment="center",
-                bbox=dict(facecolor="white", alpha=.75,
-                          linewidth=0, pad=0))
+        # show labels (if "Index" is checked)
+        if self.chIndexDelta.isChecked():
+            for peak_id in list(np.flatnonzero(df_counts["color"])):
+                label = df_counts["label"][peak_id]
+                if self.btLabelPeaks.isChecked():
+                    label += " ({:.2f})".format(
+                        self._exp_mass_data["avg_mass"][peak_id])
+                self.spectrum_axes.annotate(
+                    s=label,
+                    xy=(self._exp_mass_data.iloc[peak_id]["avg_mass"],
+                        self._exp_mass_data.iloc[peak_id]["rel_abundance"]),
+                    xytext=(0, 17),
+                    textcoords="offset pixels",
+                    horizontalalignment="center",
+                    bbox=dict(facecolor="white", alpha=.75,
+                              linewidth=0, pad=0))
+
+        # show markers
+        for peak_type, cb, y_offset in [(1, self.cbDeltaSymbol1, 4),
+                                        (2, self.cbDeltaSymbol2, 4),
+                                        (3, self.cbDeltaSymbol1, 10),
+                                        (3, self.cbDeltaSymbol2, 4),
+                                        (4, self.cbDeltaSymbol1, 4)]:
+            mask = df_counts["color"] == peak_type
+            marker = _delta_symbols["marker"][cb.currentIndex()]
+            if marker in matplotlib.markers.MarkerStyle.filled_markers:
+                facecolors = "none"
+            else:
+                facecolors = color_set[peak_type]
+            self.spectrum_axes.scatter(
+                x=self._exp_mass_data["avg_mass"][mask],
+                y=self._exp_mass_data["rel_abundance"][mask] + y_offset,
+                marker=marker,
+                facecolors=facecolors,
+                edgecolors=color_set[peak_type])
         self.spectrum_canvas.draw()
-
-        return peaks_in_series
 
 
     def highlight_selected_peaks(self, peak_indices):
@@ -2093,10 +2160,14 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.spectrum_peak_lines.set_color(color_set[peak_colors])
         self.spectrum_peak_lines.set_linewidth(lw_set[peak_colors])
 
-        # label the selection by masses
-        for annotation in self.spectrum_axes.findobj(
-                matplotlib.text.Annotation):
-            annotation.remove()
+        # remove previous annotations and markers
+        for obj in self.spectrum_axes.findobj(
+            lambda o:
+                isinstance(o, matplotlib.text.Annotation) or
+                isinstance(o, matplotlib.collections.PathCollection)):
+            obj.remove()
+
+        # label selected peaks with masses
         if self.btLabelPeaks.isChecked():
             for peak_id in peak_indices:
                 self.spectrum_axes.annotate(

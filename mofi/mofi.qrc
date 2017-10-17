@@ -2,6 +2,30 @@
   <qresource prefix="mofi resource">
     <file>../images/UncheckAll.png</file>
     <file>../images/UpdateMass.png</file>
+    <file>../images/Symbol-Circle.png</file>
+    <file>../images/Symbol-Cross.png</file>
+    <file>../images/Symbol-CrossFilled.png</file>
+    <file>../images/Symbol-Diamond.png</file>
+    <file>../images/Symbol-Hexagon1.png</file>
+    <file>../images/Symbol-Hexagon2.png</file>
+    <file>../images/Symbol-HLine.png</file>
+    <file>../images/Symbol-Octagon.png</file>
+    <file>../images/Symbol-Pentagon.png</file>
+    <file>../images/Symbol-Plus.png</file>
+    <file>../images/Symbol-PlusFilled.png</file>
+    <file>../images/Symbol-Point.png</file>
+    <file>../images/Symbol-Square.png</file>
+    <file>../images/Symbol-Star.png</file>
+    <file>../images/Symbol-ThinDiamond.png</file>
+    <file>../images/Symbol-TriangleDown.png</file>
+    <file>../images/Symbol-TriangleLeft.png</file>
+    <file>../images/Symbol-TriangleRight.png</file>
+    <file>../images/Symbol-TriangleUp.png</file>
+    <file>../images/Symbol-TriDown.png</file>
+    <file>../images/Symbol-TriLeft.png</file>
+    <file>../images/Symbol-TriRight.png</file>
+    <file>../images/Symbol-TriUp.png</file>
+    <file>../images/Symbol-VLine.png</file>
     <file>../images/Clear.png</file>
     <file>../images/CheckAll.png</file>
     <file>../images/ClearFilters.png</file>
