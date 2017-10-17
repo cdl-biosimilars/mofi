@@ -718,7 +718,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         max_spinbox = QSpinBox()
         max_spinbox.setMinimum(-1)
-        max_spinbox.setSpecialValueText("inf")
+        max_spinbox.setSpecialValueText("max")
         max_spinbox.setFrame(False)
         max_spinbox.setValue(max_count)
         max_spinbox.setStyleSheet(configure.spin_box_flat_style())
@@ -1182,7 +1182,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
              min_count, max_count) in self.calculate_mod_mass():
             if is_checked:
                 if max_count == -1:
-                    max_count = "inf"
+                    max_count = "max"
                 out_composition.append((name,
                                         formula,
                                         "{:.2f}".format(mass),
