@@ -6,7 +6,7 @@ ModFinder (MoFi) allows you to find modifications in deconvoluted mass spectra o
 
 The first search stage, termed the *composition search*, returns a combination of modifications for each peak. A typical result would be
 
-  The residual mass of 3054.58 Da can be explained by seven hexoses, eight N-acetyl hexosamines, and two fucoses.
+  The residual mass of 3052.93 Da can be explained by the mass of seven hexoses, eight N-acetyl hexosamines, and two fucoses.
 
 The second search stage, termed the *structure search*, reduces the large number of alternative compositions typically found during the first stage by integrating bottom-up MS data in the form of a glycan library. A typical result of this stage would be
 

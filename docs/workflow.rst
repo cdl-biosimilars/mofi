@@ -113,7 +113,7 @@ The table of modifications contains the following columns:
   :Name: Modification names may include any Unicode character.
   :Formula: accepts either molecular formulas (as shown for Hex) or mass values in Da (as shown for DM1 and MCC). If you enter a formula and move the mouse cursor over the cell, a tooltip containing the mass of this formula appears. A molecular formula consists of space-separated ``symbol[count]`` pairs. ``symbol`` is any one- or two-letter atomic symbol whose mass is specified in the current mass set. The optional ``[count]`` is a positive or negative integer. A symbol without count is counted once.
   :Min: the minimum …
-  :Max: … and maximum number of occurrences, respectively. If the maximum count for a modification is *inf* (short for infinite), MoFi calculates it from the glycan library, the mass of the molecule or the value of the parameter ``maxmods`` in file ``config/config.ini``.
+  :Max: … and maximum number of occurrences, respectively. If the maximum count for a modification is *max*, MoFi calculates it from the glycan library, the mass of the molecule, or the value of *Upper limit for each modification* (see :ref:`below <perform-search>`).
 
 Manipulate the table via the buttons next to it:
 
@@ -254,11 +254,11 @@ The following table summarizes the color scheme for delta series:
            :alt: Search parameters
            :align: center
 
-Click onto *Find modifications* to start the composition search, possibly followed by the structure search if you specified a list of glycans in step 3.
+Click onto *Find modifications* to start the composition search, possibly followed by the structure search if you specified a list of glycans in step 3. You may
 
-You may analyze either all peaks in the spectrum or a single mass.
-
-The tolerance for acceptable annotations can be given in Da or ppm.
+* analyze either all peaks in the spectrum or a single mass.
+* set the tolerance for acceptable annotations in Da or ppm.
+* specify an upper limit for each modification to be used in the absence of a glycan library.
 
 .. admonition:: Example
    :class: note
@@ -275,6 +275,6 @@ Settings
            :alt: File menu
            :align: center
 
-* *Save settings …* (Ctrl+S) saves the current settings (sequence, list of modifications, glycan library, spectrum) as an XML file.
+* *Save settings …* (Ctrl+S) saves the current settings (i.e., all parameters which you specified in steps (1) to (5) above) as an XML file.
 * *Load settings …* (Ctrl+O) loads settings from a previously generated XML file.
 * *Quit* (Ctrl+Q) closes MoFi.
