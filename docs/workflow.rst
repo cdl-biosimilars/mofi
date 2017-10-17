@@ -205,13 +205,19 @@ If |bt_select_peaks| *Select peaks* is active, you may interact with the spectru
 
 .. _delta-series:
 
-|bt_select_delta_series| *Select delta series* enters delta series selection mode: Select a single peak to mark it as the main peak (highlighted in red). All peaks that are separated from the main peak by equal distances are highlighted in yellow. The main peak is numbered 0, the other peaks in the series are consecutively numbered 1, 2, … (increasing masses) and –1, –2, … (decreasing masses).
+|bt_select_delta_series| *Select delta series* enters delta series selection mode: Select a single peak to mark it as the main peak (highlighted in red). All peaks that are separated from the main peak by equal distances are highlighted in blue.
 
 .. image:: images/delta_series.png
            :alt: Delta series
            :align: center
  
-You can display up to two delta series simultaneously by checking the boxes *1* and *2* to the right of the spectrum. The peaks in the second series are highlighted in blue. For each series, you may set the following parameters:
+You can display a second delta series by selecting a marker symbol to the right of the spectrum. The peaks in the second series are highlighted in yellow.
+
+.. image:: images/delta_series_2.png
+           :alt: Second delta series
+           :align: center
+
+For each series, you may set the following parameters:
 
 * Mass differences between neighboring peaks
 * Tolerance of the mass differences
@@ -219,6 +225,12 @@ You can display up to two delta series simultaneously by checking the boxes *1* 
 
 .. image:: images/delta_series_parameters.png
            :alt: Delta series parameters
+           :align: center
+
+Select *Index* to display the delta series index above each peak. The main peak is numbered 0, the other peaks in the series are consecutively numbered 1, 2, … (increasing masses) and –1, –2, … (decreasing masses). The selection status of |bt_label_peaks| *Label peaks* determines whether MoFi also displays masses next to the indices (compare the left half of the figure below to its right half).
+
+.. image:: images/delta_series_labels.png
+           :alt: Delta series labels
            :align: center
 
 It is also possible to combine the delta series (check button *Combine*). In this case, the second delta series will start at each peak in the first delta series.

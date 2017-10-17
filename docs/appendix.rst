@@ -20,7 +20,7 @@ General parameters.
     default tolerance value in parts per million (40)
 
   ``maxmods``
-    maximum number of modifications to consider in the composition search (50)
+    maximum number of modifications to consider in the composition search (100)
 
   ``path``
     default path for file dialogs (``docs/sample data``)
