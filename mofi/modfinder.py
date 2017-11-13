@@ -270,9 +270,9 @@ def create_hit_columns(item, hit, monomers, sites):
         # hit properties
         for label, form in [("Hit score", "{:.2f}"),
                             ("Permutations", "{}"),
-                            ("Theo_Mass", "{:.2f}"),
-                            ("Da", "{:.2f}"),
-                            ("ppm", "{:.2f}")]:
+                            ("Theo_Mass", configure.dec_places()),
+                            ("Da", configure.dec_places()),
+                            ("ppm", "{:.0f}")]:
             item.setText(pos, form.format(hit[label]))
             item.setTextAlignment(pos, Qt.AlignRight)
             pos += 1
@@ -288,9 +288,9 @@ def create_hit_columns(item, hit, monomers, sites):
 
     else:  # stage 1 results
         # hit properties
-        for label, form in [("Theo_Mass", "{:.2f}"),
-                            ("Da", "{:.2f}"),
-                            ("ppm", "{:.2f}")]:
+        for label, form in [("Theo_Mass", configure.dec_places()),
+                            ("Da", configure.dec_places()),
+                            ("ppm", "{:.0f}")]:
             item.setText(pos, form.format(getattr(hit, label)))
             item.setTextAlignment(pos, Qt.AlignRight)
             pos += 1
@@ -1213,7 +1213,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             ("Masses",
              ", ".join(list(self._exp_mass_data["avg_mass"].astype(str)))),
             ("Tolerance",
-             "{:.2f} {}".format(self.sbTolerance.value(),
+             "{:.1f} {}".format(self.sbTolerance.value(),
                                 self.cbTolerance.currentText()))]
 
         out_mass_set = [("atom", "atomic weight")]
@@ -1230,7 +1230,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                     max_count = "max"
                 out_composition.append((name,
                                         formula,
-                                        "{:.2f}".format(mass),
+                                        configure.dec_places().format(mass),
                                         str(min_count),
                                         str(max_count)))
 
@@ -1441,7 +1441,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 tooltip = ""
             else:
                 bg_color = QColor(configure.colors["widgets"]["bg_ok"])
-                tooltip = "{:.2f} Da".format(mass)
+                tooltip = configure.dec_places().format(mass) + " Da"
             self.tbMonomers.item(row_id, 2).setBackground(bg_color)
             self.tbMonomers.item(row_id, 2).setToolTip(tooltip)
 
@@ -1486,11 +1486,11 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             protein_formula = self._protein_formula
         else:
             protein_formula = "N/A"
-        protein_mass = ("<b>Protein:</b> {:.2f} Da "
-                        "<font color='#808080'>({})</font>"
-                        .format(
-                            self._protein_formula.mass,
-                            protein_formula))
+        protein_mass = ("<b>Protein:</b> "
+                        + configure.dec_places()
+                        .format(self._protein_formula.mass)
+                        + " Da <font color='#808080'>({})</font>"
+                        .format(protein_formula))
         self.lbProteinMass.setText(protein_mass)
 
         # (2) known modifications mass and (if available) formula
@@ -1500,19 +1500,20 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         else:
             known_mods_formula = "N/A"
             total_formula = "N/A"
-        mod_mass = ("<b>known modifications:</b> {:.2f} Da "
-                    "<font color='#808080'>({})</font>"
-                    .format(
-                        self._known_mods_mass,
-                        known_mods_formula))
+        mod_mass = ("<b>known modifications:</b> "
+                    + configure.dec_places()
+                    .format(self._known_mods_mass)
+                    + " Da <font color='#808080'>({})</font>"
+                    .format(known_mods_formula))
         self.lbKnownModMass.setText(mod_mass)
 
         # (3) total mass and (if available) formula
-        total_mass = ("<b>total:</b> {:.2f} Da "
-                      "<font color='#808080'>({})</font>"
-                      .format(
-                          self._protein_formula.mass + self._known_mods_mass,
-                          total_formula))
+        total_mass = ("<b>total:</b> "
+                      + configure.dec_places()
+                      .format(self._protein_formula.mass
+                              + self._known_mods_mass)
+                      + " Da <font color='#808080'>({})</font>"
+                      .format(total_formula))
         self.lbTotalMass.setText(total_mass)
 
 
@@ -2075,7 +2076,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             for peak_id in list(np.flatnonzero(df_counts["color"])):
                 label = df_counts["label"][peak_id]
                 if self.btLabelPeaks.isChecked():
-                    label += " ({:.2f})".format(
+                    label += " ({})".format(configure.dec_places()).format(
                         self._exp_mass_data["avg_mass"][peak_id])
                 self.spectrum_axes.annotate(
                     s=label,
@@ -2171,8 +2172,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         if self.btLabelPeaks.isChecked():
             for peak_id in peak_indices:
                 self.spectrum_axes.annotate(
-                    s="{:.2f}".format(self._exp_mass_data
-                                      .iloc[peak_id]["avg_mass"]),
+                    s=configure.dec_places().format(
+                        self._exp_mass_data.iloc[peak_id]["avg_mass"]),
                     xy=(self._exp_mass_data
                             .iloc[peak_id]["avg_mass"],
                         self._exp_mass_data
@@ -2224,8 +2225,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             root_item.setText(1, "{}".format(mass_index))
             root_item.setTextAlignment(1, Qt.AlignLeft)
             root_item.setText(
-                2, "{:.2f}".format(self._exp_mass_data
-                                   .loc[mass_index, "avg_mass"]))
+                2, configure.dec_places().format(
+                    self._exp_mass_data.loc[mass_index, "avg_mass"]))
             root_item.setTextAlignment(2, Qt.AlignRight)
             root_item.setText(
                 3, "{:.1f}".format(self._exp_mass_data
@@ -2440,7 +2441,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self.tbStatistics.setItem(row_id, 0, item)
 
         # (2) peak information
-        for col_id, label, form in [(1, "avg_mass", "{:.2f}"),
+        for col_id, label, form in [(1, "avg_mass", configure.dec_places()),
                                     (2, "rel_abundance", "{:.1f}")]:
             item = SortableTableWidgetItem(
                     form.format(self._exp_mass_data.loc[row_id, label]))

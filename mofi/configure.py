@@ -17,7 +17,8 @@ defaults = {
     "da": config.getfloat("defaults", "da"),
     "ppm": config.getint("defaults", "ppm"),
     "maxmods": config.getint("defaults", "maxmods"),
-    "path": config.get("defaults", "path")
+    "path": config.get("defaults", "path"),
+    "dec_places": config.get("defaults", "dec_places")
 }
 
 colors = {}
@@ -96,3 +97,14 @@ def spin_box_flat_style(bg="bg_ok", double=False):
         height: 7px
     }}
     """.format(bg=colors["widgets"][bg], widget=widget)
+
+
+def dec_places():
+    """
+    Returns a formatstring for printing a float, using the decimal places
+    specified in the configuration file.
+
+    :return: formatstring like '{:.4f}'
+    :rtype: str
+    """
+    return "{{:.{}f}}".format(defaults["dec_places"])
