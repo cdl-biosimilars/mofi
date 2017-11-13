@@ -2388,9 +2388,11 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         # and upper limit for the count of a given monosaccharide.
         re_filter = re.compile("(\d*)(-?)(\d*)")
         query = []
+        empty_filter = True
         for _, child in tree_widget.header().allFilters():
             f = re_filter.match(child.text()).groups()
             if "".join(f):
+                empty_filter = False
                 if f[0] and not f[1] and not f[2]:
                     query.append((int(f[0]), int(f[0])))  # x == value
                 elif f[0] and f[1] and not f[2]:
@@ -2406,19 +2408,26 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         # if all of its level 2 items are hidden, also hide the parent
         root = tree_widget.invisibleRootItem()
         for i in range(root.childCount()):
-            only_hidden_children = True
-            for j in range(root.child(i).childCount()):
-                child = root.child(i).child(j)
-                if item_is_shown(query, child, start_col):
-                    child.setHidden(False)
-                    only_hidden_children = False
-                else:
-                    child.setHidden(True)
-
-            if only_hidden_children:
-                root.child(i).setHidden(True)
-            else:
+            if empty_filter:
+                # simply show all items
+                for j in range(root.child(i).childCount()):
+                    root.child(i).child(j).setHidden(False)
                 root.child(i).setHidden(False)
+            else:
+                # each item has to be tested
+                only_hidden_children = True
+                for j in range(root.child(i).childCount()):
+                    child = root.child(i).child(j)
+                    if item_is_shown(query, child, start_col):
+                        child.setHidden(False)
+                        only_hidden_children = False
+                    else:
+                        child.setHidden(True)
+
+                if only_hidden_children:
+                    root.child(i).setHidden(True)
+                else:
+                    root.child(i).setHidden(False)
 
 
     def fill_statistics_table(self, row):
