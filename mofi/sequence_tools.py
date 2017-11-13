@@ -92,6 +92,8 @@ def get_sequence_atoms(sequence, chains=1, disulfide_bonds=0):
              (example: ``{"C": 100; "H": 50; "N": 20}``)
     :rtype: dict
     """
+
+    chains = max(chains, 1)
     composition = {a: 0 for a in "CHNOPS"}
     sequence_aa_composition = Counter(sequence)
     for aa, count in sequence_aa_composition.items():
