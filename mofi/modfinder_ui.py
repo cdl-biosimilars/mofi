@@ -822,7 +822,7 @@ class Ui_ModFinder(object):
         item = self.tbMonomers.horizontalHeaderItem(1)
         item.setText(_translate("ModFinder", "Name"))
         item = self.tbMonomers.horizontalHeaderItem(2)
-        item.setText(_translate("ModFinder", "Formula"))
+        item.setText(_translate("ModFinder", "Formula/Mass"))
         item = self.tbMonomers.horizontalHeaderItem(3)
         item.setText(_translate("ModFinder", "Min"))
         item = self.tbMonomers.horizontalHeaderItem(4)

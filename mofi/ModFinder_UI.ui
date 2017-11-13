@@ -492,7 +492,7 @@
            </column>
            <column>
             <property name="text">
-             <string>Formula</string>
+             <string>Formula/Mass</string>
             </property>
            </column>
            <column>
