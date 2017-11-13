@@ -403,6 +403,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         self._known_mods_formula = None  # formula of known modifications
         self._known_mods_mass = 0  # mass of known modification
         self._monomer_hits = None  # results from the monomer search
+        self._osa_checked = [False, False]  # check status of btOSA
         self._path = configure.defaults["path"]  # last selected path
         self._polymer_hits = None  # results from the polymer search
         self._protein_formula = mass_tools.Formula()  # f. of the sequence
@@ -465,6 +466,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         )
         self.btLoadPeaks.clicked.connect(self.load_spectrum)
         self.btLoadSequence.clicked.connect(self.load_sequence)
+        self.btOnlyShowUnannotated.clicked.connect(self.only_show_unannotated)
         self.btResetZoom.clicked.connect(self.reset_zoom)
         self.btSaveMonomers.clicked.connect(
             lambda: self.save_table("Export modifications", "monomers"))
@@ -1049,6 +1051,8 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         """
         Set the appropriate context menu of the save results button
         and initiate recoloring of the peaks.
+        Also enable the 'Only show unannotated' button accordingly
+        and set its check state.
 
         :param int index: current index of the results tab widget
         :return: nothing
@@ -1056,8 +1060,12 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         if index == 2:
             self.btSaveResults.setMenu(self.save_results_menu["table"])
+            self.btOnlyShowUnannotated.setEnabled(False)
+            self.btOnlyShowUnannotated.setChecked(False)
         else:
             self.btSaveResults.setMenu(self.save_results_menu["tree"])
+            self.btOnlyShowUnannotated.setEnabled(True)
+            self.btOnlyShowUnannotated.setChecked(self._osa_checked[index])
         self.update_selection()
 
 
@@ -2369,6 +2377,19 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                     0, Qt.Checked if check else Qt.Unchecked)
 
 
+    def only_show_unannotated(self):
+        """
+        Trigger the results table filter
+        to only show items without annotations.
+
+        :return: nothing
+        """
+        stage = self.taResults.currentIndex()
+        if stage != 2:
+            self._osa_checked[stage] = self.btOnlyShowUnannotated.isChecked()
+            self.filter_results_table(stage)
+
+
     def filter_results_table(self, stage):
         """
         Filter the results table.
@@ -2408,26 +2429,30 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         # if all of its level 2 items are hidden, also hide the parent
         root = tree_widget.invisibleRootItem()
         for i in range(root.childCount()):
-            if empty_filter:
-                # simply show all items
-                for j in range(root.child(i).childCount()):
-                    root.child(i).child(j).setHidden(False)
-                root.child(i).setHidden(False)
-            else:
-                # each item has to be tested
-                only_hidden_children = True
-                for j in range(root.child(i).childCount()):
-                    child = root.child(i).child(j)
-                    if item_is_shown(query, child, start_col):
-                        child.setHidden(False)
-                        only_hidden_children = False
-                    else:
-                        child.setHidden(True)
-
-                if only_hidden_children:
-                    root.child(i).setHidden(True)
-                else:
+            if self.btOnlyShowUnannotated.isChecked():
+                # only show items without annotation
+                root.child(i).setHidden(root.child(i).childCount() != 0)
+            else:  # otherwise use the table filters
+                if empty_filter:
+                    # simply show all items
+                    for j in range(root.child(i).childCount()):
+                        root.child(i).child(j).setHidden(False)
                     root.child(i).setHidden(False)
+                else:
+                    # each item has to be tested
+                    only_hidden_children = True
+                    for j in range(root.child(i).childCount()):
+                        child = root.child(i).child(j)
+                        if item_is_shown(query, child, start_col):
+                            child.setHidden(False)
+                            only_hidden_children = False
+                        else:
+                            child.setHidden(True)
+
+                    if only_hidden_children:
+                        root.child(i).setHidden(True)
+                    else:
+                        root.child(i).setHidden(False)
 
 
     def fill_statistics_table(self, row):

@@ -1,5 +1,6 @@
 <RCC>
   <qresource prefix="mofi resource">
+    <file>../images/FilterUnannotated.png</file>
     <file>../images/UncheckAll.png</file>
     <file>../images/UpdateMass.png</file>
     <file>../images/Symbol-Circle.png</file>

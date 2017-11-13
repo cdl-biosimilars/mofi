@@ -1694,6 +1694,29 @@ QPushButton:pressed {
          </widget>
         </item>
         <item>
+         <widget class="QToolButton" name="btOnlyShowUnannotated">
+          <property name="toolTip">
+           <string>Only show unannotated</string>
+          </property>
+          <property name="icon">
+           <iconset resource="mofi.qrc">
+            <normaloff>:/mofi resource/images/FilterUnannotated.png</normaloff>:/mofi resource/images/FilterUnannotated.png</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>24</width>
+            <height>24</height>
+           </size>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <property name="autoRaise">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
          <widget class="QToolButton" name="btClearFilters">
           <property name="toolTip">
            <string>Clear filters</string>
