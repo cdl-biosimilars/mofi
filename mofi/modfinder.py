@@ -521,7 +521,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             self.cbMassSet.addItem(mass_set)
             self.cbMassSet.setItemData(
                 set_id,
-                configure.mass_sets[mass_set].get("description", ""),
+                configure.mass_sets[mass_set]["tooltip"],
                 Qt.ToolTipRole)
         self.cbMassSet.currentTextChanged.connect(self.choose_mass_set)
 

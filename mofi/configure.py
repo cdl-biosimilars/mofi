@@ -35,11 +35,16 @@ with open(os.path.join(config_dir, "mass_sets.ini")) as f:
 mass_sets = OrderedDict()
 for set_name in mass_set_parser.sections():
     mass_sets[set_name] = OrderedDict()
+    tooltip = []
     for k, v in mass_set_parser.items(set_name):
         try:
             mass_sets[set_name][k] = float(v)
+            tooltip.append("{}: {}".format(k, v))
         except ValueError:
             mass_sets[set_name][k] = v
+
+    tooltip.insert(0, mass_sets[set_name].get("description", ""))
+    mass_sets[set_name]["tooltip"] = "\n".join(tooltip)
 
 
 def select_mass_set(name):
