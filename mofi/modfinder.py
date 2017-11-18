@@ -36,7 +36,7 @@ from mofi.paths import data_dir, docs_dir
 from mofi.modfinder_ui import Ui_ModFinder
 from mofi.widgets import (FilterHeader, CollapsingRectangleSelector,
                           SortableTreeWidgetItem, SortableTableWidgetItem,
-                          get_filename)
+                          ImportCsvDialog, get_filename)
 
 _version_info = """ModFinder v1.0
 
@@ -392,7 +392,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         """
 
         # initialize the GUI
-        super(MainWindow, self).__init__(parent)
+        super().__init__(parent)
         self.setupUi(self)
         QApplication.instance().installEventFilter(self)
 
@@ -940,6 +940,11 @@ class MainWindow(QMainWindow, Ui_ModFinder):
                 df = io_tools.read_bpf_library(df)
         self.table_from_df(df, table_widget, cols)
         self.calculate_mod_mass()
+
+
+    def import_csv(self):
+        csv = ImportCsvDialog.get_csv(self)
+        print(csv)
 
 
     def enter_context_help_mode(self):

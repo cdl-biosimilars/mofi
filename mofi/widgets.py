@@ -6,10 +6,13 @@ import os
 
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtWidgets import (QHeaderView, QLineEdit, QFileDialog,
-                             QTableWidgetItem, QTreeWidgetItem)
+                             QTableWidgetItem, QTreeWidgetItem, QDialog,
+                             QDialogButtonBox)
 from PyQt5.QtGui import QColor, QBrush
 
 from matplotlib.widgets import RectangleSelector
+
+from mofi.ImportCsv_ui import Ui_ImportCsvDialog
 
 # noinspection PyPep8Naming,PyUnresolvedReferences
 class FilterHeader(QHeaderView):
@@ -336,6 +339,42 @@ class CollapsingRectangleSelector(RectangleSelector):
         self.to_draw.set_y(ymin)
         self.to_draw.set_width(xmax - xmin)
         self.to_draw.set_height(ymax - ymin)
+
+
+class ImportCsvDialog(QDialog, Ui_ImportCsvDialog):
+    """
+    A dialog for importing CSV files.
+
+    .. automethod:: __init__
+    """
+
+    def __init__(self, parent=None):
+        """
+        Initialize the dialog.
+
+        :param QWidget parent: parent widget
+        """
+
+        # initialize the GUI
+        super().__init__(parent)
+        self.setupUi(self)
+
+        self.buttonBox.accepted.connect(self.accept)
+        self.buttonBox.rejected.connect(self.reject)
+        self.buttonBox.button(QDialogButtonBox.Apply).clicked.connect(
+            self.apply_settings)
+
+
+    def apply_settings(self):
+        pass
+
+
+    @staticmethod
+    def get_csv(parent=None):
+        dialog = ImportCsvDialog(parent)
+        result = dialog.exec_()
+        return 1, result == QDialog.Accepted
+
 
 
 _default_file_types = {
