@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>ModFinder</class>
- <widget class="QMainWindow" name="ModFinder">
+ <class>MoFi</class>
+ <widget class="QMainWindow" name="MoFi">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
     <width>1356</width>
-    <height>934</height>
+    <height>963</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>ModFinder</string>
+   <string>MoFi</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout_6">
