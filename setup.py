@@ -25,7 +25,7 @@ setup(
     ext_modules=[c_ext],
     entry_points = {
         'gui_scripts': [
-            "mofi = mofi.modfinder:main"
+            "mofi = mofi.mofi:main"
         ]
     },
     include_package_data=True,

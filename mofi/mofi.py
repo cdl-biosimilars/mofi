@@ -33,12 +33,12 @@ from matplotlib.figure import Figure
 from mofi import (configure, io_tools, mass_tools,
                   search_tools, sequence_tools)
 from mofi.paths import data_dir, docs_dir
-from mofi.modfinder_ui import Ui_ModFinder
+from mofi.mofi_ui import Ui_MoFi
 from mofi.widgets import (FilterHeader, CollapsingRectangleSelector,
                           SortableTreeWidgetItem, SortableTableWidgetItem,
-                          ImportCsvDialog, get_filename)
+                          ImportTabDataDialog, get_filename)
 
-_version_info = """ModFinder v1.0
+_version_info = """MoFi v1.0
 
 © 2017 Christian Doppler Laboratory
 for Innovative Tools for Biosimilar Characterization
@@ -377,7 +377,7 @@ def item_is_shown(query, item, col):
     return True
 
 
-class MainWindow(QMainWindow, Ui_ModFinder):
+class MainWindow(QMainWindow, Ui_MoFi):
     """
     The main window.
 
@@ -933,18 +933,14 @@ class MainWindow(QMainWindow, Ui_ModFinder):
             return
 
         if filename.endswith("csv"):
-            df = pd.read_csv(filename, keep_default_na=False)
-        else:  # xls(x)
-            df = pd.read_excel(filename, keep_default_na=False)
-            if "Modification" in df.columns:
-                df = io_tools.read_bpf_library(df)
-        self.table_from_df(df, table_widget, cols)
-        self.calculate_mod_mass()
-
-
-    def import_csv(self):
-        csv = ImportCsvDialog.get_csv(self)
-        print(csv)
+            df = ImportTabDataDialog.get_data(self, filename, cols, "csv")
+        else:
+            df = ImportTabDataDialog.get_data(self, filename, cols, "xls")
+            # if "Modification" in df.columns:  # TODO how to resolve?
+            #     df = io_tools.read_bpf_library(df)
+        if df is not None:
+            self.table_from_df(df, table_widget, cols)  # TODO changes?
+            self.calculate_mod_mass()
 
 
     def enter_context_help_mode(self):
@@ -1049,7 +1045,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
         :return: nothing
         """
 
-        QMessageBox.about(self, "About ModFinder", _version_info)
+        QMessageBox.about(self, "About MoFi", _version_info)
 
 
     def set_save_results_menu(self, index):
@@ -1219,7 +1215,7 @@ class MainWindow(QMainWindow, Ui_ModFinder):
 
         # retrieve general information about the search parameters
         out_general = [
-            ("Combinatorial search results by ModFinder", ),
+            ("Combinatorial search results by MoFi", ),
             ("Date", time.strftime("%c")),
             ("Sequence",
              self.teSequence.toPlainText().replace("\n", r"\n")),
