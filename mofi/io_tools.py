@@ -165,7 +165,7 @@ def read_bpf_library(df):
 
     :param pd.DataFrame df: data frame read from a library Excel file
     :return: a dataframe as required by
-             :meth:`~mofi.modfinder.MainWindow.table_from_df()`
+             :meth:`~mofi.mofi.MainWindow.table_from_df()`
     :rtype: pd.DataFrame
     """
 

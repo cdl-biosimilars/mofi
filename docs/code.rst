@@ -3,10 +3,10 @@ Code documentation
 ******************
 
 
-``modfinder.py`` -- The main module
+``mofi.py`` -- The main module
 ===================================
 
-.. automodule:: mofi.modfinder
+.. automodule:: mofi.mofi
 
 
 ``configure.py``
