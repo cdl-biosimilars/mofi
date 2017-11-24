@@ -3,65 +3,10 @@ Functions/classes for handling atomic masses.
 """
 
 import re
-import os
 import numpy as np
 import pandas as pd
 from mofi import configure
 import pandas.core.series
-
-
-def read_massfile(massfile):
-    """
-    Reads a list of masses (peaks) from an external Excel or CSV file.
-
-    The file must contain at least one column labeled "Average Mass"
-    or "Average mass (mean)". If there is a column labeled
-    "Relative Abundance", its values will be used for the peak heights.
-    Otherwise, all peaks will have the same height.
-
-    :param str massfile: name of the file containing the mass list
-    :return: a dataframe if the import was successful,
-             otherwise None
-    :rtype: pd.DataFrame
-    """
-
-    filename, ext = os.path.splitext(massfile)
-    try:
-        if ext in [".xls", ".xlsx"]:
-            inputframe = pd.read_excel(massfile)
-        elif ext in [".txt", ".csv"]:
-            inputframe = pd.read_csv(massfile, sep=None, engine="python")
-        else:
-            return None
-    except (TypeError, OSError):
-        return None
-
-    # find column with average masses
-    massframe = pd.DataFrame()
-    try:
-        massframe["avg_mass"] = inputframe["Average Mass"]
-    except KeyError:
-        try:
-            massframe["avg_mass"] = inputframe["Average Mass (mean)"]
-        except KeyError:
-            return None
-
-    # find column with relative intensities; if absent provide default values
-    try:
-        massframe["rel_abundance"] = inputframe["Relative Abundance"]
-    except KeyError:
-        massframe["rel_abundance"] = 100
-
-    # convert to float
-    try:
-        massframe = (massframe
-                     .astype(float)
-                     .sort_values("avg_mass"))
-    except ValueError:
-        return None
-
-    massframe.reset_index(drop=True, inplace=True)
-    return massframe
 
 
 def formstring_to_composition(formstring):
