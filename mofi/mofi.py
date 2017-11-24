@@ -50,20 +50,20 @@ Python version:
 
 # default values for columns in the monomer table
 _monomer_table_columns = [
-    ("Checked", False),
-    ("Name", None),
-    ("Composition", None),
-    ("Min", 0),
-    ("Max", -1)
+    ("Checked", False, "Use?"),
+    ("Name", None, "Name"),
+    ("Composition", None, "Formula/Mass"),
+    ("Min", 0, "Min"),
+    ("Max", -1, "Max")
 ]
 
 # default values for columns in the polymer table
 _polymer_table_columns = [
-    ("Checked", True),
-    ("Name", None),
-    ("Composition", None),
-    ("Sites", ""),
-    ("Abundance", 0.0)
+    ("Checked", True, "Use?"),
+    ("Name", None, "Name"),
+    ("Composition", None, "Composition"),
+    ("Sites", "", "Sites"),
+    ("Abundance", 0.0, "Abundance")
 ]
 
 # sorting key for column 1 of the results trees
@@ -880,7 +880,8 @@ class MainWindow(QMainWindow, Ui_MoFi):
 
         :param pd.DataFrame df: the dataframe to be converted to a table
         :param QTableWidget table_widget: widget to fill with values
-        :param list(tuple) cols: list of (column header, default value) tuples,
+        :param list(tuple) cols: list of (column header, default value,
+                     label in import dialog) tuples,
                      sorted according to the order of the arguments to
                      :meth:`~MainWindow._monomer_table_create_row()` and
                      :meth:`~MainWindow._polymer_table_create_row()`.
@@ -939,7 +940,7 @@ class MainWindow(QMainWindow, Ui_MoFi):
             # if "Modification" in df.columns:  # TODO how to resolve?
             #     df = io_tools.read_bpf_library(df)
         if df is not None:
-            self.table_from_df(df, table_widget, cols)  # TODO changes?
+            self.table_from_df(df, table_widget, cols)
             self.calculate_mod_mass()
 
 
@@ -1154,19 +1155,20 @@ class MainWindow(QMainWindow, Ui_MoFi):
         if filename is None:
             return
 
-        mass_data = mass_tools.read_massfile(filename)
-        if mass_data is None:
-            QMessageBox.critical(self,
-                                 "Error",
-                                 "Could not load mass file.")
-            return
+        cols = [("avg_mass", None, "Average mass"),
+                ("rel_abundance", 100, "Relative abundance")]
+        if filename.endswith("csv"):
+            df = ImportTabDataDialog.get_data(self, filename, cols, "csv")
+        else:
+            df = ImportTabDataDialog.get_data(self, filename, cols, "xls")
 
-        self._exp_mass_data = mass_data
-        self.twResults1.clear()
-        self.twResults2.clear()
-        self._monomer_hits = None
-        self._polymer_hits = None
-        self.draw_spectrum()
+        if df is not None:
+            self._exp_mass_data = df
+            self.twResults1.clear()
+            self.twResults2.clear()
+            self._monomer_hits = None
+            self._polymer_hits = None
+            self.draw_spectrum()
 
 
     def save_spectrum(self):

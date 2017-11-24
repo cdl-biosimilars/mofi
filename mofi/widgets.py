@@ -4,15 +4,18 @@ Custom widgets and GUI functions.
 
 import os
 
+import pandas as pd
+
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtWidgets import (QHeaderView, QLineEdit, QFileDialog,
                              QTableWidgetItem, QTreeWidgetItem, QDialog,
-                             QDialogButtonBox)
+                             QDialogButtonBox, QGridLayout, QLabel,
+                             QComboBox, QMessageBox)
 from PyQt5.QtGui import QColor, QBrush
 
 from matplotlib.widgets import RectangleSelector
 
-from mofi.ImportCsv_ui import Ui_ImportCsvDialog
+from mofi.importtabdata_ui import Ui_ImportTabData
 
 # noinspection PyPep8Naming,PyUnresolvedReferences
 class FilterHeader(QHeaderView):
@@ -341,9 +344,9 @@ class CollapsingRectangleSelector(RectangleSelector):
         self.to_draw.set_height(ymax - ymin)
 
 
-class ImportCsvDialog(QDialog, Ui_ImportCsvDialog):
+class ImportTabDataDialog(QDialog, Ui_ImportTabData):
     """
-    A dialog for importing CSV files.
+    A dialog for importing tabluar data represented by a CSV or XLS file.
 
     .. automethod:: __init__
     """
@@ -362,18 +365,185 @@ class ImportCsvDialog(QDialog, Ui_ImportCsvDialog):
         self.buttonBox.accepted.connect(self.accept)
         self.buttonBox.rejected.connect(self.reject)
         self.buttonBox.button(QDialogButtonBox.Apply).clicked.connect(
-            self.apply_settings)
+            self.apply_options)
+
+        self.cb_columns = []  # data on the comboboxes for selecting columns
+        self.csv_mode = True  # whether the dialog is in csv or xls mode
+        self.df_in = None  # dataframe that stores imported data
+        self.filename = None  # name of the import file
 
 
-    def apply_settings(self):
-        pass
+    def set_options(self, filename, cols, mode):
+        """
+        Set up the dialog to show the contents of the opened file
+        and the applicable options.
+
+        :param str filename: input file
+        :param cols: see parameter ``cols``
+                     in :meth:`mofi.MainWindow.table_from_df`
+        :param str mode: selects "csv" or "xls" mode
+        :return: nothing
+        """
+
+        self.filename = filename
+        self.csv_mode = mode == "csv"
+
+        # set the window title, load the file contents and enable line edits
+        # depending whether we're opening a csv or xls file
+        if self.csv_mode:
+            self.setWindowTitle("Import CSV")
+            self.gbCsvFile.setTitle(
+                "Contents of " + os.path.basename(filename))
+            with open(filename) as f:
+                self.teFileContents.setText("".join(f.readlines()))
+            for w in (self.lbSheetName, self.cbSheetName):
+                w.setEnabled(False)
+            self.cbSheetName.setEnabled(False)
+        else:
+            self.setWindowTitle("Import XLS")
+            self.gbCsvFile.setTitle("")
+            for w in (self.leSep, self.leComment, self.leDecimal,
+                      self.leThousands, self.lbSep, self.lbComment,
+                      self.lbDecimal, self.lbThousands, self.lbQuote,
+                      self.leQuote):
+                w.setEnabled(False)
+            with pd.ExcelFile(filename) as f:
+                self.cbSheetName.addItems(f.sheet_names)
+
+
+        # create comboboxes for selecting required/optional columns
+        self.cb_columns = []
+        layout = QGridLayout(self.gbColumns)
+        for i, col in enumerate(cols):
+            row_id = i // 2
+            col_id = i % 2 * 3
+            cb = QComboBox()
+            cb.setMinimumHeight(22)
+            layout.addWidget(QLabel(col[2] + ":"), row_id, col_id, 1, 1)
+            layout.addWidget(cb, row_id, col_id + 1, 1, 1)
+            self.cb_columns.append((cb, col[0], col[1]))
+        layout.setColumnMinimumWidth(2, 50)
+
+
+    def apply_options(self):
+        """
+        Generate the preview table from the data to be imported
+        using the current option settings.
+
+        :return: nothing
+        """
+
+        # calculate arguments for pandas reader
+        if self.cbHeader.isChecked():
+            header = self.sbSkipRows.value()
+        else:
+            header = None
+        decimal = self.leDecimal.text()
+        if decimal == "":
+            decimal = "."
+        thousands = self.leThousands.text()
+        if thousands == "":
+            thousands = None
+        quotechar = self.leQuote.text()
+        if quotechar == "":
+            quotechar = '"'
+
+        # import data
+        try:
+            if self.csv_mode:
+                self.df_in = pd.read_csv(
+                    self.filename,
+                    sep=self.leSep.text(),
+                    comment=self.leComment.text(),
+                    decimal=decimal,
+                    thousands=thousands,
+                    quotechar=quotechar,
+                    skiprows=self.sbSkipRows.value(),
+                    header=header,
+                    keep_default_na=False)
+            else:
+                print(self.cbSheetName.currentText())
+                self.df_in = pd.read_excel(
+                    self.filename,
+                    sheetname=self.cbSheetName.currentText(),
+                    skiprows=self.sbSkipRows.value(),
+                    header=header,
+                    keep_default_na=False)
+        except (ValueError, OSError) as e:
+            QMessageBox.critical(self, "Error", e.args[0])
+            return
+
+        # fill the preview table
+        try:
+            self.twPreview.clearContents()
+            self.twPreview.setColumnCount(self.df_in.columns.size)
+            self.twPreview.setRowCount(self.df_in.index.size)
+            self.twPreview.setHorizontalHeaderLabels(
+                [str(c) for c in self.df_in.columns])
+            self.twPreview.horizontalHeader().setSectionResizeMode(
+                QHeaderView.ResizeToContents)
+            self.twPreview.verticalHeader().setSectionResizeMode(
+                QHeaderView.ResizeToContents)
+            for row_id, row in self.df_in.iterrows():
+                for col_id, value in enumerate(row):
+                    self.twPreview.setItem(row_id, col_id,
+                                           QTableWidgetItem(str(value)))
+        except TypeError:
+            QMessageBox.critical(self, "Error", "Invalid quote character.")
+            return
+
+        # fill the column selectors
+        for cb, label, default_value in self.cb_columns:
+            cb.clear()
+            if default_value is not None:
+                cb.addItem("(Use default: {})".format(default_value))
+            for column in self.df_in.columns:
+                cb.addItem(str(column))
+            cb.setCurrentText(label)
+
+
+    def get_df(self):
+        """
+        Return the input data filtered according to the column selectors.
+
+        :return: a dataframe if available; None otherwise
+        :rtype: pd.DatFrame or NoneType
+        """
+
+        if self.df_in is None:
+            return None
+        df = pd.DataFrame(index=self.df_in.index)
+        for cb, label, default_value in self.cb_columns:
+            if default_value is not None and cb.currentIndex() == 0:
+                df[label] = default_value
+            else:
+                df[label] = self.df_in[cb.currentText()]
+        return df
 
 
     @staticmethod
-    def get_csv(parent=None):
-        dialog = ImportCsvDialog(parent)
+    def get_data(parent=None, filename=None, cols=None, mode="csv"):
+        """
+        Opens an Import CSV/XLS dialog and returns the imported data.
+
+        :param QWidget parent: parent widget
+        :param str filename: input file
+        :param cols: see parameter ``cols``
+                     in :meth:`mofi.MainWindow.table_from_df`
+        :param str mode: selects "csv" or "xls" mode
+        :return: a dataframe with the imported data if Ok is clicked;
+                 ``None`` otherwise
+        :rtype: pd.DataFrame or NoneType
+        """
+
+        dialog = ImportTabDataDialog(parent)
+        dialog.set_options(filename, cols, mode)
+        dialog.apply_options()
         result = dialog.exec_()
-        return 1, result == QDialog.Accepted
+        if result == QDialog.Accepted:
+            return dialog.get_df()
+        else:
+            return None
 
 
 

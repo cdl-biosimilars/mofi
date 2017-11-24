@@ -1,14 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>ImportCsvDialog</class>
- <widget class="QDialog" name="ImportCsvDialog">
+ <class>ImportTabData</class>
+ <widget class="QDialog" name="ImportTabData">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>384</width>
-    <height>617</height>
+    <width>444</width>
+    <height>646</height>
    </rect>
+  </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
   </property>
   <property name="windowTitle">
    <string>Import CSV</string>
@@ -21,7 +27,7 @@
     <number>12</number>
    </property>
    <item>
-    <widget class="QGroupBox" name="groupBox">
+    <widget class="QGroupBox" name="gbCsvFile">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
        <horstretch>0</horstretch>
@@ -46,6 +52,24 @@
           <verstretch>0</verstretch>
          </sizepolicy>
         </property>
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>100</height>
+         </size>
+        </property>
+        <property name="font">
+         <font>
+          <family>DejaVu Sans Mono</family>
+          <pointsize>10</pointsize>
+         </font>
+        </property>
+        <property name="lineWrapMode">
+         <enum>QTextEdit::NoWrap</enum>
+        </property>
+        <property name="readOnly">
+         <bool>true</bool>
+        </property>
        </widget>
       </item>
      </layout>
@@ -54,11 +78,43 @@
    <item>
     <widget class="QGroupBox" name="gridGroupBox">
      <property name="title">
-      <string>CSV options</string>
+      <string>Options</string>
      </property>
-     <layout class="QGridLayout" name="gridLayout">
+     <layout class="QGridLayout" name="gridLayout" columnminimumwidth="0,0,50,0,0">
+      <item row="0" column="1">
+       <widget class="QLineEdit" name="leSep">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>20</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>,</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="2" rowspan="3">
+       <spacer name="horizontalSpacer">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>50</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
       <item row="2" column="3">
-       <widget class="QLabel" name="label_2">
+       <widget class="QLabel" name="lbSkipRows">
         <property name="text">
          <string>Skip rows:</string>
         </property>
@@ -79,19 +135,6 @@
          </size>
         </property>
        </widget>
-      </item>
-      <item row="1" column="2">
-       <spacer name="horizontalSpacer">
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>50</width>
-          <height>20</height>
-         </size>
-        </property>
-       </spacer>
       </item>
       <item row="0" column="4">
        <widget class="QLineEdit" name="leDecimal">
@@ -116,14 +159,14 @@
        </widget>
       </item>
       <item row="0" column="0">
-       <widget class="QLabel" name="label_4">
+       <widget class="QLabel" name="lbSep">
         <property name="text">
          <string>Delimiter:</string>
         </property>
        </widget>
       </item>
       <item row="0" column="3">
-       <widget class="QLabel" name="label_5">
+       <widget class="QLabel" name="lbDecimal">
         <property name="text">
          <string>Decimal point:</string>
         </property>
@@ -152,36 +195,14 @@
        </widget>
       </item>
       <item row="1" column="0">
-       <widget class="QLabel" name="label_3">
+       <widget class="QLabel" name="lbComment">
         <property name="text">
          <string>Comment char:</string>
         </property>
        </widget>
       </item>
-      <item row="0" column="1">
-       <widget class="QLineEdit" name="leSep">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="minimumSize">
-         <size>
-          <width>20</width>
-          <height>0</height>
-         </size>
-        </property>
-        <property name="text">
-         <string>,</string>
-        </property>
-        <property name="maxLength">
-         <number>1</number>
-        </property>
-       </widget>
-      </item>
       <item row="1" column="3">
-       <widget class="QLabel" name="label_6">
+       <widget class="QLabel" name="lbThousands">
         <property name="text">
          <string>Thousands separator:</string>
         </property>
@@ -206,7 +227,17 @@
         </property>
        </widget>
       </item>
-      <item row="2" column="0" colspan="2">
+      <item row="3" column="3">
+       <widget class="QLabel" name="lbSheetName">
+        <property name="text">
+         <string>Sheet name:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="4">
+       <widget class="QComboBox" name="cbSheetName"/>
+      </item>
+      <item row="3" column="0">
        <widget class="QCheckBox" name="cbHeader">
         <property name="text">
          <string>Header</string>
@@ -216,33 +247,30 @@
         </property>
        </widget>
       </item>
-      <item row="1" column="5">
-       <spacer name="horizontalSpacer_2">
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
+      <item row="2" column="0">
+       <widget class="QLabel" name="lbQuote">
+        <property name="text">
+         <string>Quote char:</string>
         </property>
-        <property name="sizeHint" stdset="0">
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QLineEdit" name="leQuote">
+        <property name="minimumSize">
          <size>
-          <width>50</width>
-          <height>20</height>
+          <width>20</width>
+          <height>0</height>
          </size>
         </property>
-       </spacer>
+        <property name="text">
+         <string>&quot;</string>
+        </property>
+        <property name="maxLength">
+         <number>1</number>
+        </property>
+       </widget>
       </item>
      </layout>
-    </widget>
-   </item>
-   <item>
-    <widget class="QGroupBox" name="gbColumns">
-     <property name="minimumSize">
-      <size>
-       <width>0</width>
-       <height>59</height>
-      </size>
-     </property>
-     <property name="title">
-      <string>Columns to use</string>
-     </property>
     </widget>
    </item>
    <item>
@@ -252,9 +280,23 @@
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_2">
       <item>
-       <widget class="QTableWidget" name="twPreview"/>
+       <widget class="QTableWidget" name="twPreview">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>100</height>
+         </size>
+        </property>
+       </widget>
       </item>
      </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="gbColumns">
+     <property name="title">
+      <string>Columns to use</string>
+     </property>
     </widget>
    </item>
    <item>
