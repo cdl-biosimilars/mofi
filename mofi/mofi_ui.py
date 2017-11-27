@@ -619,6 +619,8 @@ class Ui_MoFi(object):
         self.horizontalLayout_16 = QtWidgets.QHBoxLayout(self.statisticsTab)
         self.horizontalLayout_16.setObjectName("horizontalLayout_16")
         self.tbStatistics = QtWidgets.QTableWidget(self.statisticsTab)
+        self.tbStatistics.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
+        self.tbStatistics.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         self.tbStatistics.setObjectName("tbStatistics")
         self.tbStatistics.setColumnCount(7)
         self.tbStatistics.setRowCount(0)

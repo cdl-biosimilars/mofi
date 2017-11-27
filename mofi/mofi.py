@@ -511,6 +511,8 @@ class MainWindow(QMainWindow, Ui_MoFi):
         self.taResults.currentChanged.connect(self.set_save_results_menu)
 
         self.tbMonomers.cellChanged.connect(self.calculate_mod_mass)
+        self.tbStatistics.itemClicked.connect(
+            lambda item: self.update_selection(table_item_clicked=item))
 
         self.teSequence.textChanged.connect(
             lambda: self.teSequence.setStyleSheet(
@@ -1847,7 +1849,8 @@ class MainWindow(QMainWindow, Ui_MoFi):
 
 
     def update_selection(self, new_selection=None,
-                         clicked_item=None, clicked_tree=None):
+                         clicked_item=None, clicked_tree=None,
+                         table_item_clicked=None):
         """
         Update the spectrum and the single mass spinbox
         after the selection has changed.
@@ -1855,6 +1858,8 @@ class MainWindow(QMainWindow, Ui_MoFi):
         :param np.array new_selection: list of indices of selected peaks
         :param SortableTreeWidgetItem clicked_item: item that was clicked
         :param QTreeWidget clicked_tree: results tree whose item was clicked
+        :param SortableTableWidgetItem table_item_clicked: item of the
+               statistics table that was clicked
         :return: nothing
         """
 
@@ -1882,6 +1887,11 @@ class MainWindow(QMainWindow, Ui_MoFi):
                     scroll_tree2 = False
             self._current_selection = [item_index]
 
+        scroll_table = True
+        # a row of the statistics table was clicked
+        if table_item_clicked is not None:
+            self._current_selection = [table_item_clicked.row()]
+            scroll_table = False
 
         # (1) update selection in the spectrum
         central_peak = self._current_selection[0]
@@ -1909,6 +1919,11 @@ class MainWindow(QMainWindow, Ui_MoFi):
                     item.setSelected(True)
                 except AttributeError:
                     pass
+
+        # (4) scroll to row in statistics table
+        if scroll_table:
+            self.tbStatistics.scrollToItem(table_item_clicked)
+            self.tbStatistics.selectRow(central_peak)
 
 
     def find_delta_peaks(self, query_peak, delta, tolerance, iterations):
@@ -2456,7 +2471,7 @@ class MainWindow(QMainWindow, Ui_MoFi):
         # (1) running counter
         item = SortableTableWidgetItem(str(row_id))
         item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
-        item.setFlags(Qt.ItemIsEnabled)
+        item.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
         self.tbStatistics.setItem(row_id, 0, item)
 
         # (2) peak information
@@ -2465,7 +2480,7 @@ class MainWindow(QMainWindow, Ui_MoFi):
             item = SortableTableWidgetItem(
                     form.format(self._exp_mass_data.loc[row_id, label]))
             item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
-            item.setFlags(Qt.ItemIsEnabled)
+            item.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
             self.tbStatistics.setItem(row_id, col_id, item)
 
         # (3) peak statistics
@@ -2478,7 +2493,7 @@ class MainWindow(QMainWindow, Ui_MoFi):
             except KeyError:
                 item = SortableTableWidgetItem("")
             item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
-            item.setFlags(Qt.ItemIsEnabled)
+            item.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
             self.tbStatistics.setItem(row_id, col_id, item)
 
 
