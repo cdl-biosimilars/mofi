@@ -386,6 +386,7 @@ def find_polymers(stage_1_results, polymer_combinations,
                * *Permutation score*
                * *Permutations*
                * *Hit score*
+               * *Stage2_ID*
 
                  If no hit was found, all columns contain the value 0
 
@@ -449,6 +450,14 @@ def find_polymers(stage_1_results, polymer_combinations,
         df_found_polymers
         .apply(lambda x: list(unique_hashes[x["Mass_ID"]]).index(x["Hash"]),
                axis=1))
+
+    # column "Stage2_ID" numbers each stage 2 hit per stage 1 hit
+    df_found_polymers["Stage2_ID"] = (
+        df_found_polymers
+        .groupby(["Mass_ID", "Stage1_ID"])
+        ["Stage2_hit"]
+        .apply(lambda x: x.astype("category").cat.codes)
+    )
 
     if progress_bar is not None:
         progress_bar.setValue(75)

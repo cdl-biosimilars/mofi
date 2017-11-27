@@ -185,7 +185,9 @@ def create_child_items(df, root_item, column_count, monomers, sites):
                 col_key=_default_col_key)
             hit_optimum = hit.loc[hit["Permutation score"].idxmax()]
             hit_item.setText(
-                1, "{}-{}".format(root_item.text(1), stage2_id))
+                1, "{}-{}-{}".format(root_item.text(1),
+                                     hit_optimum["Stage1_ID"],
+                                     hit_optimum["Stage2_ID"]))
             hit_item.setTextAlignment(1, Qt.AlignLeft)
             hit_item.setFlags(hit_item.flags() | Qt.ItemIsTristate)
             hit_item.setCheckState(0, Qt.Unchecked)
@@ -210,9 +212,7 @@ def create_child_items(df, root_item, column_count, monomers, sites):
                         default_key=float,
                         col_key=_default_col_key)
                     perm_item.setText(
-                        1, "{}-{}-{}".format(root_item.text(1),
-                                             stage2_id,
-                                             perm_id))
+                        1, "{}-{}".format(hit_item.text(1), perm_id))
                     perm_item.setTextAlignment(1, Qt.AlignLeft)
                     perm_item.setCheckState(0, Qt.Unchecked)
                     create_site_columns(perm_item, pos, perm, sites)
