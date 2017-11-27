@@ -27,7 +27,6 @@ import matplotlib.collections
 import matplotlib.markers
 import matplotlib.text
 from matplotlib.backends.backend_qt5agg import FigureCanvas
-from matplotlib.widgets import SpanSelector
 from matplotlib.figure import Figure
 
 from mofi import (configure, io_tools, mass_tools,
@@ -575,8 +574,6 @@ class MainWindow(QMainWindow, Ui_MoFi):
         self.spectrum_axes = None
         # LineCollection representing the peaks in the spectrum
         self.spectrum_peak_lines = None
-        # SpanSelector to select multiple peaks
-        self.spectrum_span_selector = None
         # CollapsingRectangleSelector to zoom the spectrum
         self.spectrum_rectangle_selector = None
         # original limits of the x axis when the plot is drawn
@@ -1739,14 +1736,7 @@ class MainWindow(QMainWindow, Ui_MoFi):
 
         # set up the pick and span selectors.
         self.spectrum_fig.canvas.mpl_connect(
-            "pick_event", self.select_peaks_by_pick)
-        self.spectrum_span_selector = SpanSelector(
-            self.spectrum_axes,
-            self.select_peaks_by_span,
-            "horizontal",
-            minspan=10,  # in order not to interfere with the picker
-            rectprops=dict(alpha=.1),
-            button=1)  # only the left mouse button spans
+            "pick_event", self.select_peak)
         self.spectrum_rectangle_selector = CollapsingRectangleSelector(
             self.spectrum_axes,
             self.zoom_spectrum,
@@ -1806,11 +1796,9 @@ class MainWindow(QMainWindow, Ui_MoFi):
         try:
             if self.bgSpectrum.checkedButton() == self.btModeSelection:
                 self.gbDeltaSeries.setEnabled(False)
-                self.spectrum_span_selector.active = True
             else:
                 self.gbDeltaSeries.setEnabled(True)
                 self.toggle_delta_series()
-                self.spectrum_span_selector.active = False
         except AttributeError:  # i.e., there is currently no spectrum
             pass
 
@@ -1846,7 +1834,7 @@ class MainWindow(QMainWindow, Ui_MoFi):
         self.update_selection()
 
 
-    def select_peaks_by_pick(self, event):
+    def select_peak(self, event):
         """
         Select a peak picked by a mouseclick on the spectrum.
 
@@ -1856,24 +1844,6 @@ class MainWindow(QMainWindow, Ui_MoFi):
         if event.mouseevent.button == 1:
             self.update_selection(new_selection=event.ind)
             self.btLoadPeaks.setFocus()
-
-
-    def select_peaks_by_span(self, min_mass, max_mass):
-        """
-        Select all peaks that fall within a selected span.
-
-        :param float min_mass: lower end of the span
-        :param float max_mass: upper end of the span
-        :return: nothing
-        """
-
-        peak_indices = self._exp_mass_data.index[
-                (min_mass <= self._exp_mass_data["avg_mass"])
-                & (self._exp_mass_data["avg_mass"] <= max_mass)
-            ].tolist()
-
-        if peak_indices:
-            self.update_selection(new_selection=peak_indices)
 
 
     def update_selection(self, new_selection=None,
