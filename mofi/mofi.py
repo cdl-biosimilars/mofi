@@ -472,6 +472,7 @@ class MainWindow(QMainWindow, Ui_MoFi):
         self.btLoadPeaks.clicked.connect(self.load_spectrum)
         self.btLoadSequence.clicked.connect(self.load_sequence)
         self.btOnlyShowUnannotated.clicked.connect(self.only_show_unannotated)
+        self.btRemoveSort.clicked.connect(self.remove_sort)
         self.btResetZoom.clicked.connect(self.reset_zoom)
         self.btSaveMonomers.clicked.connect(
             lambda: self.save_table("Export modifications", "monomers"))
@@ -2504,6 +2505,28 @@ class MainWindow(QMainWindow, Ui_MoFi):
             self.twResults1.header().clearFilters()
         elif self.taResults.currentIndex() == 1:
             self.twResults2.header().clearFilters()
+
+
+    def remove_sort(self):
+        """
+        Restore the original order of rows in the results trees.
+
+        :return: nothing
+        """
+
+        if self.taResults.currentIndex() == 0:
+            # simply sort ascending by ID column
+            self.twResults1.sortByColumn(1, Qt.AscendingOrder)
+            self.twResults1.header().setSortIndicator(-1, 0)
+
+        elif self.taResults.currentIndex() == 1:
+            # sort root items ascending by ID,
+            # and child items descending by hit score
+            self.twResults2.header().setSortIndicator(-1, 0)
+            root = self.twResults2.invisibleRootItem()
+            root.sortChildren(1, Qt.AscendingOrder)
+            for i in range(root.childCount()):
+                root.child(i).sortChildren(5, Qt.DescendingOrder)
 
 
     def save_settings(self):
