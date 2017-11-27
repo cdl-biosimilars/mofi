@@ -171,15 +171,14 @@ def create_child_items(df, root_item, column_count, monomers, sites):
         # peak_optimum is a (hit_ID, permutation_ID) tuple
         try:
             peak_optimum = df.loc[df["Permutation score"].idxmax()]
-            peak_optimum.name = (peak_optimum.name[1],
-                                 peak_optimum.name[2])
+            peak_optimum.name = (peak_optimum.name[0],
+                                 peak_optimum.name[1])
             create_hit_columns(root_item, peak_optimum, monomers, sites)
         except ValueError:  # if df is empty, like due to filtering
             pass
 
         # (1) child items for all hits per peak
-        for stage2_id, hit in (df.reset_index("Isobar", drop=True)
-                                 .groupby("Stage2_hit")):
+        for stage2_id, hit in (df.groupby("Stage2_hit")):
             hit_item = SortableTreeWidgetItem(
                 root_item,
                 default_key=float,
@@ -2319,7 +2318,7 @@ class MainWindow(QMainWindow, Ui_MoFi):
                 ["Perm", "Perm Score"],
                 list(
                     self._polymer_hits.columns[
-                        self._polymer_hits.columns.get_loc("ppm") + 1:
+                        self._polymer_hits.columns.get_loc("Stage1_ID") + 1:
                         self._polymer_hits.columns.get_loc(
                             "Permutation score")]
                     )

@@ -44,6 +44,7 @@ def find_monomers(mods, unexplained_masses, mass_tolerance=5.0,
                * *Theo_Mass*
                * *Da*
                * *ppm*
+               * "Stage1_ID"
 
                  If no hit was found, all columns contain the value 0
 
@@ -147,6 +148,12 @@ def find_monomers(mods, unexplained_masses, mass_tolerance=5.0,
         .groupby("Isobar")
         .cumcount())
     combinations.loc[combinations["Isobar"] == -1, "Stage1_hit"] = -1
+
+    # add column "Stage1_ID", a counter per mass ID
+    combinations["Stage1_ID"] = (
+        combinations
+        .groupby("Mass_ID")
+        .cumcount())
 
     # prepare search statistics
     df_statistics = pd.DataFrame(statistics, columns=["search_space_size"])
@@ -358,51 +365,33 @@ def find_polymers(stage_1_results, polymer_combinations,
                                as returned by :func:`get_monomers_from_library`
     :param QProgressBar progress_bar: a progress bar that gets updated
                                       during the search
-    :return: dataframe (1) describing the search results, like::
+    :return: None if the search failed; otherwise two dataframes:
 
-        #                                    Hex  HexNAc  Neu5Ac  Fuc  [...]
-        # Mass_ID Isobar Stage2_hit Perm_ID
-        # 0       5      0          0          6       8       0    2  [...]
-        # 1       27     0          0          8       6       1    1  [...]
-        #                           1          8       6       1    1  [...]
-        #                1          0          5       4       1    1  [...]
-        #                           1          5       4       1    1  [...]
-        # 2       37     0          0          7       8       0    2  [...]
-        #                           1          7       8       0    2  [...]
-        #
-        #                                     Exp_Mass    Theo_Mass        Da
-        # Mass_ID Isobar Stage2_hit Perm_ID
-        # 0       5      0          0        148057.12  148057.8620 -0.739772
-        # 1       27     0          0        148122.21  148120.8700  1.341018
-        #                           1        148122.21  148120.8700  1.341018
-        #                1          0        148122.21  148120.8700  1.341018
-        #                           1        148122.21  148120.8700  1.341018
-        # 2       37     0          0        148220.11  148220.0030  0.109210
-        #                           1        148220.11  148220.0030  0.109210
-        #
-        #                                          ppm     ch_A     ch_B
-        # Mass_ID Isobar Stage2_hit Perm_ID
-        # 0       5      0          0        -4.996506     2G0F    A2G0F
-        # 1       27     0          0         9.053539  A2S1G0F       M4
-        #                           1         9.053539       M4  A2S1G0F
-        #                1          0         9.053539   Unglyc  A2S1G1F
-        #                           1         9.053539  A2S1G1F   Unglyc
-        # 2       37     0          0         0.736810    A2G0F    A2G1F
-        #                           1         0.736810    A2G1F    A2G0F
-        #
-        #                                        Score  Permut  Permutation
-        # Mass_ID Isobar Stage2_hit Perm_ID             ations  score
-        # 0       5      0          0        100.000000      1  100.000000
-        # 1       27     0          0          4.403297      2    8.806594
-        #                           1          4.403297      2    8.806594
-        #                1          0         45.596703      2   91.193406
-        #                           1         45.596703      2   91.193406
-        # 2       37     0          0         50.000000      2  100.000000
-        #                           1         50.000000      2  100.000000
+             (1) a dataframe describing the search results;
+                 multiindex:
 
-             dataframe (2) describing the search statistics;
-             one row per mass;
-             columns: *stage2_results*, *stage2_uniques*
+               a. *Mass_ID*
+               b. *Stage2_hit*
+               c. *Perm_ID*
+
+                 columns:
+
+               * one column for each modification (e.g., *Hex*, *HexNAc*, ...)
+               * *Exp_Mass*
+               * *Theo_Mass*
+               * *Da*
+               * *ppm*
+               * *Stage1_ID*
+               * one column for each glycosylation site (e.g., *ch_A*, *ch_B*)
+               * *Permutation score*
+               * *Permutations*
+               * *Hit score*
+
+                 If no hit was found, all columns contain the value 0
+
+             (2) a dataframe describing the search statistics
+                 with one row per unexplained mass;
+                 columns: *stage2_results*, *stage2_uniques*
     :rtype: tuple(pd.DataFrame)
     """
 
@@ -431,14 +420,30 @@ def find_polymers(stage_1_results, polymer_combinations,
     if progress_bar is not None:
         progress_bar.setValue(50)
 
-    # calculate glycan hash and counts/abundance per hash/peak/isobar
+    # calculate glycan hash
     df_found_polymers["Hash"] = (
         df_found_polymers
-        .iloc[:, df_found_polymers.columns.get_loc("ppm") + 1: -1]
+        .iloc[:, df_found_polymers.columns.get_loc("Stage1_ID") + 1: -1]
         .apply(lambda x: hash(frozenset(x)), axis=1))
 
+    # create columns Perm_ID (index of permutation),
+    # Permutations (count) and Hit score
+    df_found_polymers = (
+        df_found_polymers
+        .reset_index()
+        .sort_values(["Mass_ID", "Permutation score"], ascending=[True, False])
+        .set_index(["Mass_ID", "Hash"])
+    )
+    hash_group = df_found_polymers.groupby(df_found_polymers.index.names)
+    df_found_polymers["Perm_ID"] = hash_group.cumcount()
+    df_found_polymers["Permutations"] = hash_group.size()
+    df_found_polymers["Hit score"] = hash_group["Permutation score"].sum()
+    df_found_polymers = (
+        df_found_polymers
+        .reset_index()
+        .sort_values(["Mass_ID", "Hit score"], ascending=[True, False]))
+
     # column "Stage2_hit" numbers unique permutations per mass index
-    df_found_polymers.reset_index(inplace=True)
     unique_hashes = df_found_polymers.groupby("Mass_ID")["Hash"].unique()
     df_found_polymers["Stage2_hit"] = (
         df_found_polymers
@@ -448,21 +453,11 @@ def find_polymers(stage_1_results, polymer_combinations,
     if progress_bar is not None:
         progress_bar.setValue(75)
 
-    # create columns Perm_ID (index of permutation), Permutations (count)
-    # and Hit score
-    df_found_polymers.set_index(["Isobar", "Stage2_hit", "Stage1_hit"],
-                                inplace=True)
-    hash_group = df_found_polymers.groupby(df_found_polymers.index.names)
-    df_found_polymers["Perm_ID"] = hash_group.cumcount()
-    df_found_polymers["Permutations"] = hash_group.size()
-    df_found_polymers["Hit score"] = hash_group["Permutation score"].sum()
-
+    # clean up
     df_found_polymers = (
         df_found_polymers
-        .reset_index("Stage1_hit", drop=True)
-        .drop(["Hash"], axis=1)
-        .set_index(["Mass_ID", "Perm_ID"], append=True)
-        .reorder_levels(["Mass_ID", "Isobar", "Stage2_hit", "Perm_ID"])
+        .drop(["Hash", "Stage1_hit", "Isobar"], axis=1)
+        .set_index(["Mass_ID", "Stage2_hit", "Perm_ID"])
         .sort_index()
         .fillna({"Permutation score": 0, "Hit score": 0}))
 
