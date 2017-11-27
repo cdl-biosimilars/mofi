@@ -403,7 +403,6 @@ class MainWindow(QMainWindow, Ui_MoFi):
         QApplication.instance().installEventFilter(self)
 
         # initialize private members
-        self._current_selection = [0]  # list of currently selected peaks
         self._exp_mass_data = None  # peak list (mass + relative abundance)
         self._in_context_help_mode = False  # True if in context help mode
         self._known_mods_formula = None  # formula of known modifications
@@ -415,6 +414,7 @@ class MainWindow(QMainWindow, Ui_MoFi):
         self._protein_formula = mass_tools.Formula()  # f. of the sequence
         self._results_tree_headers = [[], []]  # results tables headers
         self._search_statistics = None  # search statistics
+        self._selected_peak = 0  # currently selected peak
 
         # connect signals to slots
         self.acAbout.triggered.connect(self.show_about)
@@ -512,7 +512,7 @@ class MainWindow(QMainWindow, Ui_MoFi):
 
         self.tbMonomers.cellChanged.connect(self.calculate_mod_mass)
         self.tbStatistics.itemClicked.connect(
-            lambda item: self.update_selection(table_item_clicked=item))
+            lambda item: self.update_selection(clicked_table_item=item))
 
         self.teSequence.textChanged.connect(
             lambda: self.teSequence.setStyleSheet(
@@ -1844,21 +1844,19 @@ class MainWindow(QMainWindow, Ui_MoFi):
         :return: nothing
         """
         if event.mouseevent.button == 1:
-            self.update_selection(new_selection=event.ind)
-            self.btLoadPeaks.setFocus()
+            self.update_selection(clicked_peak=event.ind[len(event.ind)//2])
 
 
-    def update_selection(self, new_selection=None,
-                         clicked_item=None, clicked_tree=None,
-                         table_item_clicked=None):
+    def update_selection(self, clicked_peak=None, clicked_item=None,
+                         clicked_tree=None, clicked_table_item=None):
         """
         Update the spectrum and the single mass spinbox
         after the selection has changed.
 
-        :param np.array new_selection: list of indices of selected peaks
+        :param int clicked_peak: peak in the spectrum that was clicked
         :param SortableTreeWidgetItem clicked_item: item that was clicked
         :param QTreeWidget clicked_tree: results tree whose item was clicked
-        :param SortableTableWidgetItem table_item_clicked: item of the
+        :param SortableTableWidgetItem clicked_table_item: item of the
                statistics table that was clicked
         :return: nothing
         """
@@ -1867,8 +1865,8 @@ class MainWindow(QMainWindow, Ui_MoFi):
             return
 
         # if the selection did not change, use the old one
-        if new_selection is not None and len(new_selection) > 0:
-            self._current_selection = new_selection[:]
+        if clicked_peak is not None:
+            self._selected_peak = clicked_peak
 
         # an item of a results tree was clicked
         # for top-level items, proceed with selection
@@ -1885,25 +1883,25 @@ class MainWindow(QMainWindow, Ui_MoFi):
                     scroll_tree1 = False
                 else:
                     scroll_tree2 = False
-            self._current_selection = [item_index]
+            self._selected_peak = item_index
 
         scroll_table = True
         # a row of the statistics table was clicked
-        if table_item_clicked is not None:
-            self._current_selection = [table_item_clicked.row()]
+        if clicked_table_item is not None:
+            int(self.tbStatistics.item(clicked_table_item.row(), 0).text())
+            self._selected_peak = clicked_table_item.row()
             scroll_table = False
 
         # (1) update selection in the spectrum
-        central_peak = self._current_selection[0]
         if self.bgSpectrum.checkedButton() == self.btModeSelection:
-            self.highlight_selected_peaks(self._current_selection)
+            self.highlight_selected_peak(self._selected_peak)
         else:
-            self.highlight_delta_series(central_peak)
+            self.highlight_delta_series(self._selected_peak)
 
         # (2) fill the single mass spin box with the currently selected mass
         try:
             self.sbSingleMass.setValue(
-                self._exp_mass_data.loc[central_peak, "avg_mass"])
+                self._exp_mass_data.loc[self._selected_peak, "avg_mass"])
         except AttributeError:  # occurs when second peak file is loaded
             pass
 
@@ -1914,7 +1912,7 @@ class MainWindow(QMainWindow, Ui_MoFi):
                 try:
                     for i in range(tree.invisibleRootItem().childCount()):
                         tree.invisibleRootItem().child(i).setSelected(False)
-                    item = tree.invisibleRootItem().child(central_peak)
+                    item = tree.invisibleRootItem().child(self._selected_peak)
                     tree.scrollToItem(item)
                     item.setSelected(True)
                 except AttributeError:
@@ -1922,8 +1920,8 @@ class MainWindow(QMainWindow, Ui_MoFi):
 
         # (4) scroll to row in statistics table
         if scroll_table:
-            self.tbStatistics.scrollToItem(table_item_clicked)
-            self.tbStatistics.selectRow(central_peak)
+            self.tbStatistics.scrollToItem(clicked_table_item)
+            self.tbStatistics.selectRow(self._selected_peak)
 
 
     def find_delta_peaks(self, query_peak, delta, tolerance, iterations):
@@ -2117,12 +2115,11 @@ class MainWindow(QMainWindow, Ui_MoFi):
         self.spectrum_canvas.draw()
 
 
-    def highlight_selected_peaks(self, peak_indices):
+    def highlight_selected_peak(self, peak_index):
         """
-        Highlight selected peaks in the spectrum.
+        Highlight the selected peak in the spectrum.
 
-        :param list(int) peak_indices: list of indices of peaks
-                                       that should be highlighted
+        :param int peak_index: index of the peak to be highlighted
         :return: nothing
         """
 
@@ -2151,7 +2148,7 @@ class MainWindow(QMainWindow, Ui_MoFi):
                     self._exp_mass_data.shape[0], dtype=int)
 
         selected_peaks = np.zeros(self._exp_mass_data.shape[0], dtype=int)
-        selected_peaks[peak_indices] = 1
+        selected_peaks[peak_index] = 1
 
         # peak colors will be an array with one entry per peak:
         # before search: 0 - not selected, 1 - selected
@@ -2178,19 +2175,15 @@ class MainWindow(QMainWindow, Ui_MoFi):
 
         # label selected peaks with masses
         if self.btLabelPeaks.isChecked():
-            for peak_id in peak_indices:
-                self.spectrum_axes.annotate(
-                    s=configure.dec_places().format(
-                        self._exp_mass_data.iloc[peak_id]["avg_mass"]),
-                    xy=(self._exp_mass_data
-                            .iloc[peak_id]["avg_mass"],
-                        self._exp_mass_data
-                            .iloc[peak_id]["rel_abundance"]),
-                    xytext=(0, 5),
-                    textcoords="offset pixels",
-                    horizontalalignment="center",
-                    bbox=dict(facecolor="white", alpha=.75,
-                              linewidth=0, pad=0))
+            self.spectrum_axes.annotate(
+                s=configure.dec_places().format(
+                    self._exp_mass_data.iloc[peak_index]["avg_mass"]),
+                xy=(self._exp_mass_data.iloc[peak_index]["avg_mass"],
+                    self._exp_mass_data.iloc[peak_index]["rel_abundance"]),
+                xytext=(0, 5),
+                textcoords="offset pixels",
+                horizontalalignment="center",
+                bbox=dict(facecolor="white", alpha=.75, linewidth=0, pad=0))
         self.spectrum_canvas.draw()
 
 
