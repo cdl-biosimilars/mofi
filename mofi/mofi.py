@@ -521,10 +521,10 @@ class MainWindow(QMainWindow, Ui_MoFi):
 
         self.twResults1.itemClicked.connect(
             lambda item: self.update_selection(
-                clicked_item=item, clicked_tree=self.twResults1))
+                clicked_tree_item=item, clicked_tree=self.twResults1))
         self.twResults2.itemClicked.connect(
             lambda item: self.update_selection(
-                clicked_item=item, clicked_tree=self.twResults2))
+                clicked_tree_item=item, clicked_tree=self.twResults2))
 
         # fill the mass sets combobox
         for set_id, mass_set in enumerate(configure.mass_sets):
@@ -1847,14 +1847,14 @@ class MainWindow(QMainWindow, Ui_MoFi):
             self.update_selection(clicked_peak=event.ind[len(event.ind)//2])
 
 
-    def update_selection(self, clicked_peak=None, clicked_item=None,
+    def update_selection(self, clicked_peak=None, clicked_tree_item=None,
                          clicked_tree=None, clicked_table_item=None):
         """
         Update the spectrum and the single mass spinbox
         after the selection has changed.
 
         :param int clicked_peak: peak in the spectrum that was clicked
-        :param SortableTreeWidgetItem clicked_item: item that was clicked
+        :param SortableTreeWidgetItem clicked_tree_item: item that was clicked
         :param QTreeWidget clicked_tree: results tree whose item was clicked
         :param SortableTableWidgetItem clicked_table_item: item of the
                statistics table that was clicked
@@ -1864,35 +1864,32 @@ class MainWindow(QMainWindow, Ui_MoFi):
         if self._exp_mass_data is None:  # there's no spectrum
             return
 
-        # if the selection did not change, use the old one
+        # (A) Get the selected peak:
+        # (1) a peak was picked in the spectrum
         if clicked_peak is not None:
             self._selected_peak = clicked_peak
 
-        # an item of a results tree was clicked
-        # for top-level items, proceed with selection
-        # for child items, do not change the selection in the clicked table
+        # (2) an item of a results tree was clicked
+        #     -> extract the peak index from the annotation index
         scroll_tree1 = True
         scroll_tree2 = True
         if clicked_tree:
-            item_index = (clicked_tree.invisibleRootItem()
-                          .indexOfChild(clicked_item))
-            if item_index == -1:
-                item_index = clicked_tree.invisibleRootItem().indexOfChild(
-                    clicked_item.getTopParent())
-                if clicked_tree == self.twResults1:
-                    scroll_tree1 = False
-                else:
-                    scroll_tree2 = False
-            self._selected_peak = item_index
+            if clicked_tree == self.twResults1:
+                scroll_tree1 = False
+            else:
+                scroll_tree2 = False
+            self._selected_peak = int(clicked_tree_item.text(1).split("-")[0])
 
+        # (3) a row of the statistics table was clicked
+        #     -> extract the peak index from the leftmost cell
         scroll_table = True
-        # a row of the statistics table was clicked
         if clicked_table_item is not None:
-            int(self.tbStatistics.item(clicked_table_item.row(), 0).text())
-            self._selected_peak = clicked_table_item.row()
+            self._selected_peak = int(
+                self.tbStatistics.item(clicked_table_item.row(), 0).text())
             scroll_table = False
 
-        # (1) update selection in the spectrum
+        # (B) Update the GUI:
+        # (1) highlight selected peaks in the spectrum
         if self.bgSpectrum.checkedButton() == self.btModeSelection:
             self.highlight_selected_peak(self._selected_peak)
         else:
@@ -1912,16 +1909,23 @@ class MainWindow(QMainWindow, Ui_MoFi):
                 try:
                     for i in range(tree.invisibleRootItem().childCount()):
                         tree.invisibleRootItem().child(i).setSelected(False)
-                    item = tree.invisibleRootItem().child(self._selected_peak)
-                    tree.scrollToItem(item)
-                    item.setSelected(True)
+                    for i in range(tree.invisibleRootItem().childCount()):
+                        item = tree.invisibleRootItem().child(i)
+                        peak_id = int(item.text(1).split("-")[0])
+                        if peak_id == self._selected_peak:
+                            tree.scrollToItem(item)
+                            item.setSelected(True)
+                            break
                 except AttributeError:
                     pass
 
         # (4) scroll to row in statistics table
         if scroll_table:
-            self.tbStatistics.scrollToItem(clicked_table_item)
-            self.tbStatistics.selectRow(self._selected_peak)
+            for row in range(self.tbStatistics.rowCount()):
+                peak_id = int(self.tbStatistics.item(row, 0).text())
+                if peak_id == self._selected_peak:
+                    self.tbStatistics.selectRow(row)
+                    break
 
 
     def find_delta_peaks(self, query_peak, delta, tolerance, iterations):
