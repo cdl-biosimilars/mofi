@@ -36,7 +36,7 @@ from mofi.paths import data_dir, docs_dir
 from mofi.mofi_ui import Ui_MoFi
 from mofi.widgets import (FilterHeader, CollapsingRectangleSelector,
                           SortableTreeWidgetItem, SortableTableWidgetItem,
-                          ImportTabDataDialog, get_filename)
+                          ImportTabDataDialog, FileTypes, get_filename)
 
 _version_info = """MoFi v1.0
 
@@ -63,6 +63,13 @@ _polymer_table_columns = [
     ("Name", None, "Name"),
     ("Composition", None, "Composition"),
     ("Sites", "", "Sites"),
+    ("Abundance", 0.0, "Abundance")
+]
+
+# default values for columns in the polymer table
+_pepmap_columns = [
+    ("Checked", True, "Use?"),
+    ("Modification", None, "Modification"),
     ("Abundance", 0.0, "Abundance")
 ]
 
@@ -459,7 +466,7 @@ class MainWindow(QMainWindow, Ui_MoFi):
             lambda: self.load_table(
                 default=False,
                 dialog_title="Import glycans",
-                extensions=["csv", "xls", "xlsx"],
+                extensions=["csv", "xls", "xlsx", "xls-bpf"],
                 table_widget=self.tbPolymers,
                 cols=_polymer_table_columns
             )
@@ -859,8 +866,8 @@ class MainWindow(QMainWindow, Ui_MoFi):
         :return: nothing
         """
 
-        filename, self._path = get_filename(
-            self, "save", dialog_title, self._path, ["csv"])
+        filename, _, self._path = get_filename(
+            self, "save", dialog_title, self._path, FileTypes(["csv"]))
         if filename is None:
             return
 
@@ -891,7 +898,7 @@ class MainWindow(QMainWindow, Ui_MoFi):
         :return: nothing
         """
 
-        for label, default in cols:
+        for label, default, _ in cols:
             if label not in df.columns:
                 if default is None:
                     QMessageBox.warning(
@@ -927,18 +934,22 @@ class MainWindow(QMainWindow, Ui_MoFi):
         if default:
             filename = os.path.join(data_dir, subdir,
                                     self.sender().text() + ".csv")
+            filetype = ""
         else:
-            filename, self._path = get_filename(
-                self, "open", dialog_title, self._path, extensions)
+            filename, filetype, self._path = get_filename(
+                self, "open", dialog_title, self._path, FileTypes(extensions))
         if filename is None:
             return
 
         if filename.endswith("csv"):
             df = ImportTabDataDialog.get_data(self, filename, cols, "csv")
         else:
-            df = ImportTabDataDialog.get_data(self, filename, cols, "xls")
-            # if "Modification" in df.columns:  # TODO how to resolve?
-            #     df = io_tools.read_bpf_library(df)
+            if filetype == "BioPharma Finder PepMap results":
+                df = ImportTabDataDialog.get_data(self, filename,
+                                                  _pepmap_columns, "xls")
+                df = io_tools.read_bpf_library(df)
+            else:
+                df = ImportTabDataDialog.get_data(self, filename, cols, "xls")
         if df is not None:
             self.table_from_df(df, table_widget, cols)
             self.calculate_mod_mass()
@@ -1104,8 +1115,8 @@ class MainWindow(QMainWindow, Ui_MoFi):
         :return: nothing
         """
 
-        filename, self._path = get_filename(
-            self, "open", "Open sequence", self._path, ["fasta"])
+        filename, _, self._path = get_filename(
+            self, "open", "Open sequence", self._path, FileTypes(["fasta"]))
         if filename is None:
             return
 
@@ -1128,8 +1139,8 @@ class MainWindow(QMainWindow, Ui_MoFi):
         :return: nothing
         """
 
-        filename, self._path = get_filename(
-            self, "save", "Save sequence", self._path, ["fasta"])
+        filename, _, self._path = get_filename(
+            self, "save", "Save sequence", self._path, FileTypes(["fasta"]))
         if filename is None:
             return
 
@@ -1150,8 +1161,9 @@ class MainWindow(QMainWindow, Ui_MoFi):
         :return: nothing
         """
 
-        filename, self._path = get_filename(
-            self, "open", "Open mass list", self._path, ["xls", "xlsx", "csv"])
+        filename, _, self._path = get_filename(
+            self, "open", "Open mass list", self._path,
+            FileTypes(["xls", "xlsx", "csv"]))
         if filename is None:
             return
 
@@ -1178,10 +1190,9 @@ class MainWindow(QMainWindow, Ui_MoFi):
         :return: nothing
         """
 
-        file_types = self.spectrum_canvas.get_supported_filetypes()
-        filename, self._path = get_filename(
+        filename, _, self._path = get_filename(
             self, "save", "Save spectrum", self._path,
-            sorted(file_types.keys()), file_types)
+            FileTypes(self.spectrum_canvas.get_supported_filetypes()))
         if filename is None:
             return
 
@@ -1210,8 +1221,9 @@ class MainWindow(QMainWindow, Ui_MoFi):
         :return: nothing
         """
 
-        filename, self._path = get_filename(
-            self, "save", "Save results", self._path, ["csv", "xlsx"])
+        filename, _, self._path = get_filename(
+            self, "save", "Save results", self._path,
+            FileTypes(["csv", "xlsx"]))
         if filename is None:
             return
 
@@ -2520,8 +2532,8 @@ class MainWindow(QMainWindow, Ui_MoFi):
         :return: nothing
         """
 
-        filename, self._path = get_filename(
-            self, "save", "Save settings", self._path, ["xml"])
+        filename, _, self._path = get_filename(
+            self, "save", "Save settings", self._path, FileTypes(["xml"]))
         if filename is None:
             return
 
@@ -2562,8 +2574,8 @@ class MainWindow(QMainWindow, Ui_MoFi):
         :return: nothing
         """
 
-        filename, self._path = get_filename(
-            self, "open", "Load settings", self._path, ["xml"])
+        filename, _, self._path = get_filename(
+            self, "open", "Load settings", self._path, FileTypes(["xml"]))
         if filename is None:
             return
 
