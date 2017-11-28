@@ -231,7 +231,7 @@ def create_child_items(df, root_item, column_count, monomers, sites):
             pass
         # child items for all hits per peak
         stage1_id = 0
-        for hit in df.reset_index().itertuples():
+        for hit_id, hit in df.reset_index().iterrows():
             hit_item = SortableTreeWidgetItem(
                 root_item,
                 default_key=float,
@@ -248,7 +248,7 @@ def create_child_items(df, root_item, column_count, monomers, sites):
                 even_color=configure.colors["table"]["child_even"],
                 odd_color=configure.colors["table"]["child_odd"],
                 column_count=column_count,
-                alternating=hit.Index)
+                alternating=hit_id)
 
 
 def create_hit_columns(item, hit, monomers, sites):
@@ -257,8 +257,7 @@ def create_hit_columns(item, hit, monomers, sites):
     in the results table.
 
     :param SortableTreeWidgetItem item: row to fill
-    :param hit: hit data
-    :type hit: pd.Series or namedtuple
+    :param pd.Series hit: hit data
     :param list monomers: list of monosaccharides
     :param list sites: list of glycosylation sites
     :return: the position of the first unused column
@@ -296,13 +295,13 @@ def create_hit_columns(item, hit, monomers, sites):
         for label, form in [("Theo_Mass", configure.dec_places()),
                             ("Da", configure.dec_places()),
                             ("ppm", "{:.0f}")]:
-            item.setText(pos, form.format(getattr(hit, label)))
+            item.setText(pos, form.format(hit[label]))
             item.setTextAlignment(pos, Qt.AlignRight)
             pos += 1
 
         # monomer counts
         for monomer in monomers:
-            item.setText(pos, "{:.0f}".format(getattr(hit, monomer)))
+            item.setText(pos, "{:.0f}".format(hit[monomer]))
             item.setTextAlignment(pos, Qt.AlignRight)
             pos += 1
 
