@@ -157,6 +157,15 @@ class Ui_ImportTabData(object):
 
         self.retranslateUi(ImportTabData)
         QtCore.QMetaObject.connectSlotsByName(ImportTabData)
+        ImportTabData.setTabOrder(self.teFileContents, self.leSep)
+        ImportTabData.setTabOrder(self.leSep, self.leComment)
+        ImportTabData.setTabOrder(self.leComment, self.leQuote)
+        ImportTabData.setTabOrder(self.leQuote, self.leDecimal)
+        ImportTabData.setTabOrder(self.leDecimal, self.leThousands)
+        ImportTabData.setTabOrder(self.leThousands, self.sbSkipRows)
+        ImportTabData.setTabOrder(self.sbSkipRows, self.cbSheetName)
+        ImportTabData.setTabOrder(self.cbSheetName, self.cbHeader)
+        ImportTabData.setTabOrder(self.cbHeader, self.twPreview)
 
     def retranslateUi(self, ImportTabData):
         _translate = QtCore.QCoreApplication.translate

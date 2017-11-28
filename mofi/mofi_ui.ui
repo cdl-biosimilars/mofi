@@ -2013,12 +2013,15 @@ QPushButton:pressed {
   <tabstop>btDeleteRowPolymers</tabstop>
   <tabstop>btClearPolymers</tabstop>
   <tabstop>tbPolymers</tabstop>
+  <tabstop>cbDeltaSymbol1</tabstop>
   <tabstop>sbDeltaValue1</tabstop>
   <tabstop>sbDeltaTolerance1</tabstop>
   <tabstop>sbDeltaRepetition1</tabstop>
+  <tabstop>cbDeltaSymbol2</tabstop>
   <tabstop>sbDeltaValue2</tabstop>
   <tabstop>sbDeltaTolerance2</tabstop>
   <tabstop>sbDeltaRepetition2</tabstop>
+  <tabstop>chIndexDelta</tabstop>
   <tabstop>chCombineDelta</tabstop>
   <tabstop>btLoadPeaks</tabstop>
   <tabstop>btSaveSpectrum</tabstop>
@@ -2032,14 +2035,20 @@ QPushButton:pressed {
   <tabstop>sbSingleMass</tabstop>
   <tabstop>sbTolerance</tabstop>
   <tabstop>cbTolerance</tabstop>
+  <tabstop>sbMaxMods</tabstop>
   <tabstop>taResults</tabstop>
-  <tabstop>twResults1</tabstop>
   <tabstop>twResults2</tabstop>
-  <tabstop>tbStatistics</tabstop>
+  <tabstop>btSaveResults</tabstop>
+  <tabstop>btOnlyShowUnannotated</tabstop>
   <tabstop>btClearFilters</tabstop>
+  <tabstop>btRestoreSortOrder</tabstop>
+  <tabstop>btCollapseAll</tabstop>
   <tabstop>btExpandParents</tabstop>
   <tabstop>btExpandAll</tabstop>
+  <tabstop>btCheckAll</tabstop>
   <tabstop>btUncheckAll</tabstop>
+  <tabstop>twResults1</tabstop>
+  <tabstop>tbStatistics</tabstop>
  </tabstops>
  <resources>
   <include location="mofi.qrc"/>

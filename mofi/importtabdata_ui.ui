@@ -308,6 +308,18 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>teFileContents</tabstop>
+  <tabstop>leSep</tabstop>
+  <tabstop>leComment</tabstop>
+  <tabstop>leQuote</tabstop>
+  <tabstop>leDecimal</tabstop>
+  <tabstop>leThousands</tabstop>
+  <tabstop>sbSkipRows</tabstop>
+  <tabstop>cbSheetName</tabstop>
+  <tabstop>cbHeader</tabstop>
+  <tabstop>twPreview</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>
