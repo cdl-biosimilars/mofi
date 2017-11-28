@@ -22,536 +22,636 @@ EVQLVESGGGLVQPGGSLRLSCAASGFNIKDTYIHWVRQAPGKGLEWVARIYPTNGYTRYADSVKGRFTISADTSKNTAY
       </columns>
       <rows>
         <row id="0">
-          <cell>148037.718513</cell>
-          <cell>4.97919541264</cell>
+          <cell>155878.511937</cell>
+          <cell>4.75700649079</cell>
         </row>
         <row id="1">
-          <cell>148058.260945</cell>
-          <cell>7.42794851719</cell>
+          <cell>156201.957844</cell>
+          <cell>3.13167297031</cell>
         </row>
         <row id="2">
-          <cell>148099.386563</cell>
-          <cell>3.09176205787</cell>
+          <cell>155083.214438</cell>
+          <cell>20.0951279891</cell>
         </row>
         <row id="3">
-          <cell>148103.916624</cell>
-          <cell>1.50885861687</cell>
+          <cell>154920.971746</cell>
+          <cell>18.2855973309</cell>
         </row>
         <row id="4">
-          <cell>148107.435951</cell>
-          <cell>1.75656896983</cell>
+          <cell>155244.084649</cell>
+          <cell>7.46761979448</cell>
         </row>
         <row id="5">
-          <cell>148138.256949</cell>
-          <cell>1.47575843259</cell>
+          <cell>154762.052858</cell>
+          <cell>3.9467440759</cell>
         </row>
         <row id="6">
-          <cell>148192.55811</cell>
-          <cell>4.0301155571</cell>
+          <cell>154758.753411</cell>
+          <cell>3.52150410243</cell>
         </row>
         <row id="7">
-          <cell>148219.36634</cell>
-          <cell>8.17939973864</cell>
+          <cell>153965.903356</cell>
+          <cell>41.5153958354</cell>
         </row>
         <row id="8">
-          <cell>148259.270954</cell>
-          <cell>12.0135127256</cell>
+          <cell>154127.62053</cell>
+          <cell>31.2763711417</cell>
         </row>
         <row id="9">
-          <cell>148331.09423</cell>
-          <cell>3.1602612729</cell>
+          <cell>153802.916771</cell>
+          <cell>24.4040919327</cell>
         </row>
         <row id="10">
-          <cell>148356.089312</cell>
-          <cell>1.22337025121</cell>
+          <cell>154288.402185</cell>
+          <cell>14.5010874189</cell>
         </row>
         <row id="11">
-          <cell>148416.558447</cell>
-          <cell>7.55176353744</cell>
+          <cell>154124.634059</cell>
+          <cell>4.22434835076</cell>
         </row>
         <row id="12">
-          <cell>148470.88797</cell>
-          <cell>5.0588329108</cell>
+          <cell>154450.420825</cell>
+          <cell>2.93310401305</cell>
         </row>
         <row id="13">
-          <cell>148506.990554</cell>
-          <cell>0.911667591194</cell>
+          <cell>153007.361285</cell>
+          <cell>75.4090087287</cell>
         </row>
         <row id="14">
-          <cell>148515.299231</cell>
-          <cell>2.17844053772</cell>
+          <cell>153170.515713</cell>
+          <cell>60.5414118944</cell>
         </row>
         <row id="15">
-          <cell>148542.705904</cell>
-          <cell>3.09565200109</cell>
+          <cell>152847.245383</cell>
+          <cell>52.1819891125</cell>
         </row>
         <row id="16">
-          <cell>148565.340873</cell>
-          <cell>2.83446955657</cell>
+          <cell>153329.048582</cell>
+          <cell>21.7373425636</cell>
         </row>
         <row id="17">
-          <cell>148573.994178</cell>
-          <cell>1.91056799713</cell>
+          <cell>152700.836388</cell>
+          <cell>10.7199318068</cell>
         </row>
         <row id="18">
-          <cell>148624.492151</cell>
-          <cell>2.97594626237</cell>
+          <cell>152049.589173</cell>
+          <cell>96.286545986</cell>
         </row>
         <row id="19">
-          <cell>148682.150817</cell>
-          <cell>2.55063204831</cell>
+          <cell>152213.478804</cell>
+          <cell>72.1488686139</cell>
         </row>
         <row id="20">
-          <cell>148722.424997</cell>
-          <cell>3.21117300561</cell>
+          <cell>152374.864355</cell>
+          <cell>36.3539551242</cell>
         </row>
         <row id="21">
-          <cell>148833.370859</cell>
-          <cell>2.39317620361</cell>
+          <cell>151739.765178</cell>
+          <cell>15.9782366571</cell>
         </row>
         <row id="22">
-          <cell>148867.806798</cell>
-          <cell>8.24404540784</cell>
+          <cell>152536.945942</cell>
+          <cell>9.2185907234</cell>
         </row>
         <row id="23">
-          <cell>148882.47896</cell>
-          <cell>2.4449610425</cell>
-        </row>
-        <row id="24">
-          <cell>148904.368701</cell>
-          <cell>2.19467796266</cell>
-        </row>
-        <row id="25">
-          <cell>148961.519188</cell>
-          <cell>2.71403004875</cell>
-        </row>
-        <row id="26">
-          <cell>149017.170117</cell>
-          <cell>33.2224919132</cell>
-        </row>
-        <row id="27">
-          <cell>149062.893926</cell>
-          <cell>1.02244562817</cell>
-        </row>
-        <row id="28">
-          <cell>149178.423429</cell>
-          <cell>47.1919119819</cell>
-        </row>
-        <row id="29">
-          <cell>149189.869443</cell>
-          <cell>1.30404157872</cell>
-        </row>
-        <row id="30">
-          <cell>149233.5822</cell>
-          <cell>6.10458655158</cell>
-        </row>
-        <row id="31">
-          <cell>149238.798381</cell>
-          <cell>1.44927339119</cell>
-        </row>
-        <row id="32">
-          <cell>149242.980523</cell>
-          <cell>3.77970065408</cell>
-        </row>
-        <row id="33">
-          <cell>149251.80166</cell>
-          <cell>4.05757133913</cell>
-        </row>
-        <row id="34">
-          <cell>149339.555197</cell>
-          <cell>38.6559162298</cell>
-        </row>
-        <row id="35">
-          <cell>149390.003554</cell>
-          <cell>4.04977251154</cell>
-        </row>
-        <row id="36">
-          <cell>149399.216315</cell>
-          <cell>16.2887831422</cell>
-        </row>
-        <row id="37">
-          <cell>149426.481916</cell>
-          <cell>2.04650314665</cell>
-        </row>
-        <row id="38">
-          <cell>149491.321831</cell>
-          <cell>3.86117707103</cell>
-        </row>
-        <row id="39">
-          <cell>149501.270687</cell>
-          <cell>12.7420616287</cell>
-        </row>
-        <row id="40">
-          <cell>149538.169854</cell>
-          <cell>1.75835091063</cell>
-        </row>
-        <row id="41">
-          <cell>149554.233293</cell>
-          <cell>2.47810005856</cell>
-        </row>
-        <row id="42">
-          <cell>149560.708368</cell>
-          <cell>12.116405484</cell>
-        </row>
-        <row id="43">
-          <cell>149618.555711</cell>
-          <cell>5.3114336508</cell>
-        </row>
-        <row id="44">
-          <cell>149637.945688</cell>
-          <cell>1.96050131555</cell>
-        </row>
-        <row id="45">
-          <cell>149654.763004</cell>
-          <cell>1.47154798953</cell>
-        </row>
-        <row id="46">
-          <cell>149663.425735</cell>
-          <cell>4.97676811183</cell>
-        </row>
-        <row id="47">
-          <cell>149728.552315</cell>
-          <cell>5.17393910564</cell>
-        </row>
-        <row id="48">
-          <cell>149732.478655</cell>
-          <cell>3.16969400685</cell>
-        </row>
-        <row id="49">
-          <cell>149773.033757</cell>
-          <cell>3.35989055015</cell>
-        </row>
-        <row id="50">
-          <cell>149822.115019</cell>
-          <cell>8.7641092815</cell>
-        </row>
-        <row id="51">
-          <cell>149833.127104</cell>
-          <cell>5.81804912734</cell>
-        </row>
-        <row id="52">
-          <cell>149903.860001</cell>
-          <cell>2.71851745458</cell>
-        </row>
-        <row id="53">
-          <cell>149972.082097</cell>
-          <cell>50.5464696466</cell>
-        </row>
-        <row id="54">
-          <cell>150002.479942</cell>
-          <cell>4.84615080273</cell>
-        </row>
-        <row id="55">
-          <cell>150049.29754</cell>
-          <cell>5.3638127177</cell>
-        </row>
-        <row id="56">
-          <cell>150134.921019</cell>
-          <cell>85.8519707677</cell>
-        </row>
-        <row id="57">
-          <cell>150178.385851</cell>
-          <cell>2.45441056521</cell>
-        </row>
-        <row id="58">
-          <cell>150198.647155</cell>
-          <cell>25.670783205</cell>
-        </row>
-        <row id="59">
-          <cell>150297.003618</cell>
-          <cell>58.7926384941</cell>
-        </row>
-        <row id="60">
-          <cell>150354.744336</cell>
-          <cell>32.3807522509</cell>
-        </row>
-        <row id="61">
-          <cell>150398.059847</cell>
-          <cell>2.22138456528</cell>
-        </row>
-        <row id="62">
-          <cell>150406.310043</cell>
-          <cell>0.930404769749</cell>
-        </row>
-        <row id="63">
-          <cell>150452.577163</cell>
-          <cell>2.22305018473</cell>
-        </row>
-        <row id="64">
-          <cell>150460.479509</cell>
-          <cell>18.5832877745</cell>
-        </row>
-        <row id="65">
-          <cell>150470.646254</cell>
-          <cell>2.13381878324</cell>
-        </row>
-        <row id="66">
-          <cell>150518.127024</cell>
-          <cell>28.3423028443</cell>
-        </row>
-        <row id="67">
-          <cell>150537.918235</cell>
-          <cell>1.87314580847</cell>
-        </row>
-        <row id="68">
-          <cell>150548.833288</cell>
-          <cell>0.747088649852</cell>
-        </row>
-        <row id="69">
-          <cell>150564.103824</cell>
-          <cell>2.70415542082</cell>
-        </row>
-        <row id="70">
-          <cell>150575.943488</cell>
-          <cell>1.77229088254</cell>
-        </row>
-        <row id="71">
-          <cell>150584.342819</cell>
-          <cell>5.21480124914</cell>
-        </row>
-        <row id="72">
-          <cell>150599.312642</cell>
-          <cell>3.13516116834</cell>
-        </row>
-        <row id="73">
-          <cell>150620.053885</cell>
-          <cell>4.47636131111</cell>
-        </row>
-        <row id="74">
-          <cell>150672.132024</cell>
-          <cell>2.89377432913</cell>
-        </row>
-        <row id="75">
-          <cell>150685.673787</cell>
-          <cell>7.36812088121</cell>
-        </row>
-        <row id="76">
-          <cell>150782.383372</cell>
-          <cell>12.6024713491</cell>
-        </row>
-        <row id="77">
-          <cell>150931.465642</cell>
-          <cell>70.9791495787</cell>
-        </row>
-        <row id="78">
-          <cell>151092.598161</cell>
+          <cell>151092.447183</cell>
           <cell>100.0</cell>
         </row>
+        <row id="24">
+          <cell>151255.614512</cell>
+          <cell>85.049490701</cell>
+        </row>
+        <row id="25">
+          <cell>150932.061684</cell>
+          <cell>73.5550539716</cell>
+        </row>
+        <row id="26">
+          <cell>150784.478284</cell>
+          <cell>20.1200742563</cell>
+        </row>
+        <row id="27">
+          <cell>151417.804573</cell>
+          <cell>19.4561278118</cell>
+        </row>
+        <row id="28">
+          <cell>151416.093447</cell>
+          <cell>17.0392618374</cell>
+        </row>
+        <row id="29">
+          <cell>150135.330799</cell>
+          <cell>60.2443229621</cell>
+        </row>
+        <row id="30">
+          <cell>150297.009893</cell>
+          <cell>59.0911914836</cell>
+        </row>
+        <row id="31">
+          <cell>149973.79632</cell>
+          <cell>47.5061769892</cell>
+        </row>
+        <row id="32">
+          <cell>150459.811655</cell>
+          <cell>28.8830654486</cell>
+        </row>
+        <row id="33">
+          <cell>149826.473503</cell>
+          <cell>14.8884537997</cell>
+        </row>
+        <row id="34">
+          <cell>150293.135299</cell>
+          <cell>1.04270589961</cell>
+        </row>
+        <row id="35">
+          <cell>149339.033817</cell>
+          <cell>28.140823484</cell>
+        </row>
+        <row id="36">
+          <cell>149015.99518</cell>
+          <cell>26.0527250191</cell>
+        </row>
+        <row id="37">
+          <cell>151889.795817</cell>
+          <cell>65.5034179954</cell>
+        </row>
+        <row id="38">
+          <cell>151314.792685</cell>
+          <cell>44.1435768736</cell>
+        </row>
+        <row id="39">
+          <cell>152271.134372</cell>
+          <cell>35.1528827577</cell>
+        </row>
+        <row id="40">
+          <cell>149179.399465</cell>
+          <cell>34.9625410459</cell>
+        </row>
+        <row id="41">
+          <cell>151473.76459</cell>
+          <cell>31.8498705769</cell>
+        </row>
+        <row id="42">
+          <cell>150519.827816</cell>
+          <cell>28.1374052236</cell>
+        </row>
+        <row id="43">
+          <cell>150355.106665</cell>
+          <cell>26.7552515748</cell>
+        </row>
+        <row id="44">
+          <cell>151153.131026</cell>
+          <cell>26.1291281827</cell>
+        </row>
+        <row id="45">
+          <cell>152431.976772</cell>
+          <cell>25.314345097</cell>
+        </row>
+        <row id="46">
+          <cell>150193.058021</cell>
+          <cell>22.8186192055</cell>
+        </row>
+        <row id="47">
+          <cell>153229.462723</cell>
+          <cell>21.4345105456</cell>
+        </row>
+        <row id="48">
+          <cell>153389.430261</cell>
+          <cell>18.4218572756</cell>
+        </row>
+        <row id="49">
+          <cell>153068.127681</cell>
+          <cell>16.0017379676</cell>
+        </row>
+        <row id="50">
+          <cell>151639.457528</cell>
+          <cell>15.9278076819</cell>
+        </row>
+        <row id="51">
+          <cell>149398.823703</cell>
+          <cell>15.6824113621</cell>
+        </row>
+        <row id="52">
+          <cell>152109.763741</cell>
+          <cell>15.5402841107</cell>
+        </row>
+        <row id="53">
+          <cell>154185.595066</cell>
+          <cell>14.7345412817</cell>
+        </row>
+        <row id="54">
+          <cell>152106.971211</cell>
+          <cell>12.3100894948</cell>
+        </row>
+        <row id="55">
+          <cell>155314.272222</cell>
+          <cell>10.8723653169</cell>
+        </row>
+        <row id="56">
+          <cell>152656.795271</cell>
+          <cell>10.6912886891</cell>
+        </row>
+        <row id="57">
+          <cell>153661.725844</cell>
+          <cell>9.55432768205</cell>
+        </row>
+        <row id="58">
+          <cell>148220.11221</cell>
+          <cell>8.99169994064</cell>
+        </row>
+        <row id="59">
+          <cell>151697.440506</cell>
+          <cell>8.43881824245</cell>
+        </row>
+        <row id="60">
+          <cell>149233.487053</cell>
+          <cell>8.27777309367</cell>
+        </row>
+        <row id="61">
+          <cell>150585.692144</cell>
+          <cell>7.42974287825</cell>
+        </row>
+        <row id="62">
+          <cell>151002.217154</cell>
+          <cell>7.3058431857</cell>
+        </row>
+        <row id="63">
+          <cell>154343.091262</cell>
+          <cell>7.21758930458</cell>
+        </row>
+        <row id="64">
+          <cell>149496.336538</cell>
+          <cell>6.91942482281</cell>
+        </row>
+        <row id="65">
+          <cell>152601.193488</cell>
+          <cell>6.83163550995</cell>
+        </row>
+        <row id="66">
+          <cell>155139.016437</cell>
+          <cell>6.00412038575</cell>
+        </row>
+        <row id="67">
+          <cell>154027.922812</cell>
+          <cell>5.97887813901</cell>
+        </row>
+        <row id="68">
+          <cell>151586.801161</cell>
+          <cell>5.74967812257</cell>
+        </row>
+        <row id="69">
+          <cell>156390.217566</cell>
+          <cell>5.4798624773</cell>
+        </row>
+        <row id="70">
+          <cell>156480.073992</cell>
+          <cell>5.39745744759</cell>
+        </row>
+        <row id="71">
+          <cell>148879.912857</cell>
+          <cell>5.25914748311</cell>
+        </row>
+        <row id="72">
+          <cell>154024.400843</cell>
+          <cell>5.25687619967</cell>
+        </row>
+        <row id="73">
+          <cell>152776.288158</cell>
+          <cell>5.038582896</cell>
+        </row>
+        <row id="74">
+          <cell>154983.494289</cell>
+          <cell>4.68308375711</cell>
+        </row>
+        <row id="75">
+          <cell>153392.165231</cell>
+          <cell>4.55351667442</cell>
+        </row>
+        <row id="76">
+          <cell>156139.000203</cell>
+          <cell>4.45055691804</cell>
+        </row>
+        <row id="77">
+          <cell>149635.960722</cell>
+          <cell>4.41699084239</cell>
+        </row>
+        <row id="78">
+          <cell>155374.957491</cell>
+          <cell>4.35994365243</cell>
+        </row>
         <row id="79">
-          <cell>151144.707913</cell>
-          <cell>8.64674048158</cell>
+          <cell>150672.837052</cell>
+          <cell>4.16883655231</cell>
         </row>
         <row id="80">
-          <cell>151154.366804</cell>
-          <cell>22.3183780256</cell>
+          <cell>151913.231275</cell>
+          <cell>4.1470622571</cell>
         </row>
         <row id="81">
-          <cell>151253.900064</cell>
-          <cell>76.8234333096</cell>
+          <cell>150043.259528</cell>
+          <cell>4.13991917387</cell>
         </row>
         <row id="82">
-          <cell>151310.813545</cell>
-          <cell>14.4055843225</cell>
+          <cell>153459.83775</cell>
+          <cell>3.973813357</cell>
         </row>
         <row id="83">
-          <cell>151316.538814</cell>
-          <cell>13.3793804003</cell>
+          <cell>156044.945234</cell>
+          <cell>3.84849889671</cell>
         </row>
         <row id="84">
-          <cell>151364.439596</cell>
-          <cell>1.51095947809</cell>
+          <cell>153099.237947</cell>
+          <cell>3.83584922867</cell>
         </row>
         <row id="85">
-          <cell>151417.086832</cell>
-          <cell>27.8295193072</cell>
+          <cell>155304.388551</cell>
+          <cell>3.73731757793</cell>
         </row>
         <row id="86">
-          <cell>151470.920608</cell>
-          <cell>23.8038008074</cell>
+          <cell>154978.000685</cell>
+          <cell>3.72735635893</cell>
         </row>
         <row id="87">
-          <cell>151480.399247</cell>
-          <cell>11.2984860778</cell>
+          <cell>156968.514715</cell>
+          <cell>3.68402733814</cell>
         </row>
         <row id="88">
-          <cell>151535.405206</cell>
-          <cell>6.70580129766</cell>
+          <cell>148381.360467</cell>
+          <cell>3.44557005759</cell>
         </row>
         <row id="89">
-          <cell>151545.956402</cell>
-          <cell>5.44527187942</cell>
+          <cell>148815.605965</cell>
+          <cell>3.16891175527</cell>
         </row>
         <row id="90">
-          <cell>151584.806535</cell>
-          <cell>6.23243586377</cell>
+          <cell>153615.308245</cell>
+          <cell>3.16605719782</cell>
         </row>
         <row id="91">
-          <cell>151636.224396</cell>
-          <cell>9.83770202098</cell>
+          <cell>150046.223542</cell>
+          <cell>3.09831281494</cell>
         </row>
         <row id="92">
-          <cell>151695.930319</cell>
-          <cell>3.52781487251</cell>
+          <cell>155142.634759</cell>
+          <cell>2.85996254614</cell>
         </row>
         <row id="93">
-          <cell>151739.305605</cell>
-          <cell>5.34843463181</cell>
+          <cell>155619.87203</cell>
+          <cell>2.85014997727</cell>
         </row>
         <row id="94">
-          <cell>151801.644094</cell>
-          <cell>2.14972512181</cell>
+          <cell>148963.805963</cell>
+          <cell>2.70491223565</cell>
         </row>
         <row id="95">
-          <cell>151887.956987</cell>
-          <cell>53.4239971912</cell>
+          <cell>155478.120889</cell>
+          <cell>2.70308666834</cell>
         </row>
         <row id="96">
-          <cell>151896.068913</cell>
-          <cell>6.87471983911</cell>
+          <cell>151830.865671</cell>
+          <cell>2.61434439758</cell>
         </row>
         <row id="97">
-          <cell>151907.192758</cell>
-          <cell>3.29277893884</cell>
+          <cell>149044.493391</cell>
+          <cell>2.5440536155</cell>
         </row>
         <row id="98">
-          <cell>151915.084598</cell>
-          <cell>2.72876959784</cell>
+          <cell>156904.687588</cell>
+          <cell>2.5057456786</cell>
         </row>
         <row id="99">
-          <cell>152049.899391</cell>
-          <cell>99.0029974722</cell>
+          <cell>152504.677752</cell>
+          <cell>2.47022740016</cell>
         </row>
         <row id="100">
-          <cell>152106.065817</cell>
-          <cell>17.4741026748</cell>
+          <cell>149254.923684</cell>
+          <cell>2.41798521348</cell>
         </row>
         <row id="101">
-          <cell>152115.093043</cell>
-          <cell>7.54061067196</cell>
+          <cell>150743.397083</cell>
+          <cell>2.35644455769</cell>
         </row>
         <row id="102">
-          <cell>152211.367245</cell>
-          <cell>77.5813775673</cell>
+          <cell>154223.434161</cell>
+          <cell>2.35559080042</cell>
         </row>
         <row id="103">
-          <cell>152272.831476</cell>
-          <cell>34.9440610626</cell>
+          <cell>150217.78841</cell>
+          <cell>2.31254552498</cell>
         </row>
         <row id="104">
-          <cell>152371.951453</cell>
-          <cell>17.9128741614</cell>
+          <cell>156886.118255</cell>
+          <cell>2.26515658172</cell>
         </row>
         <row id="105">
-          <cell>152379.443797</cell>
-          <cell>8.57623719005</cell>
+          <cell>148686.88773</cell>
+          <cell>2.18772860514</cell>
         </row>
         <row id="106">
-          <cell>152431.741727</cell>
-          <cell>29.4417998419</cell>
+          <cell>148057.122228</cell>
+          <cell>2.09685326183</cell>
         </row>
         <row id="107">
-          <cell>152439.318156</cell>
-          <cell>4.02197686701</cell>
+          <cell>155474.083392</cell>
+          <cell>2.08698805458</cell>
         </row>
         <row id="108">
-          <cell>152499.866167</cell>
-          <cell>5.50760897957</cell>
+          <cell>153422.98755</cell>
+          <cell>2.02935862428</cell>
         </row>
         <row id="109">
-          <cell>152519.755494</cell>
-          <cell>3.9828766717</cell>
+          <cell>153833.64572</cell>
+          <cell>2.02035089028</cell>
         </row>
         <row id="110">
-          <cell>152596.587447</cell>
-          <cell>6.46768477903</cell>
+          <cell>154067.029921</cell>
+          <cell>1.93776265405</cell>
         </row>
         <row id="111">
-          <cell>152604.99731</cell>
-          <cell>4.26982858572</cell>
+          <cell>152756.815777</cell>
+          <cell>1.91893700125</cell>
         </row>
         <row id="112">
-          <cell>152651.872009</cell>
-          <cell>2.65696793665</cell>
+          <cell>153815.508811</cell>
+          <cell>1.83749307</cell>
         </row>
         <row id="113">
-          <cell>152693.951195</cell>
-          <cell>5.48555616444</cell>
+          <cell>153080.713862</cell>
+          <cell>1.83085854333</cell>
         </row>
         <row id="114">
-          <cell>152703.421484</cell>
-          <cell>2.60779906998</cell>
+          <cell>148541.783785</cell>
+          <cell>1.82928105518</cell>
         </row>
         <row id="115">
-          <cell>152845.367369</cell>
-          <cell>25.748890197</cell>
+          <cell>149881.70872</cell>
+          <cell>1.81442774356</cell>
         </row>
         <row id="116">
-          <cell>152848.327753</cell>
-          <cell>18.9368786317</cell>
+          <cell>154352.36386</cell>
+          <cell>1.78540807811</cell>
         </row>
         <row id="117">
-          <cell>152861.426134</cell>
-          <cell>6.68663564802</cell>
+          <cell>150417.170027</cell>
+          <cell>1.78476045854</cell>
         </row>
         <row id="118">
-          <cell>153006.181179</cell>
-          <cell>70.6313612063</cell>
+          <cell>154778.526655</cell>
+          <cell>1.69328626288</cell>
         </row>
         <row id="119">
-          <cell>153069.639818</cell>
-          <cell>19.6888582213</cell>
+          <cell>148568.981678</cell>
+          <cell>1.68127701529</cell>
         </row>
         <row id="120">
-          <cell>153169.183124</cell>
-          <cell>58.3139969577</cell>
+          <cell>153876.890323</cell>
+          <cell>1.67740095672</cell>
         </row>
         <row id="121">
-          <cell>153229.173164</cell>
-          <cell>24.6777712473</cell>
+          <cell>150829.475134</cell>
+          <cell>1.67249771036</cell>
         </row>
         <row id="122">
-          <cell>153330.904509</cell>
-          <cell>20.2930409677</cell>
+          <cell>150965.855528</cell>
+          <cell>1.66723739211</cell>
         </row>
         <row id="123">
-          <cell>153387.766097</cell>
-          <cell>16.3796314363</cell>
+          <cell>150379.255862</cell>
+          <cell>1.64483489755</cell>
         </row>
         <row id="124">
-          <cell>153554.061725</cell>
-          <cell>2.64082616248</cell>
+          <cell>154835.683645</cell>
+          <cell>1.6080579788</cell>
         </row>
         <row id="125">
-          <cell>153804.025551</cell>
-          <cell>15.3473999403</cell>
+          <cell>156244.74446</cell>
+          <cell>1.54260183691</cell>
         </row>
         <row id="126">
-          <cell>153965.57112</cell>
-          <cell>29.3086559536</cell>
+          <cell>150684.52882</cell>
+          <cell>1.53405008257</cell>
         </row>
         <row id="127">
-          <cell>154126.67882</cell>
-          <cell>22.8534173219</cell>
+          <cell>156727.819917</cell>
+          <cell>1.52681121161</cell>
         </row>
         <row id="128">
-          <cell>154182.608459</cell>
-          <cell>4.14368425683</cell>
+          <cell>148509.496503</cell>
+          <cell>1.5157446818</cell>
         </row>
         <row id="129">
-          <cell>154754.494675</cell>
-          <cell>4.19074213323</cell>
+          <cell>148398.069585</cell>
+          <cell>1.50951482293</cell>
         </row>
         <row id="130">
-          <cell>154919.672163</cell>
-          <cell>8.70666941108</cell>
+          <cell>150727.47652</cell>
+          <cell>1.49089778806</cell>
         </row>
         <row id="131">
-          <cell>155533.963773</cell>
-          <cell>2.12993489075</cell>
+          <cell>153277.702173</cell>
+          <cell>1.47193165497</cell>
         </row>
         <row id="132">
-          <cell>155740.52098</cell>
-          <cell>2.81188114059</cell>
+          <cell>149716.573502</cell>
+          <cell>1.44965702283</cell>
+        </row>
+        <row id="133">
+          <cell>154349.289206</cell>
+          <cell>1.40858712735</cell>
+        </row>
+        <row id="134">
+          <cell>156076.088956</cell>
+          <cell>1.4065519582</cell>
+        </row>
+        <row id="135">
+          <cell>151197.026505</cell>
+          <cell>1.32750966768</cell>
+        </row>
+        <row id="136">
+          <cell>154506.24478</cell>
+          <cell>1.25809075123</cell>
+        </row>
+        <row id="137">
+          <cell>151984.453567</cell>
+          <cell>1.19027410185</cell>
+        </row>
+        <row id="138">
+          <cell>148369.515872</cell>
+          <cell>1.09527152418</cell>
+        </row>
+        <row id="139">
+          <cell>148469.430537</cell>
+          <cell>1.0598875313</cell>
+        </row>
+        <row id="140">
+          <cell>156259.082851</cell>
+          <cell>1.01547215578</cell>
+        </row>
+        <row id="141">
+          <cell>149781.199384</cell>
+          <cell>0.993042041877</cell>
+        </row>
+        <row id="142">
+          <cell>151033.542916</cell>
+          <cell>0.991735221471</cell>
+        </row>
+        <row id="143">
+          <cell>148884.723646</cell>
+          <cell>0.983471701507</cell>
+        </row>
+        <row id="144">
+          <cell>149452.600772</cell>
+          <cell>0.975168942875</cell>
+        </row>
+        <row id="145">
+          <cell>151165.494216</cell>
+          <cell>0.917592540419</cell>
+        </row>
+        <row id="146">
+          <cell>156540.885736</cell>
+          <cell>0.904392996625</cell>
+        </row>
+        <row id="147">
+          <cell>155429.409749</cell>
+          <cell>0.838214946698</cell>
+        </row>
+        <row id="148">
+          <cell>153126.663779</cell>
+          <cell>0.815232223508</cell>
+        </row>
+        <row id="149">
+          <cell>148122.211018</cell>
+          <cell>0.809897158532</cell>
+        </row>
+        <row id="150">
+          <cell>155831.817082</cell>
+          <cell>0.679520956937</cell>
+        </row>
+        <row id="151">
+          <cell>155695.403586</cell>
+          <cell>0.647109670883</cell>
+        </row>
+        <row id="152">
+          <cell>150069.874642</cell>
+          <cell>0.639595053106</cell>
+        </row>
+        <row id="153">
+          <cell>154537.878648</cell>
+          <cell>0.58411478175</cell>
+        </row>
+        <row id="154">
+          <cell>156959.156717</cell>
+          <cell>0.573962741306</cell>
+        </row>
+        <row id="155">
+          <cell>149753.938251</cell>
+          <cell>0.548163343551</cell>
+        </row>
+        <row id="156">
+          <cell>154990.534201</cell>
+          <cell>0.533481542975</cell>
+        </row>
+        <row id="157">
+          <cell>155588.851463</cell>
+          <cell>0.371091745081</cell>
         </row>
       </rows>
     </dataframe>
@@ -616,26 +716,18 @@ EVQLVESGGGLVQPGGSLRLSCAASGFNIKDTYIHWVRQAPGKGLEWVARIYPTNGYTRYADSVKGRFTISADTSKNTAY
           <cell>-1</cell>
         </row>
         <row id="6">
-          <cell>False</cell>
-          <cell>NCore</cell>
-          <cell>C34 H56 N2 O25</cell>
-          <cell>892.8109999999999</cell>
-          <cell>0</cell>
-          <cell>-1</cell>
-        </row>
-        <row id="7">
           <cell>True</cell>
-          <cell>DM1</cell>
-          <cell>957.5286</cell>
-          <cell>957.5286</cell>
+          <cell>DM1-MCC</cell>
+          <cell>C47 H61 Cl N4 O13 S</cell>
+          <cell>957.53</cell>
           <cell>0</cell>
           <cell>10</cell>
         </row>
-        <row id="8">
+        <row id="7">
           <cell>True</cell>
           <cell>MCC</cell>
-          <cell>221.25</cell>
-          <cell>221.25</cell>
+          <cell>C12 H15 O3 N</cell>
+          <cell>221.25600000000003</cell>
           <cell>0</cell>
           <cell>1</cell>
         </row>
