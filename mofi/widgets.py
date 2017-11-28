@@ -581,7 +581,7 @@ class FileTypes:
         "xlsx": ("xlsx", "Excel"),
         "csv": ("csv", "Comma-separated value"),
         "fasta": ("fasta", "Protein sequence"),
-        "xml": ("xml", "ModFinder XML settings"),
+        "xml": ("xml", "MoFi XML settings"),
         "": ("", "all files")
     }
 
