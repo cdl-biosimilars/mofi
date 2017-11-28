@@ -1184,19 +1184,26 @@ class MainWindow(QMainWindow, Ui_MoFi):
 
     def save_spectrum(self):
         """
-        Save the spectrum as graphics file.
+        Save the spectrum as CSV or graphics file.
 
         :return: nothing
         """
 
-        filename, _, self._path = get_filename(
-            self, "save", "Save spectrum", self._path,
-            FileTypes(self.spectrum_canvas.get_supported_filetypes()))
+        if self._exp_mass_data is None:
+            return
+
+        types = self.spectrum_canvas.get_supported_filetypes()
+        types.update({"csv": "Comma-separated value"})
+        filename, filetype, self._path = get_filename(
+            self, "save", "Save spectrum", self._path, FileTypes(types))
         if filename is None:
             return
 
         try:
-            self.spectrum_fig.savefig(filename, dpi=300)
+            if filetype == "Comma-separated value":
+                self._exp_mass_data.to_csv(filename, index=False)
+            else:
+                self.spectrum_fig.savefig(filename, dpi=300)
         except OSError:
             QMessageBox.critical(
                 self,
