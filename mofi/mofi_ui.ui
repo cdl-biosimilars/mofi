@@ -1764,7 +1764,7 @@ QPushButton:pressed {
          </widget>
         </item>
         <item row="3" column="0">
-         <widget class="QToolButton" name="btRemoveSort">
+         <widget class="QToolButton" name="btRestoreSortOrder">
           <property name="toolTip">
            <string>Restore original sort order</string>
           </property>

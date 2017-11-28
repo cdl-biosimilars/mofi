@@ -471,8 +471,9 @@ class MainWindow(QMainWindow, Ui_MoFi):
         self.btLoadPeaks.clicked.connect(self.load_spectrum)
         self.btLoadSequence.clicked.connect(self.load_sequence)
         self.btOnlyShowUnannotated.clicked.connect(self.only_show_unannotated)
-        self.btRemoveSort.clicked.connect(self.restore_original_sort_order)
         self.btResetZoom.clicked.connect(self.reset_zoom)
+        self.btRestoreSortOrder.clicked.connect(
+            self.restore_original_sort_order)
         self.btSaveMonomers.clicked.connect(
             lambda: self.save_table("Export modifications", "monomers"))
         self.btSavePolymers.clicked.connect(
@@ -1026,7 +1027,10 @@ class MainWindow(QMainWindow, Ui_MoFi):
         elif widget in [self.tbStatistics, self.statisticsTab]:
             site = "results"
             anchor = "statistics"
-        elif widget == self.btClearFilters:
+        elif widget == self.btRestoreSortOrder:
+            site = "results"
+            anchor = "sort-results"
+        elif widget in [self.btClearFilters, self.btOnlyShowUnannotated]:
             site = "results"
             anchor = "filter-results"
         elif widget in [self.btCollapseAll, self.btExpandParents,
