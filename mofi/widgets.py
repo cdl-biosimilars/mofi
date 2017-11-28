@@ -3,6 +3,8 @@ Custom widgets and GUI functions.
 """
 
 import os
+from urllib.request import pathname2url
+import webbrowser
 
 import pandas as pd
 
@@ -16,6 +18,7 @@ from PyQt5.QtGui import QColor, QBrush
 from matplotlib.widgets import RectangleSelector
 
 from mofi.importtabdata_ui import Ui_ImportTabData
+from mofi.paths import docs_dir
 
 # noinspection PyPep8Naming,PyUnresolvedReferences
 class FilterHeader(QHeaderView):
@@ -366,11 +369,27 @@ class ImportTabDataDialog(QDialog, Ui_ImportTabData):
         self.buttonBox.rejected.connect(self.reject)
         self.buttonBox.button(QDialogButtonBox.Apply).clicked.connect(
             self.apply_options)
+        self.buttonBox.button(QDialogButtonBox.Help).clicked.connect(
+            self.show_help)
 
         self.cb_columns = []  # data on the comboboxes for selecting columns
         self.csv_mode = True  # whether the dialog is in csv or xls mode
         self.df_in = None  # dataframe that stores imported data
         self.filename = None  # name of the import file
+
+    @staticmethod
+    def show_help():
+        """
+        Open the manual in a browser and jump to the import dialog section.
+
+        :return: nothing
+        """
+
+        site = "workflow.html"
+        anchor = "import-dialog"
+        path = os.path.abspath(os.path.join(docs_dir, "html", site))
+        url = "#".join([pathname2url(path), anchor])
+        webbrowser.open("file:{}".format(url))
 
 
     def set_options(self, filename, cols, mode):

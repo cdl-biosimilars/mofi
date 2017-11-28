@@ -151,7 +151,7 @@ class Ui_ImportTabData(object):
         self.gbColumns.setObjectName("gbColumns")
         self.verticalLayout.addWidget(self.gbColumns)
         self.buttonBox = QtWidgets.QDialogButtonBox(ImportTabData)
-        self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.Apply|QtWidgets.QDialogButtonBox.Cancel|QtWidgets.QDialogButtonBox.Ok)
+        self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.Apply|QtWidgets.QDialogButtonBox.Cancel|QtWidgets.QDialogButtonBox.Help|QtWidgets.QDialogButtonBox.Ok)
         self.buttonBox.setObjectName("buttonBox")
         self.verticalLayout.addWidget(self.buttonBox)
 
