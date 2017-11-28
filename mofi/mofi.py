@@ -471,7 +471,7 @@ class MainWindow(QMainWindow, Ui_MoFi):
         self.btLoadPeaks.clicked.connect(self.load_spectrum)
         self.btLoadSequence.clicked.connect(self.load_sequence)
         self.btOnlyShowUnannotated.clicked.connect(self.only_show_unannotated)
-        self.btRemoveSort.clicked.connect(self.remove_sort)
+        self.btRemoveSort.clicked.connect(self.restore_original_sort_order)
         self.btResetZoom.clicked.connect(self.reset_zoom)
         self.btSaveMonomers.clicked.connect(
             lambda: self.save_table("Export modifications", "monomers"))
@@ -2513,7 +2513,7 @@ class MainWindow(QMainWindow, Ui_MoFi):
             self.twResults2.header().clearFilters()
 
 
-    def remove_sort(self):
+    def restore_original_sort_order(self):
         """
         Restore the original order of rows in the results trees.
 
