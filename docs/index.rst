@@ -1,9 +1,11 @@
-******************************************************************
-MoFi -- A software for the annotation of glycoprotein mass spectra
-******************************************************************
+****
+MoFi
+****
+
+**A software tool for annotating glycoprotein mass spectra by integrating hybrid data from the intact protein and glycopeptide level**
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    :caption: Contents
 
    introduction

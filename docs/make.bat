@@ -9,7 +9,7 @@ if "%SPHINXBUILD%" == "" (
 )
 set SOURCEDIR=.
 set BUILDDIR=..\mofi\docs
-set SPHINXPROJ=ModFinder
+set SPHINXPROJ=MoFi
 
 if "%1" == "" goto help
 

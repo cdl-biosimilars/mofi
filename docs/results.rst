@@ -1,3 +1,5 @@
+.. |bt_restore_sort| image:: ../images/RestoreSort.png
+                             :scale: 50 %
 .. |bt_check_all| image:: ../images/CheckAll.png
                           :scale: 50 %
 .. |bt_clear_filters| image:: ../images/ClearFilters.png
@@ -8,6 +10,8 @@
                                :scale: 50 %
 .. |bt_expand_all| image:: ../images/Expand2.png
                            :scale: 50 %
+.. |bt_filter_unannotated| image:: ../images/FilterUnannotated.png
+                                   :scale: 50 %
 .. |bt_save| image:: ../images/Save.png
                      :scale: 50 %
 .. |bt_uncheck_all| image:: ../images/UncheckAll.png
@@ -66,7 +70,7 @@ A child row (light green) with the following columns appears for each possible a
 * residual unexplained mass in *Da* and *ppm*
 * counts for each modification (here: columns *Hex* to *MCC*)
 
-For child rows, the format of the row index is ``[peak ID]-[hit ID]``.
+For child rows, the format of the row index is ``[peak ID]-[stage 1 ID]``.
 
 
 
@@ -82,7 +86,7 @@ Stage 2 results
 
 For each peak, the parent row (dark green) shows its experimental mass, relative abundance (%), and data of the annotation with the highest hit score. The format of the row index is ``[peak ID]``.
 
-A child row (light green) with the following columns appears for each possible annotation:
+A child row (light green) with the following columns appears for each possible stage 2 hit:
 
 * hit index
 * hit score (in percent)
@@ -92,9 +96,9 @@ A child row (light green) with the following columns appears for each possible a
 * counts for each modification (here: columns *Hex* to *MCC*)
 * data of the permutation with the highest permutation score
 
-For child rows, the format of the row index is ``[peak ID]-[hit ID]``.
+For child rows, the format of the row index is ``[peak ID]-[stage 1 ID]-[hit ID]``.
 
-Each stage 2 annotation ('hit') may comprise several permutations of glycan assignments. *Permutations* are isobaric annotations that comprise an equal set of glycans, but assign those glycans to different glycosylation sites. For instance, the annotations "G0F at site A, G1F at site B" and "G1F at site A, G0F at site B" are permutations of the general glycan annotation (G0F, G1F).
+Each stage 2 *hit* comprises all annotations that agree in their glycan set, but assign those glycans to different glycosylation sites. These groups of isobaric annotations are called *permutations*. For instance, a hit with glycan set (A2G0F, A2G1F) may comprise the assignments "A2G0F to site A, A2G1F to site B" and "A2G1F to site A, A2G0F to site B".
 
 A grandchild row (white) with the following columns appears for each possible permutation:
 
@@ -102,31 +106,19 @@ A grandchild row (white) with the following columns appears for each possible pe
 * permutation score (in percent)
 * one column per glycosylation site (here: *ch_A* and *ch_B*)
 
-For grandchild rows, the format of the row index is ``[peak ID]-[hit ID]-[permutation ID]``.
+For grandchild rows, the format of the row index is ``[peak ID]-[stage 1 ID]-[hit ID]-[permutation ID]``.
 
-The *permutation score* is proportional to the normalized probability of a glycan combination (normalization is done peakwise). Assume that MoFi found :math:`K` permutations for a peak, and that the :math:`k`-th permutation (:math:`k = 1, \dots, K`) comprises a set of glycans :math:`g_k \subset \{1, \dots, n\}` with known abundances :math:`p_1, \dots, p_n` (:math:`n`: total number of glycans). Then, the permutation score :math:`S^\mathrm{perm}_k` of the :math:`k`-th permutation is
-
-.. math::
-
-   S^\mathrm{perm}_k = \frac{\prod_{i \in g_k} p_i}{\sum_{k=1}^K \prod_{i \in g_k} p_i } \ .
-
-The *hit score* is the sum of the permutation scores of all possible glycan assignments that constitute an annotation. Assume that MoFi found :math:`H` hits for a peak, and that the :math:`h`-th hit (:math:`h = 1, \dots, H`) comprises a set of permutations :math:`v_h \subset \{1, \dots, K\}`. Then, the hit score :math:`S^\mathrm{hit}_h` of the :math:`h`-th hit is
+The *permutation score* is proportional to the probability of a glycan combination in a peak. Assume that a protein has :math:`a = 1, \dots, A` different glycosylation sites, each of which may harbor a single glycan from a site-specific set of glycans :math:`\Gamma_a`. (Note that :math:`\Gamma_a` has to include a "null glycan" if site :math:`a` may exist in an unglycosylated form.) Assume further that MoFi found :math:`K` permutations for a peak, and that the :math:`k`-th permutation contains the combination :math:`\gamma_k = (g_1, \dots, g_A)` of glycans :math:`g_1 \in \Gamma_1, \dots, g_A \in \Gamma_A` with known abundances :math:`p_{g_1}, \dots, p_{g_A}`. Then, the permutation score :math:`S^\mathrm{perm}_k` of the :math:`k`-th permutation is
 
 .. math::
 
-   S^\mathrm{hit}_h = \sum_{i \in v_h} S^\mathrm{perm}_i \ .
+   S^\mathrm{perm}_k = \frac{\prod_{g \in \gamma_k} p_g}{\sum_{k=1}^K \prod_{g \in \gamma_k} p_g } \ .
 
-Note that both the permutation score and hit score correspond to the contribution of each permutation or hit to the peak height. From the definition of the permutation score, it is evident that
-
-.. math::
-
-   \sum_{k=1}^K S^\mathrm{perm}_k = 1 \ .
-
-Likewise, since each set of permutations :math:`v_h` contains a different subset of all permutations associated with a peak (:math:`\forall h, \eta \in 1, \dots, H: v_h \cap v_\eta = \emptyset`), it also follows that
+The *hit score* is the sum of the scores of all permutations in a hit. Assume that MoFi found :math:`H` hits for a peak, and that the :math:`h`-th hit comprises a set of permutations :math:`\kappa_h \subseteq \{1, \dots, K\}`. Then, the hit score :math:`S^\mathrm{hit}_h` of the :math:`h`-th hit is
 
 .. math::
 
-   \sum_{h=1}^H S^\mathrm{hit}_h = 1 \ .
+   S^\mathrm{hit}_h = \sum_{k \in \kappa_h} S^\mathrm{perm}_k \ .
 
 
 .. _statistics:
@@ -153,17 +145,22 @@ The statistics table lists the following measures for each peak:
 Manipulation of the results tables
 ==================================
 
+.. _sort-results:
+
 --------
 Sorting
 --------
 
-Click on a column header to sort the table by this column. Sorting by ID restores the original order of the rows.
+Click on a column header to sort the table by this column. The button |bt_restore_sort| *Restore original sort order* sorts the rows (1) ascending by peak ID and (2)
+
+* ascending by absolute residual unexplained mass for stage 1 results
+* descending by hit score for stage 2 results
 
 .. _filter-results:
 
---------
-Fitering
---------
+---------
+Filtering
+---------
 
 You may filter the stage 1/2 results tables by entering a *constraint* for one or several modifications into the filters beneath the table header and then pressing *Enter*. The button |bt_clear_filters| *Clear filters* removes all constraints.
 
@@ -177,6 +174,8 @@ Constraints must have one of the following forms:
 .. image:: images/filter.png
            :alt: Results filter
            :align: center
+
+|bt_filter_unannotated| *Only show unannotated* hides all parent rows with at least one annotation.
 
 .. _expand-results:
 
@@ -211,28 +210,15 @@ Click |bt_check_all| *Check all* or |bt_uncheck_all| *Uncheck all* to check or u
 .. admonition:: Example
    :class: note
 
-   Check the box of permutation row 78-0-1. Its parent rows (78-0 and 78) automatically become partially checked:
+   Check the box of permutation 23-0-0-1. Its parent rows (23-0-0 and 23) automatically become partially checked:
 
    .. image:: images/results_table_checkboxes.png
               :alt: Results table checkboxes
               :align: center
 
-   Hence, *Save checked entries* yields a CSV/Excel file that contains one row (78-0-1), while *Save checked entries with parents* yields a file that contains three rows (78, 78-0 and 78-0-1).
+   Hence, *Save checked entries* yields a CSV/Excel file that contains one row (23-0-0-1), while *Save checked entries with parents* yields a file that contains three rows (23, 23-0-0 and 23-0-0-1).
 
 The statistics table supports the following saving options:
 
 * *Save in wide format* saves the statistics table as shown in the main window.
 * *Save in long format* saves the statistics table in long (tidy) format. In the exported table, the columns *Search space size* to *Stage 2 hits* will be gathered, which yields two columns *Measure* and *Value*.
-
-.. admonition:: Example
-   :class: note
-
-   Saving the statistics table in long format facilitates its analysis by tools that require tidy data. For instance, the R script below employs packages from the tidyverse to plot the search statistics.
-
-   .. literalinclude:: sample data/search_statistics.R
-                       :language: R
-
-   .. image:: images/search_statistics.png
-              :alt: Search statistics
-              :align: center
-   

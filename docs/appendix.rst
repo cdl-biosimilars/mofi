@@ -22,6 +22,9 @@ General parameters.
   ``maxmods``
     maximum number of modifications to consider in the composition search (100)
 
+  ``dec_places``
+    number of decimal places of all masses shown in Da (4)
+
   ``path``
     default path for file dialogs (``docs/sample data``)
 
@@ -64,8 +67,8 @@ The default color scheme for the peaks corresponds to ColorBrewer's 4-class *PiY
 
 The default color scheme for delta series is 4-class *RdYlBu*.
 
-  ``other``
-    peaks that do not belong to any delta series (``#b3b3b3``)
+  ``main``
+    main peak in the delta series (``#d7191c``)
 
   ``series_1``
     peaks that belong to the first delta series (``#2c7bb6``)
@@ -76,8 +79,8 @@ The default color scheme for delta series is 4-class *RdYlBu*.
   ``both``
     peaks that belong to both delta series (``#abd9e9``)
 
-  ``main``
-    main peak in the delta series (``#d7191c``)
+  ``other``
+    peaks that do not belong to any delta series (``#b3b3b3``)
 
 
 .. rubric:: colors.table
@@ -125,6 +128,6 @@ data/glycans/\*.csv
 
 Each CSV file present in this directory will be available as a set of default glycans. The name of the respective menu item derives from the file name.
 
-Example (``Default mAB glycans.csv``):
+Example (``Default mAb glycans.csv``):
 
-.. literalinclude:: ../mofi/data/glycans/Default mAB glycans.csv
+.. literalinclude:: ../mofi/data/glycans/Default mAb glycans.csv
