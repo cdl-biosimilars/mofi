@@ -109,7 +109,7 @@ def dec_places():
     Returns a formatstring for printing a float, using the decimal places
     specified in the configuration file.
 
-    :return: formatstring like '{:.4f}'
+    :return: formatstring like ``"{:.4f}"``
     :rtype: str
     """
     return "{{:.{}f}}".format(defaults["dec_places"])

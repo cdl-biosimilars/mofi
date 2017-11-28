@@ -44,7 +44,7 @@ def find_monomers(mods, unexplained_masses, mass_tolerance=5.0,
                * *Theo_Mass*
                * *Da*
                * *ppm*
-               * "Stage1_ID"
+               * *Stage1_ID*
 
                  If no hit was found, all columns contain the value 0
 

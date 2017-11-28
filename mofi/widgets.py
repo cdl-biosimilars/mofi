@@ -399,7 +399,7 @@ class ImportTabDataDialog(QDialog, Ui_ImportTabData):
 
         :param str filename: input file
         :param cols: see parameter ``cols``
-                     in :meth:`mofi.MainWindow.table_from_df`
+                     in :meth:`mofi.MainWindow.table_from_df()`
         :param str mode: selects "csv" or "xls" mode
         :return: nothing
         """
@@ -525,7 +525,7 @@ class ImportTabDataDialog(QDialog, Ui_ImportTabData):
         Return the input data filtered according to the column selectors.
 
         :return: a dataframe if available; None otherwise
-        :rtype: pd.DatFrame or NoneType
+        :rtype: pd.DataFrame or NoneType
         """
 
         if self.df_in is None:
@@ -547,7 +547,7 @@ class ImportTabDataDialog(QDialog, Ui_ImportTabData):
         :param QWidget parent: parent widget
         :param str filename: input file
         :param cols: see parameter ``cols``
-                     in :meth:`mofi.MainWindow.table_from_df`
+                     in :meth:`mofi.MainWindow.table_from_df()`
         :param str mode: selects "csv" or "xls" mode
         :return: a dataframe with the imported data if Ok is clicked;
                  ``None`` otherwise
@@ -566,7 +566,7 @@ class ImportTabDataDialog(QDialog, Ui_ImportTabData):
 
 class FileTypes:
     """
-    A class for managing file types in :class:`~PyQt5.QtWidgets.QFileDialog`s.
+    A class for managing file types in :class:`~PyQt5.QtWidgets.QFileDialog` .
 
     :cvar dict _default_file_types: default file types
     :ivar list types: actually used file types
@@ -627,6 +627,7 @@ class FileTypes:
         """
         Returns  a file filter suitable for the ``filter`` parameter of
         :class:`~PyQt5.QtWidgets.QFileDialog`.
+
         :return: a file filter
         :rtype: str
         """
