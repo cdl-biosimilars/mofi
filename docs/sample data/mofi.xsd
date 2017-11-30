@@ -1,0 +1,84 @@
+<xs:schema attributeFormDefault="unqualified" elementFormDefault="qualified" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element name="column">
+    <xs:complexType>
+      <xs:simpleContent>
+        <xs:extension base="xs:string">
+          <xs:attribute type="xs:string" name="dtype" use="optional"/>
+        </xs:extension>
+      </xs:simpleContent>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="cell" type="xs:string"/>
+  <xs:element name="row">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="cell" maxOccurs="unbounded" minOccurs="0"/>
+      </xs:sequence>
+      <xs:attribute type="xs:short" name="id" use="optional"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="columns">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="column" maxOccurs="unbounded" minOccurs="0"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="rows">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="row" maxOccurs="unbounded" minOccurs="0"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="dataframe">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="columns"/>
+        <xs:element ref="rows"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="sequence" type="xs:string"/>
+  <xs:element name="disulfides" type="xs:byte"/>
+  <xs:element name="pngasef" type="xs:string"/>
+  <xs:element name="mass-set" type="xs:string"/>
+  <xs:element name="tolerance-value" type="xs:float"/>
+  <xs:element name="tolerance-flavor" type="xs:byte"/>
+  <xs:element name="masslist">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="dataframe"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="monomers">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="dataframe"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="polymers">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="dataframe"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="settings">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="sequence"/>
+        <xs:element ref="disulfides"/>
+        <xs:element ref="pngasef"/>
+        <xs:element ref="mass-set"/>
+        <xs:element ref="tolerance-value"/>
+        <xs:element ref="tolerance-flavor"/>
+        <xs:element ref="masslist"/>
+        <xs:element ref="monomers"/>
+        <xs:element ref="polymers"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>
