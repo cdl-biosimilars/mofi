@@ -165,12 +165,16 @@ def read_bpf_library(df):
 
     :param pd.DataFrame df: data frame read from a library Excel file
     :return: a dataframe as required by
-             :meth:`~mofi.mofi.MainWindow.table_from_df()`
-    :rtype: pd.DataFrame
+             :meth:`~mofi.mofi.MainWindow.table_from_df()`;
+             None if any error is encountered
+    :rtype: pd.DataFrame or NoneType
     """
 
-    df = df.copy()  # type: pd.DataFrame
-    df["Sites"] = df["Modification"].apply(lambda x: x.split("+")[0])
-    df["Name"] = df["Modification"].apply(lambda x: x.split("+")[1])
-    df["Composition"] = df["Name"].apply(_parse_bpf_glycan)
-    return df
+    try:
+        df = df.copy()  # type: pd.DataFrame
+        df["Sites"] = df["Modification"].apply(lambda x: x.split("+")[0])
+        df["Name"] = df["Modification"].apply(lambda x: x.split("+")[1])
+        df["Composition"] = df["Name"].apply(_parse_bpf_glycan)
+        return df
+    except AttributeError:
+        return None

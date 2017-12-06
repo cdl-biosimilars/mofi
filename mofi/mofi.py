@@ -942,13 +942,12 @@ class MainWindow(QMainWindow, Ui_MoFi):
 
         if filename.endswith("csv"):
             df = ImportTabDataDialog.get_data(self, filename, cols, "csv")
+        elif filetype == "BioPharma Finder PepMap results":
+            df = ImportTabDataDialog.get_data(self, filename,
+                                              _pepmap_columns, "xls")
+            df = io_tools.read_bpf_library(df)
         else:
-            if filetype == "BioPharma Finder PepMap results":
-                df = ImportTabDataDialog.get_data(self, filename,
-                                                  _pepmap_columns, "xls")
-                df = io_tools.read_bpf_library(df)
-            else:
-                df = ImportTabDataDialog.get_data(self, filename, cols, "xls")
+            df = ImportTabDataDialog.get_data(self, filename, cols, "xls")
         if df is not None:
             self.table_from_df(df, table_widget, cols)
             self.calculate_mod_mass()
