@@ -1164,7 +1164,7 @@ class MainWindow(QMainWindow, Ui_MoFi):
 
         filename, _, self._path = get_filename(
             self, "open", "Open mass list", self._path,
-            FileTypes(["xls", "xlsx", "csv"]))
+            FileTypes(["csv", "xlsx", "xls"]))
         if filename is None:
             return
 
