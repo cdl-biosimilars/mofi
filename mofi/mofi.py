@@ -1249,7 +1249,7 @@ class MainWindow(QMainWindow, Ui_MoFi):
 
         out_mass_set = [("atom", "atomic weight")]
         for (atom, weight) in configure.current_mass_set.items():
-            if atom != "description":
+            if atom not in ["description", "tooltip"]:
                 out_mass_set.append((atom, str(weight)))
 
         out_composition = [("name", "formula", "mass",
