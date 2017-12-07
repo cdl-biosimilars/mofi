@@ -30,7 +30,7 @@ For freezing:
 To run MoFi directly in source:
 
 * Execute `python setup.py build_ext --inplace` to create the `findmods` library.
-* Execute `docs/make html` (Linux) or `docs\make.bat html` (Windows) to create the documentation.
+* In the `docs` directory, execute `make html` (Linux) or `make.bat html` (Windows) to create the documentation.
 * Start MoFi via executing `python run.py`.
 
 To run MoFi from a frozen distribution:
@@ -44,13 +44,3 @@ To run MoFi from a frozen distribution:
 * Create the library and documentation as described above.
 * Execute `pyinstaller -i images\mofi.ico mofi.spec`.
 * The folder `dist/mofi` is now a self-contained MoFi installation.
-
-
-
-## Creating a Debian package
-
-* Create the library and documentation as described above
-* Add new message in `debian/changelog`. Ensure that a key with the appropriate user ID exists.
-* Tag that version using `git tag -a v1.0`
-* Commit the changes
-* Run `gbp buildpackage`
