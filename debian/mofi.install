@@ -1,2 +1,2 @@
-package-files/setup/mofi.svg /usr/share/icons/hicolor/scalable/apps
-package-files/setup/mofi.desktop /usr/share/applications
+debian/setup/mofi.svg /usr/share/icons/hicolor/scalable/apps
+debian/setup/mofi.desktop /usr/share/applications

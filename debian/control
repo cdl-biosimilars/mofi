@@ -14,4 +14,4 @@ Package: mofi
 Architecture: any
 Depends: ${misc:Depends}, ${python3:Depends}, ${shlibs:Depends}
 Description: MoFi
- A software fot the annotation of glycoprotein mass spectra.
+ A software tool for annotating glycoprotein mass spectra by integrating hybrid data from the intact protein and glycopeptide level.

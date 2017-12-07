@@ -19,7 +19,7 @@ c_ext = Extension(
 setup(
     name='mofi',
     version='1.0',
-    description='Finds modifications',
+    description='A software tool for annotating glycoprotein mass spectra by integrating hybrid data from the intact protein and glycopeptide level',
     packages=['mofi'],
     install_requires=require,
     ext_modules=[c_ext],

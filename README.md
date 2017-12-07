@@ -1,10 +1,8 @@
-# MoFi
-
-A software for the annotation of glycoprotein mass spectra.
-
-
+# MoFi - A software tool for annotating glycoprotein mass spectra by integrating hybrid data from the intact protein and glycopeptide level
 
 ## Requirements
+
+General:
 
 * Python 3.5
 * numpy
@@ -18,64 +16,41 @@ A software for the annotation of glycoprotein mass spectra.
 
 For building the C++ extension:
 
-* Unix: gcc / clang
+* Linux: gcc / clang
 * Windows: Visual C++ 2015 Build Tools with Windows SDK 8.1
 
 For freezing:
 
-* pyinstaller (Unix)
-* cx_freeze (Windows)
+* pyinstaller
 
 
 
 ## Installation
 
-You may either run MoFi directly from source or execute the frozen version from a stand-alone distribution.
+To run MoFi directly in source:
 
+* Execute `python setup.py build_ext --inplace` to create the `findmods` library.
+* Execute `docs/make html` (Linux) or `docs\make.bat html` (Windows) to create the documentation.
+* Start MoFi via executing `python run.py`.
 
-### Running in source (Unix/Windows)
+To run MoFi from a frozen distribution:
 
-* Run `python3 setup.py build` to create the `findmods` library
-* Copy the library (`findmods[...].so` on Unix, `findmods[...].pyd` on Windows) from `build/lib[...]/mofi/` to `mofi/`
-* Run `make html` (Unix) or `make.bat html` (Windows) in the `docs/` directory to create the documentation
-* Start MoFi via `run.py`
-
-
-
-
-### Running from frozen distribution
-
-* Extract the contents of the archive
-* Start MoFi by executing `MoFi` (on Windows) or `run` (on Unix).
+* Extract the contents of the archive and start MoFi by executing `mofi`.
 
 
 
-## Creating frozen distributions and Debian packages
+## Creating frozen distributions
 
-### Freezing
-
-#### General
-
-* Create and copy the library as described above
+* Create the library and documentation as described above.
+* Execute `pyinstaller -i images\mofi.ico mofi.spec`.
+* The folder `dist/mofi` is now a self-contained MoFi installation.
 
 
-#### Windows)
 
-* Run `./package.sh`
-* The folder `build/mofi-windows/` is now a self-contained MoFi installation, which can be compressed (if desired) and distributed.
-* Start the program by double-clicking `MoFi`.
+## Creating a Debian package
 
-
-#### Unix
-
-* Run `pyinstaller run.spec`
-* The folder `dist/run/` is now a self-contained MoFi installation, which can be compressed (if desired) and distributed.
-* Start the program by double-clicking `run`.
-
-
-### Debian package
-
+* Create the library and documentation as described above
 * Add new message in `debian/changelog`. Ensure that a key with the appropriate user ID exists.
 * Tag that version using `git tag -a v1.0`
 * Commit the changes
-* Run `gpb buildpackage`
+* Run `gbp buildpackage`
