@@ -35,7 +35,7 @@ The layout of MoFi's main window encourages a workflow that comprises six steps:
 1. Load a protein *sequence*.
 2. Specify a list of *modifications* for the composition search.
 3. Provide a *glycan library* for the structure search (optional).
-4. Load a *mass spectrum* (optional).
+4. Load or enter *mass values*.
 5. Perform the *search(es)*
 6. Evaluate and save the results.
 
@@ -186,9 +186,9 @@ Manipulate the table via the buttons next to it:
 
 .. _spectrum:
 
-===================================
-(4) Load a mass spectrum (optional)
-===================================
+=============================
+(4) Load or enter mass values
+=============================
 
 Click |bt_load| *Load mass list* to load a peak list (in CSV or Excel format) that represents a mass spectrum. The file must contain at least one column labeled "Average Mass" or "Average Mass (mean)". If a column labeled "Relative Abundance" is present, MoFi will interpret its values as peak heights. Again, choose columns to be used in the :ref:`import dialog <import-dialog>`.
 

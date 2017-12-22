@@ -47,9 +47,9 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'MoFi'
-copyright = '2017 Christian Doppler Laboratory for Innovative Tools for Biosimilar Characterization. License pending.'
+copyright = '2017 Christian Doppler Laboratory for Innovative Tools for Biosimilar Characterization'
 author = 'Wolfgang Skala'
-date = '05.10.2017'
+date = '22.12.2017'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
