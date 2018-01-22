@@ -1356,7 +1356,7 @@ class MainWindow(QMainWindow, Ui_MoFi):
                     f.write("\n#   ".join(out_structures))
                     f.write("\n")
 
-                    df.to_csv(f, index=False)
+                    df.to_csv(f, index=False, na_rep="NA")
             else:
                 with pd.ExcelWriter(filename, engine="xlsxwriter") as f:
                     df.to_excel(f, sheet_name="MoFi results", index=False)
