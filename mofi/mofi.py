@@ -1317,8 +1317,8 @@ class MainWindow(QMainWindow, Ui_MoFi):
                     columns=(["checked"]
                              + [header.text(c)
                                 for c in range(1, header.columnCount())]))
-                .replace("", np.nan)
-                .ffill())
+                .replace("", np.nan))
+            df[["Exp. Mass", "%"]] = df[["Exp. Mass", "%"]].ffill()
             if not df.empty and df.iloc[0, 1] is None:
                 df = df.drop(0)
 
