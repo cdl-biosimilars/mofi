@@ -511,6 +511,7 @@ class MainWindow(QMainWindow, Ui_MoFi):
         self.taResults.currentChanged.connect(self.set_save_results_menu)
 
         self.tbMonomers.cellChanged.connect(self.calculate_mod_mass)
+        self.tbPolymers.keyPressEvent = self.extract_monosaccharides
         self.tbStatistics.itemClicked.connect(
             lambda item: self.update_selection(clicked_table_item=item))
 
@@ -1506,6 +1507,27 @@ class MainWindow(QMainWindow, Ui_MoFi):
             self._known_mods_formula = mass_tools.Formula()
         self.update_mass_in_statusbar()
         return result
+
+
+    def extract_monosaccharides(self, event):
+        """
+        Calculate the monosaccharide composition of a glycan entered in the
+        list of glycans if its name conforms to the Zhang nomenclature
+        and the user pressed Shift+Return.
+        This function overrides :meth:`~MainWindow.tbPolymers.keyPressEvent()`.
+
+        :param QKeyEvent event: key event that triggered the function
+        :return: nothing
+        """
+
+        if (event.key() == Qt.Key_Return
+                and event.modifiers() == Qt.ShiftModifier
+                and self.tbPolymers.currentColumn() == 1):
+            composition = io_tools.parse_zhang_glycan(
+                self.tbPolymers.currentItem().text())
+            if composition:
+                (self.tbPolymers.item(self.tbPolymers.currentRow(), 2)
+                                .setText(composition))
 
 
     def update_mass_in_statusbar(self):
