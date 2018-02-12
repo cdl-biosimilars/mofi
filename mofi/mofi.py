@@ -60,8 +60,8 @@ _monomer_table_columns = [
 _polymer_table_columns = [
     ("Checked", True, "Use?"),
     ("Name", None, "Name"),
-    ("Composition", None, "Composition"),
-    ("Sites", "", "Sites"),
+    ("Composition", "from name", "Composition"),
+    ("Sites", "from name", "Sites"),
     ("Abundance", 0.0, "Abundance")
 ]
 
@@ -801,6 +801,16 @@ class MainWindow(QMainWindow, Ui_MoFi):
         :param float abundance: relative abundance
         :return: nothing
         """
+
+        # automatically extract site and/or composition
+        if sites == "from name":
+            split_name = name.split("+", 1)
+            if len(split_name) == 2:
+                sites, name = split_name
+            else:
+                sites = ""
+        if composition == "from name":
+            composition = io_tools.parse_zhang_glycan(name)
 
         self.tbPolymers.blockSignals(True)
         self.tbPolymers.insertRow(row_id)
