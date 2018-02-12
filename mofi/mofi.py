@@ -933,14 +933,17 @@ class MainWindow(QMainWindow, Ui_MoFi):
         if default:
             filename = os.path.join(data_dir, subdir,
                                     self.sender().text() + ".csv")
-            filetype = ""
+            filetype = "DEFAULT"
         else:
             filename, filetype, self._path = get_filename(
                 self, "open", dialog_title, self._path, FileTypes(extensions))
         if filename is None:
             return
 
-        if filename.endswith("csv"):
+        if filetype == "DEFAULT":
+            df = ImportTabDataDialog.get_data(self, filename, cols, "csv",
+                                              force_accept=True)
+        elif filename.endswith("csv"):
             df = ImportTabDataDialog.get_data(self, filename, cols, "csv")
         elif filetype == "BioPharma Finder PepMap results":
             df = ImportTabDataDialog.get_data(self, filename,

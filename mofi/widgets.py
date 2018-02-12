@@ -540,7 +540,8 @@ class ImportTabDataDialog(QDialog, Ui_ImportTabData):
 
 
     @staticmethod
-    def get_data(parent=None, filename=None, cols=None, mode="csv"):
+    def get_data(parent=None, filename=None, cols=None,
+                 mode="csv", force_accept=False):
         """
         Opens an Import CSV/XLS dialog and returns the imported data.
 
@@ -549,6 +550,9 @@ class ImportTabDataDialog(QDialog, Ui_ImportTabData):
         :param cols: see parameter ``cols``
                      in :meth:`mofi.MainWindow.table_from_df()`
         :param str mode: selects "csv" or "xls" mode
+        :param boolean force_accept: True returns the imported data without
+                                     allowing the user to modify import
+                                     parameters
         :return: a dataframe with the imported data if Ok is clicked;
                  ``None`` otherwise
         :rtype: pd.DataFrame or NoneType
@@ -557,11 +561,15 @@ class ImportTabDataDialog(QDialog, Ui_ImportTabData):
         dialog = ImportTabDataDialog(parent)
         dialog.set_options(filename, cols, mode)
         dialog.apply_options()
-        result = dialog.exec_()
-        if result == QDialog.Accepted:
+
+        if force_accept:
             return dialog.get_df()
         else:
-            return None
+            result = dialog.exec_()
+            if result == QDialog.Accepted:
+                return dialog.get_df()
+            else:
+                return None
 
 
 class FileTypes:
