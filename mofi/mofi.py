@@ -37,9 +37,9 @@ from mofi.widgets import (FilterHeader, CollapsingRectangleSelector,
                           SortableTreeWidgetItem, SortableTableWidgetItem,
                           ImportTabDataDialog, FileTypes, get_filename)
 
-_version_info = """MoFi v1.0
+_version_info = """MoFi v1.1
 
-© 2017 Christian Doppler Laboratory
+© 2018 Christian Doppler Laboratory
 for Innovative Tools for Biosimilar Characterization
 
 Contact: Wolfgang.Skala@sbg.ac.at
