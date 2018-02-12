@@ -153,26 +153,3 @@ def parse_zhang_glycan(glycan):
     return ", ".join("{} {}".format(c, m)
                      for m, c in zip(monosaccharides, counts)
                      if c > 0)
-
-
-def read_bpf_library(df):
-    """
-    Read an N-glycan library as returned by Thermo Fisher BioPharma Finder.
-    A column labeled "Modification" is required; sites and composition
-    will be deduced from this column.
-
-    :param pd.DataFrame df: data frame read from a library Excel file
-    :return: a dataframe as required by
-             :meth:`~mofi.mofi.MainWindow.table_from_df()`;
-             None if any error is encountered
-    :rtype: pd.DataFrame or NoneType
-    """
-
-    try:
-        df = df.copy()  # type: pd.DataFrame
-        df["Sites"] = df["Modification"].apply(lambda x: x.split("+")[0])
-        df["Name"] = df["Modification"].apply(lambda x: x.split("+")[1])
-        df["Composition"] = df["Name"].apply(parse_zhang_glycan)
-        return df
-    except AttributeError:
-        return None

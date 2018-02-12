@@ -65,13 +65,6 @@ _polymer_table_columns = [
     ("Abundance", 0.0, "Abundance")
 ]
 
-# default values for columns in the polymer table
-_pepmap_columns = [
-    ("Checked", True, "Use?"),
-    ("Modification", None, "Modification"),
-    ("Abundance", 0.0, "Abundance")
-]
-
 # sorting key for column 1 of the results trees
 _default_col_key = {1: lambda x: [int(i) for i in x.split("-")]}
 
@@ -463,7 +456,7 @@ class MainWindow(QMainWindow, Ui_MoFi):
             lambda: self.load_table(
                 default=False,
                 dialog_title="Import glycans",
-                extensions=["csv", "xls", "xlsx", "xls-bpf"],
+                extensions=["csv", "xls", "xlsx"],
                 table_widget=self.tbPolymers,
                 cols=_polymer_table_columns
             )
@@ -956,10 +949,6 @@ class MainWindow(QMainWindow, Ui_MoFi):
                                               force_accept=True)
         elif filename.endswith("csv"):
             df = ImportTabDataDialog.get_data(self, filename, cols, "csv")
-        elif filetype == "BioPharma Finder PepMap results":
-            df = ImportTabDataDialog.get_data(self, filename,
-                                              _pepmap_columns, "xls")
-            df = io_tools.read_bpf_library(df)
         else:
             df = ImportTabDataDialog.get_data(self, filename, cols, "xls")
         if df is not None:
