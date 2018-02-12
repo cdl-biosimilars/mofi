@@ -101,9 +101,8 @@ def dataframe_from_xml(root):
                 .astype(dict(zip(column_names, dtypes))))
 
 
-# regular expression for parsing glycans according to the nomenclature
-# of Thermo Fisher BioPharma Finder
-_re_bpf_glycan = re.compile(r"""
+# regular expression for parsing glycans according to the Zhang nomenclature
+_re_zhang_glycan = re.compile(r"""
         ^(?:(A)(\d)+)?  # g[1]:  antennas
         (?:(Sg)(\d)+)?  # g[3]:  Neu5Gc
         (?:(S)(\d)+)?   # g[5]:  Neu5Ac
@@ -115,19 +114,18 @@ _re_bpf_glycan = re.compile(r"""
         """, re.VERBOSE)
 
 
-def _parse_bpf_glycan(glycan):
+def parse_zhang_glycan(glycan):
     """
     Convert a glycan abbreviation (e.g., "A2G1F") to a composition string
     as used in the polymer table (e.g., "4 Hex, 3 HexNAc, 1 Fuc").
 
-    :param str glycan: a glycan abbreviation as described
-                       in the BioPharma Finder manual
-
+    :param str glycan: a glycan abbreviation
+                       conforming to the Zhang nomenclature
     :return: a composition string
     :rtype: str
     """
 
-    g = list(_re_bpf_glycan.findall(glycan)[0])
+    g = list(_re_zhang_glycan.findall(glycan)[0])
     if not "".join(g):
         # deal with two non-standard abbreviations
         if glycan == "Gn":
@@ -174,7 +172,7 @@ def read_bpf_library(df):
         df = df.copy()  # type: pd.DataFrame
         df["Sites"] = df["Modification"].apply(lambda x: x.split("+")[0])
         df["Name"] = df["Modification"].apply(lambda x: x.split("+")[1])
-        df["Composition"] = df["Name"].apply(_parse_bpf_glycan)
+        df["Composition"] = df["Name"].apply(parse_zhang_glycan)
         return df
     except AttributeError:
         return None
