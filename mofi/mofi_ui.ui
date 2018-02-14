@@ -358,11 +358,11 @@
            <item>
             <widget class="QToolButton" name="btDefaultMonomers">
              <property name="toolTip">
-              <string>Load default modifications</string>
+              <string>Default modifications and tools</string>
              </property>
              <property name="icon">
               <iconset resource="mofi.qrc">
-               <normaloff>:/mofi resource/images/DefaultEntries.png</normaloff>:/mofi resource/images/DefaultEntries.png</iconset>
+               <normaloff>:/mofi resource/images/Tools.png</normaloff>:/mofi resource/images/Tools.png</iconset>
              </property>
              <property name="iconSize">
               <size>

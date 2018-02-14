@@ -1,5 +1,6 @@
 <RCC>
   <qresource prefix="mofi resource">
+    <file>../images/Tools.png</file>
     <file>../images/RestoreSort.png</file>
     <file>../images/FilterUnannotated.png</file>
     <file>../images/UncheckAll.png</file>

@@ -35,7 +35,8 @@ from mofi.paths import data_dir, docs_dir
 from mofi.mofi_ui import Ui_MoFi
 from mofi.widgets import (FilterHeader, CollapsingRectangleSelector,
                           SortableTreeWidgetItem, SortableTableWidgetItem,
-                          ImportTabDataDialog, FileTypes, get_filename)
+                          ImportTabDataDialog, FileTypes, get_filename,
+                          CreatePointMutationDialog)
 
 _version_info = """MoFi v1.1
 
@@ -617,6 +618,8 @@ class MainWindow(QMainWindow, Ui_MoFi):
                     cols=_monomer_table_columns
                 )
             )
+        menu.addSeparator()
+        menu.addAction("Create point mutation …", self.create_point_mutation)
         self.btDefaultMonomers.setMenu(menu)
 
         # polymer table and associated buttons
@@ -1329,9 +1332,11 @@ class MainWindow(QMainWindow, Ui_MoFi):
                 out_contents.append("all results")
             elif mode == "checked_parent":
                 out_contents.append("checked results (with parents)")
+                # noinspection PyUnresolvedReferences
                 df = df[df.checked != Qt.Unchecked]
             else:
                 out_contents.append("checked results")
+                # noinspection PyUnresolvedReferences
                 df = df[df.checked == Qt.Checked]
             df = df.drop("checked", axis=1)
         out_general.insert(1, (", ".join(out_contents), ))
@@ -2652,6 +2657,26 @@ class MainWindow(QMainWindow, Ui_MoFi):
         self.sbDisulfides.setMaximum(disulfides)
         self.sbDisulfides.setValue(disulfides)
         self.calculate_mod_mass()
+
+
+    def create_point_mutation(self):
+        """
+        Open a "create point mutation" dialog and add a row to the
+        table of modifications if a valid point mutation is entered.
+
+        :return: nothing
+        """
+
+        name, formula = CreatePointMutationDialog.get_mutation(self)
+        if name is not None:
+            self.tbMonomers.create_row(
+                self.tbMonomers.rowCount(),
+                active=True,
+                name=name,
+                composition=str(formula),
+                min_count=0,
+                max_count=1)
+            self.calculate_mod_mass()
 
 
 def main():

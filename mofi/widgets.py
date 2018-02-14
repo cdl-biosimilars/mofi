@@ -17,8 +17,12 @@ from PyQt5.QtGui import QColor, QBrush
 
 from matplotlib.widgets import RectangleSelector
 
+from mofi.configure import dec_places
+from mofi.createpointmutation_ui import Ui_CreatePointMutation
 from mofi.importtabdata_ui import Ui_ImportTabData
+from mofi.mass_tools import Formula
 from mofi.paths import docs_dir
+from mofi.sequence_tools import amino_acid_compositions, amino_acid_names
 
 # noinspection PyPep8Naming,PyUnresolvedReferences
 class FilterHeader(QHeaderView):
@@ -696,3 +700,86 @@ def get_filename(parent, kind="save", caption="", directory="",
     if not filename.endswith(ext):
         filename += "." + ext
     return filename, desc, new_path
+
+
+class CreatePointMutationDialog(QDialog, Ui_CreatePointMutation):
+    """
+    A dialog for creating a modification describing a point mutation.
+
+    :ivar str mutation_name: The name of the mutation
+    :ivar Formula mutation_formula: The formula corresponding to the mutation
+
+    .. automethod:: __init__
+    """
+
+    def __init__(self, parent=None):
+        """
+        Initialize the dialog.
+
+        :param QWidget parent: parent widget
+        """
+
+        # initialize the GUI
+        super().__init__(parent)
+        self.setupUi(self)
+
+        self.mutation_name = None
+        self.mutation_formula = None
+
+        self.leOldResidue.textChanged.connect(self._update_info)
+        self.leNewResidue.textChanged.connect(self._update_info)
+        self._update_info()
+
+    def _update_info(self):
+        """
+        Calculate the mutation name/formula and update the info text
+        whenever the contents of the line edits change.
+
+        :return: nothing
+        """
+
+        # clear mutation data and info text
+        self.lbMutation.setText("")
+        self.lbFormula.setText("")
+        self.lbMass.setText("")
+        self.mutation_name = None
+        self.mutation_formula = None
+
+        # get formulas of residues
+        try:
+            old_res = self.leOldResidue.text().upper()
+            new_res = self.leNewResidue.text().upper()
+            old_formula = Formula(amino_acid_compositions[old_res])
+            new_formula = Formula(amino_acid_compositions[new_res])
+        except KeyError:
+            return
+
+        if old_res == new_res:
+            return
+
+        self.mutation_name = old_res + " → " + new_res
+        self.mutation_formula = new_formula - old_formula
+
+        # update info text
+        self.lbMutation.setText(
+            amino_acid_names[old_res][1]
+            + " → "
+            + amino_acid_names[new_res][1])
+        self.lbFormula.setText(str(self.mutation_formula))
+        self.lbMass.setText(dec_places().format(self.mutation_formula.mass))
+
+    @staticmethod
+    def get_mutation(parent=None):
+        """
+        Opens an Create point mutation dialog
+        and returns the created mutation.
+
+        :param QWidget parent: parent widget
+        :return: the name and formula of the mutation
+        :rtype: tuple(str, Formula)
+        """
+
+        dialog = CreatePointMutationDialog(parent)
+        result = dialog.exec_()
+        if result == QDialog.Accepted:
+            return dialog.mutation_name, dialog.mutation_formula
