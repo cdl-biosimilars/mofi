@@ -36,7 +36,7 @@ from mofi.mofi_ui import Ui_MoFi
 from mofi.widgets import (FilterHeader, CollapsingRectangleSelector,
                           SortableTreeWidgetItem, SortableTableWidgetItem,
                           ImportTabDataDialog, FileTypes, get_filename,
-                          CreatePointMutationDialog)
+                          CreatePointMutationDialog, CreateTruncationDialog)
 
 _version_info = """MoFi v1.1
 
@@ -644,6 +644,8 @@ class MainWindow(QMainWindow, Ui_MoFi):
                     cols=_polymer_table_columns
                 )
             )
+        menu.addSeparator()
+        menu.addAction("Create terminal truncation …", self.create_truncation)
         self.btDefaultPolymers.setMenu(menu)
 
         # headers with filters for the results trees
@@ -2676,6 +2678,18 @@ class MainWindow(QMainWindow, Ui_MoFi):
                 composition=str(formula),
                 min_count=0,
                 max_count=1)
+            self.calculate_mod_mass()
+
+
+    def create_truncation(self):
+        result = CreateTruncationDialog.get_truncation(
+            self, self.teSequence.toPlainText())
+        if result:
+            modifications, structures = result
+            for m in modifications:
+                self.tbMonomers.create_row(self.tbMonomers.rowCount(), **m)
+            for s in structures:
+                self.tbPolymers.create_row(self.tbPolymers.rowCount(), **s)
             self.calculate_mod_mass()
 
 

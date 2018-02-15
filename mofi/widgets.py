@@ -2,7 +2,9 @@
 Custom widgets and GUI functions.
 """
 
+from collections import Counter
 import os
+import re
 from urllib.request import pathname2url
 import webbrowser
 
@@ -19,10 +21,12 @@ from matplotlib.widgets import RectangleSelector
 
 from mofi.configure import dec_places
 from mofi.createpointmutation_ui import Ui_CreatePointMutation
+from mofi.createtruncation_ui import Ui_CreateTruncation
 from mofi.importtabdata_ui import Ui_ImportTabData
 from mofi.mass_tools import Formula
 from mofi.paths import docs_dir
-from mofi.sequence_tools import amino_acid_compositions, amino_acid_names
+from mofi.sequence_tools import (amino_acid_compositions, amino_acid_names,
+                                 read_fasta_string)
 
 # noinspection PyPep8Naming,PyUnresolvedReferences
 class FilterHeader(QHeaderView):
@@ -783,3 +787,205 @@ class CreatePointMutationDialog(QDialog, Ui_CreatePointMutation):
         result = dialog.exec_()
         if result == QDialog.Accepted:
             return dialog.mutation_name, dialog.mutation_formula
+
+
+def extract_positions(pos_list):
+    """
+    Extract positions from a string like "1, 3-5, 9".
+
+    :param str pos_list: list of single positions and ranges
+    :return: list of individual positions (e.g., (1, 3, 4, 5, 9))
+    :rtype: list(int)
+    :raises ValueError: if parsing fails
+    """
+
+    re_range = re.compile("(?P<start>\d+)-(?P<stop>\d+)")
+    pos = []
+    for s in pos_list.split(","):
+        s = s.strip()
+        match = re_range.match(s)
+        if match:
+            g = match.groupdict()
+            pos += [i for i in range(int(g["start"]), int(g["stop"]) + 1)]
+        else:
+            pos.append(int(s))  # may raise ValueError
+    return pos
+
+
+class CreateTruncationDialog(QDialog, Ui_CreateTruncation):
+    """
+    A dialog for creating an N-or C-terminal truncation.
+
+    :ivar list chains: chain names
+    :ivar str sequences: chain sequences
+    :ivar list modifications: data for the table of modifications
+    :ivar list structures: data for the table of structures
+
+    .. automethod:: __init__
+    """
+
+    def __init__(self, parent=None, main_sequence=None):
+        """
+        Initialize the dialog.
+
+        :param QWidget parent: parent widget
+        :param str main_sequence: sequence to be loaded
+                                  if the user clicks 'From parameters'
+        """
+
+        # initialize the GUI
+        super().__init__(parent)
+        self.setupUi(self)
+
+        # signal-slot connections
+        self.btFromParameters.clicked.connect(self.sequence_from_parameters)
+        self.rbResidueList.clicked.connect(self.switch_residue_input)
+        self.rbResidueNth.clicked.connect(self.switch_residue_input)
+
+        # initialize instance variables
+        self.chains, self.sequences = read_fasta_string(main_sequence,
+                                                        join_sequences=False)
+        self.modifications = None
+        self.structures = None
+
+        # fill the chain combobox
+        if self.sequences:
+            self.cbChain.addItem("(all)")
+            for chain in self.chains:
+                self.cbChain.addItem(chain)
+        else:
+            self.btFromParameters.setEnabled(False)
+            self.lbChain.setEnabled(False)
+            self.cbChain.setEnabled(False)
+
+    def sequence_from_parameters(self):
+        """
+        Fill the sequence text edit with (parts of) the sequence
+        of the main window.
+
+        :return: nothing
+        """
+
+        index = self.cbChain.currentIndex() - 1
+        if index == -1:
+            self.teSequence.setText("".join(self.sequences))
+        else:
+            self.teSequence.setText(self.sequences[index])
+
+    def switch_residue_input(self):
+        """
+        Enable the appropriate entry fields for truncation positions.
+        :return: nothing
+        """
+
+        if self.rbResidueNth.isChecked():
+            self.sbResidueNth.setEnabled(True)
+            self.leResidueList.setEnabled(False)
+        else:
+            self.sbResidueNth.setEnabled(False)
+            self.leResidueList.setEnabled(True)
+
+    def truncate(self):
+        """
+        Calculate data for modifications and structures that describe
+        N- or C-terminal truncations.
+
+        :return: two lists of dicts containing data for creating rows in the
+                 table of modifications and table of structures, respectively
+        :rtype: tuple(list(dict), list(dict))
+        """
+
+        sequence = self.teSequence.toPlainText()
+        if not sequence:
+            return
+
+        # get all truncation positions
+        if self.rbResidueList.isChecked():
+            try:
+                raw_pos = extract_positions(self.leResidueList.text())
+            except ValueError:
+                QMessageBox.critical(
+                    self,
+                    "Error",
+                    "Could not parse list of truncation positions.")
+                return
+            if self.rbNterminus.isChecked():
+                pos = [0] + raw_pos
+            else:
+                pos = [-i for i in raw_pos[::-1]] + [len(sequence)]
+        else:
+            step = self.sbResidueNth.value()
+            if self.rbNterminus.isChecked():
+                pos = range(0, len(sequence) + 1, step)
+            else:
+                pos = range(len(sequence), -1, -step)
+
+        # create all subsequences
+        if self.rbNterminus.isChecked():
+            prefix = "N_"
+            subsequences = [sequence[i:] for i in pos]
+        else:
+            prefix = "C_"
+            subsequences = [sequence[:i] for i in pos]
+
+        # create data for the required stage 1 modifications
+        modifications = []
+        for aa, count in Counter(sequence).items():
+            modifications.append(dict(
+                active=True,
+                name=prefix + amino_acid_names[aa][1],
+                composition=str(Formula(amino_acid_compositions[aa])),
+                min_count=0,
+                max_count=count))
+
+        # create data for the corresponding stage 2 structures
+        structures = []
+        for s in subsequences:
+            composition = []
+            for aa, count in Counter(s).items():
+                composition.append("{} {}{}".format(count,
+                                                    prefix,
+                                                    amino_acid_names[aa][1]))
+            structures.append(dict(
+                active=True,
+                name=prefix + s,
+                composition=", ".join(composition),
+                sites=prefix + "trunc",
+                abundance=0.0))
+
+        return modifications, structures
+
+    def done(self, r):
+        """
+        Check whether truncation works when Ok is clicked.
+
+        :param r: return code
+        :return: nothing
+        """
+
+        if r == QDialog.Accepted:
+            result = self.truncate()
+            if result:
+                self.modifications, self.structures = result
+                super().done(r)
+        else:
+            super().done(r)
+
+    @staticmethod
+    def get_truncation(parent=None, main_sequence=None):
+        """
+        Opens an Create truncation dialog
+        and returns the created truncation.
+
+        :param QWidget parent: parent widget
+        :param str main_sequence: sequence to be loaded
+                                  if the user clicks 'From parameters'
+        :return: two lists of dicts containing data for creating rows in the
+                 table of modifications and table of structures, respectively
+        :rtype: tuple(list(dict)), list(dict)) or None
+        """
+
+        dialog = CreateTruncationDialog(parent, main_sequence)
+        result = dialog.exec_()
+        if result == QDialog.Accepted:
+            return dialog.modifications, dialog.structures

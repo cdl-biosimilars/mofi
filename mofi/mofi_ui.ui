@@ -579,11 +579,11 @@
            <item>
             <widget class="QToolButton" name="btDefaultPolymers">
              <property name="toolTip">
-              <string>Load default glycans</string>
+              <string>Default glycans and tools</string>
              </property>
              <property name="icon">
               <iconset resource="mofi.qrc">
-               <normaloff>:/mofi resource/images/DefaultEntries.png</normaloff>:/mofi resource/images/DefaultEntries.png</iconset>
+               <normaloff>:/mofi resource/images/Tools.png</normaloff>:/mofi resource/images/Tools.png</iconset>
              </property>
              <property name="iconSize">
               <size>
