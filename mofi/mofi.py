@@ -620,6 +620,8 @@ class MainWindow(QMainWindow, Ui_MoFi):
             )
         menu.addSeparator()
         menu.addAction("Create point mutation …", self.create_point_mutation)
+        menu.addAction("Create terminal truncation …",
+                       lambda: self.create_truncation(stage2=False))
         self.btDefaultMonomers.setMenu(menu)
 
         # polymer table and associated buttons
@@ -645,7 +647,8 @@ class MainWindow(QMainWindow, Ui_MoFi):
                 )
             )
         menu.addSeparator()
-        menu.addAction("Create terminal truncation …", self.create_truncation)
+        menu.addAction("Create terminal truncation …",
+                       lambda: self.create_truncation(stage2=True))
         self.btDefaultPolymers.setMenu(menu)
 
         # headers with filters for the results trees
@@ -2681,9 +2684,19 @@ class MainWindow(QMainWindow, Ui_MoFi):
             self.calculate_mod_mass()
 
 
-    def create_truncation(self):
+    def create_truncation(self, stage2=True):
+        """
+        Open a "create point mutation" dialog and add a row to the
+        table of modifications if a valid point mutation is entered.
+
+        :param bool stage2: True if stage 2 structures should be created
+        :return: nothing
+        """
+
         result = CreateTruncationDialog.get_truncation(
-            self, self.teSequence.toPlainText())
+            self,
+            main_sequence=self.teSequence.toPlainText(),
+            stage2=stage2)
         if result:
             modifications, structures = result
             for m in modifications:

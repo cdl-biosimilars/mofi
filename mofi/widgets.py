@@ -820,17 +820,20 @@ class CreateTruncationDialog(QDialog, Ui_CreateTruncation):
     :ivar str sequences: chain sequences
     :ivar list modifications: data for the table of modifications
     :ivar list structures: data for the table of structures
+    :ivar bool stage2: indicates whether data for stage 2 should be generated
 
     .. automethod:: __init__
     """
 
-    def __init__(self, parent=None, main_sequence=None):
+    def __init__(self, parent=None, main_sequence=None, stage2=True):
         """
         Initialize the dialog.
 
         :param QWidget parent: parent widget
         :param str main_sequence: sequence to be loaded
                                   if the user clicks 'From parameters'
+        :param bool stage2: True if truncations should be searched in stage 2;
+                            otherwise False
         """
 
         # initialize the GUI
@@ -847,6 +850,7 @@ class CreateTruncationDialog(QDialog, Ui_CreateTruncation):
                                                         join_sequences=False)
         self.modifications = None
         self.structures = None
+        self.stage2 = stage2
 
         # fill the chain combobox
         if self.sequences:
@@ -928,30 +932,49 @@ class CreateTruncationDialog(QDialog, Ui_CreateTruncation):
             prefix = "C_"
             subsequences = [sequence[:i] for i in pos]
 
-        # create data for the required stage 1 modifications
-        modifications = []
-        for aa, count in Counter(sequence).items():
-            modifications.append(dict(
-                active=True,
-                name=prefix + amino_acid_names[aa][1],
-                composition=str(Formula(amino_acid_compositions[aa])),
-                min_count=0,
-                max_count=count))
+        if self.stage2:
+            # create data for the required stage 1 modifications
+            modifications = []
+            for aa, count in Counter(sequence).items():
+                modifications.append(dict(
+                    active=True,
+                    name=prefix + amino_acid_names[aa][1],
+                    composition=str(Formula(amino_acid_compositions[aa])),
+                    min_count=0,
+                    max_count=count))
 
-        # create data for the corresponding stage 2 structures
-        structures = []
-        for s in subsequences:
-            composition = []
-            for aa, count in Counter(s).items():
-                composition.append("{} {}{}".format(count,
-                                                    prefix,
-                                                    amino_acid_names[aa][1]))
-            structures.append(dict(
-                active=True,
-                name=prefix + s,
-                composition=", ".join(composition),
-                sites=prefix + "trunc",
-                abundance=0.0))
+            # create data for the corresponding stage 2 structures
+            structures = []
+            for s in subsequences:
+                composition = []
+                for aa, count in Counter(s).items():
+                    composition.append("{} {}{}".format(count,
+                                                        prefix,
+                                                        amino_acid_names[aa][1]))
+                structures.append(dict(
+                    active=True,
+                    name=prefix + s,
+                    composition=", ".join(composition),
+                    sites=prefix + "trunc",
+                    abundance=0.0))
+        else:
+            # create data for the required stage 1 modifications
+            modifications = []
+            for s in subsequences:
+                if not s:
+                    continue
+                formula = Formula()
+                for aa, count in Counter(s).items():
+                    formula += Formula(amino_acid_compositions[aa]) * count
+                modifications.append(dict(
+                    active=True,
+                    name=prefix + s,
+                    composition=str(formula),
+                    min_count=0,
+                    max_count=1))
+
+            # stage 2 structures are not required
+            structures = []
 
         return modifications, structures
 
@@ -972,7 +995,7 @@ class CreateTruncationDialog(QDialog, Ui_CreateTruncation):
             super().done(r)
 
     @staticmethod
-    def get_truncation(parent=None, main_sequence=None):
+    def get_truncation(parent=None, main_sequence=None, stage2=True):
         """
         Opens an Create truncation dialog
         and returns the created truncation.
@@ -980,12 +1003,14 @@ class CreateTruncationDialog(QDialog, Ui_CreateTruncation):
         :param QWidget parent: parent widget
         :param str main_sequence: sequence to be loaded
                                   if the user clicks 'From parameters'
+        :param bool stage2: True if truncations should be searched in stage 2;
+                            otherwise False
         :return: two lists of dicts containing data for creating rows in the
                  table of modifications and table of structures, respectively
         :rtype: tuple(list(dict)), list(dict)) or None
         """
 
-        dialog = CreateTruncationDialog(parent, main_sequence)
+        dialog = CreateTruncationDialog(parent, main_sequence, stage2)
         result = dialog.exec_()
         if result == QDialog.Accepted:
             return dialog.modifications, dialog.structures
