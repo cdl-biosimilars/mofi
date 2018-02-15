@@ -59,25 +59,34 @@ amino_acid_compositions = {
     "Z": {"H": 8, "C": 4, "O": 5, "N": 1, "P": 1}}  # phosphothreonine
 
 
-def read_fasta_string(fasta_string):
+def read_fasta_string(fasta_string, join_sequences=True):
     """
     Extracts the chain number and sequence from a string in FASTA format.
     The chain number equals the number of header lines (starting with ``>``).
     The sequences of all chains are merged.
 
     :param str fasta_string: String in FASTA format
-    :return: (1) number of chains,
-             (2) string containing the raw sequence
-    :rtype: tuple(int, str)
+    :param bool join_sequences: determines the output format
+    :return: number of chains and string containing the raw sequence
+             if `join_sequences` is True;
+             list of chain names and list of chain sequences
+             if `join_sequences` is False;
+    :rtype: tuple(int, str) or tuple(list(str), list(str))
     """
-    seqences = []
-    chains = 0
+
+    sequences = []
+    chain_names = []
     for line in fasta_string.split("\n"):
         if line.startswith(">"):
-            chains += 1
+            chain_names.append(line[1:])
         else:
-            seqences.append(line.strip())
-    return chains, "".join(seqences)
+            line = line.strip()
+            if line:
+                sequences.append(line.strip())
+    if join_sequences:
+        return len(chain_names), "".join(sequences)
+    else:
+        return chain_names, sequences
 
 
 def get_sequence_atoms(sequence, chains=1, disulfide_bonds=0):
