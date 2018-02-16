@@ -1468,21 +1468,21 @@ class MainWindow(QMainWindow, Ui_MoFi):
             is_formula = True
 
             # get the mass from the formula cell
-            error_in_formula = False
-            try:  # composition could be a formula ...
-                formula = mass_tools.Formula(composition)
-                mass = formula.mass
+            error_message = ""
+            try:  # composition could be a mass in Da ...
+                mass = float(composition)
+                is_formula = False
             except ValueError:
-                try:  # ... or a mass in Da
-                    mass = float(composition)
-                    is_formula = False
-                except ValueError:
-                    error_in_formula = True
+                try:  # ... or a formula
+                    formula = mass_tools.Formula(composition)
+                    mass = formula.mass
+                except ValueError as e:
+                    error_message = str(e)
 
             # set the mass tooltip and color the cell
-            if error_in_formula or mass == 0:
+            if error_message or mass == 0:
                 bg_color = QColor(configure.colors["widgets"]["bg_error"])
-                tooltip = ""
+                tooltip = error_message
             else:
                 bg_color = QColor(configure.colors["widgets"]["bg_ok"])
                 tooltip = configure.dec_places().format(mass) + " Da"
