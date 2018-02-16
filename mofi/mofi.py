@@ -1248,7 +1248,7 @@ class MainWindow(QMainWindow, Ui_MoFi):
                 "Error",
                 "Error when writing to " + filename + OSError.args)
 
-
+    # noinspection PyUnresolvedReferences
     def save_search_results(self, mode):
         """
         Write the search results to a CSV file.
@@ -1256,10 +1256,13 @@ class MainWindow(QMainWindow, Ui_MoFi):
         :param str mode: Specifies which results should be exported.
           Possible choices:
 
+            * ``"all"``: all entries in results tree
+            * ``"parent"``: level 0 entries in results tree
+            * ``"hit"``: level 1 entries in results tree
+            * ``"permutation"``: level 2 entries in results tree
             * ``"checked"``: checked entries in results tree
             * ``"checked_parent"``: checked entries in results tree
-              with (partially checked) parents
-            * ``"all"``: all entries in results tree
+                                    with (partially checked) parents
             * ``"stats_wide"``: statistics table in wide format (as shown)
             * ``"stats_long"``: statistics table in long (tidy) format
         :return: nothing
@@ -1271,7 +1274,7 @@ class MainWindow(QMainWindow, Ui_MoFi):
         if filename is None:
             return
 
-        # retrieve general information about the search parameters
+        # retrieve general information about (1) the search parameters ...
         out_general = [
             ("Combinatorial search results by MoFi", ),
             ("Date", time.strftime("%c")),
@@ -1283,11 +1286,13 @@ class MainWindow(QMainWindow, Ui_MoFi):
              "{:.1f} {}".format(self.sbTolerance.value(),
                                 self.cbTolerance.currentText()))]
 
+        # (2) the mass set ...
         out_mass_set = [("atom", "atomic weight")]
         for (atom, weight) in configure.current_mass_set.items():
             if atom not in ["description", "tooltip"]:
                 out_mass_set.append((atom, str(weight)))
 
+        # (3) the table of modifications ...
         out_composition = [("name", "formula", "mass",
                             "min_count", "max_count")]
         for (is_checked, name, formula, mass,
@@ -1301,6 +1306,7 @@ class MainWindow(QMainWindow, Ui_MoFi):
                                         str(min_count),
                                         str(max_count)))
 
+        # (4) ... and the table of structures
         out_structures = [("name", "composition", "sites", "abundance")]
         for (is_checked, name, composition,
              sites, abundance) in self.get_polymers():
@@ -1310,6 +1316,7 @@ class MainWindow(QMainWindow, Ui_MoFi):
                                        sites,
                                        "{:.2f}".format(abundance)))
 
+        # export the statistics table
         if mode.startswith("stats"):
             out_contents = ["Search statistics"]
 
@@ -1329,13 +1336,15 @@ class MainWindow(QMainWindow, Ui_MoFi):
                                          "Stage 2 hits"],
                              value_name="Value",
                              var_name="Measure")
+
+        # export one of the results tables
         else:
             # set up the depth-first search algorithm
-            def explore(node):
-                yield ([node.checkState(0)]
+            def explore(node, level=-1):
+                yield ([level, node.checkState(0)]
                        + [node.text(c) for c in range(1, node.columnCount())])
                 for i in range(node.childCount()):
-                    yield from explore(node.child(i))
+                    yield from explore(node.child(i), level+1)
 
             # choose the appropriate data source
             if self.taResults.currentIndex() == 0:
@@ -1347,28 +1356,53 @@ class MainWindow(QMainWindow, Ui_MoFi):
 
             # create dataframe from (selected) entries
             header = results_tree.headerItem()
-            df = (
-                pd.DataFrame(
-                    explore(results_tree.invisibleRootItem()),
-                    columns=(["checked"]
-                             + [header.text(c)
-                                for c in range(1, header.columnCount())]))
-                .replace("", np.nan))
+            df = pd.DataFrame(
+                explore(results_tree.invisibleRootItem()),
+                columns=(["level", "checked"]
+                         + [header.text(c)
+                            for c in range(1, header.columnCount())]))
+            df = df.replace("", np.nan)
             df[["Exp. Mass", "%"]] = df[["Exp. Mass", "%"]].ffill()
-            if not df.empty and df.iloc[0, 1] is None:
+            if not df.empty and df.iloc[0, 3] is None:
                 df = df.drop(0)
+
+            # calculate boolean selectors
+            level0 = (df.level == 0)
+            level1 = (df.level == 1)
+            unannotated = level0 & (df["Da"].isnull())
 
             if mode == "all":
                 out_contents.append("all results")
+                df.loc[~level0] = df.loc[~level0].ffill()
+
+            elif mode == "parent":
+                out_contents.append("parent (level 0) rows")
+                df = df[level0]
+
+            elif mode == "hit":
+                out_contents.append("hit (level 1) rows")
+                df.loc[unannotated, "ID"] = df.loc[unannotated, "ID"] + "-0-0"
+                df = df[level1 | unannotated]
+
+            elif mode == "permutation":
+                out_contents.append("permutation (level 2) rows")
+                hits_without_perms = level1 & (df["# Perms"] == "1")
+                level2 = (df.level == 2)
+                df.loc[unannotated, "ID"] = (
+                    df.loc[unannotated, "ID"] + "-0-0-0")
+                df.loc[hits_without_perms, "ID"] = (
+                    df.loc[hits_without_perms, "ID"] + "-0")
+                df.loc[~level0] = df.loc[~level0].ffill()
+                df = df[level2 | hits_without_perms | unannotated]
+
             elif mode == "checked_parent":
                 out_contents.append("checked results (with parents)")
-                # noinspection PyUnresolvedReferences
                 df = df[df.checked != Qt.Unchecked]
-            else:
+
+            else:  # mode == "checked"
                 out_contents.append("checked results")
-                # noinspection PyUnresolvedReferences
                 df = df[df.checked == Qt.Checked]
-            df = df.drop("checked", axis=1)
+            df = df.drop(["level", "checked"], axis=1)
         out_general.insert(1, (", ".join(out_contents), ))
 
         # write to csv or xlsx file
