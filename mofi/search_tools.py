@@ -167,7 +167,7 @@ def find_monomers(mods, unexplained_masses, mass_tolerance=5.0,
 
 
 # regex for decomposing glycan compositions
-_re_monomer_list = re.compile(r"(\d*)\s*([\w-]+)(?:,|$)")
+re_monomer_list = re.compile(r"(\d*)\s*([\w-]+)(?:,|$)")
 
 
 def _calc_monomer_counts(value, monomers=None):
@@ -182,7 +182,7 @@ def _calc_monomer_counts(value, monomers=None):
     :rtype: np.array
     """
     composition = {}  # generate a {name: count} dict
-    for (count, monomer) in _re_monomer_list.findall(value):
+    for (count, monomer) in re_monomer_list.findall(value):
         try:
             composition[monomer] = int(count)
         except ValueError:
@@ -227,7 +227,7 @@ def get_monomers_from_library(glycan_library):
 
     rows = []
     for name, data in glycan_library.iterrows():
-        for (count, monomer) in _re_monomer_list.findall(data["Composition"]):
+        for (count, monomer) in re_monomer_list.findall(data["Composition"]):
             try:
                 count = int(count)
             except ValueError:

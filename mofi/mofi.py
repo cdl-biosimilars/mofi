@@ -1515,6 +1515,30 @@ class MainWindow(QMainWindow, Ui_MoFi):
         else:
             self._known_mods_formula = mass_tools.Formula()
         self.update_mass_in_statusbar()
+
+        # calculate masses for structures and display as tooltip
+        monomer_masses = {m[1]: m[3] for m in result}
+        for row_id in range(self.tbPolymers.rowCount()):
+            tooltip = ""
+            mass = 0
+            for count, monomer in search_tools.re_monomer_list.findall(
+                    self.tbPolymers.item(row_id, 2).text()):
+                try:
+                    mass += int(count) * monomer_masses[monomer]
+                except KeyError:
+                    tooltip = "Modification '{}' unknown.".format(monomer)
+                    break
+                except ValueError:
+                    tooltip = "Invalid count for '{}'.".format(monomer)
+                    break
+            if tooltip:
+                bg_color = QColor(configure.colors["widgets"]["bg_error"])
+            else:
+                bg_color = QColor(configure.colors["widgets"]["bg_ok"])
+                tooltip = configure.dec_places().format(mass) + " Da"
+            self.tbPolymers.item(row_id, 2).setBackground(bg_color)
+            self.tbPolymers.item(row_id, 2).setToolTip(tooltip)
+
         return result
 
 
@@ -1534,6 +1558,8 @@ class MainWindow(QMainWindow, Ui_MoFi):
                 self.tbPolymers.item(row, col).text())
             if composition:
                 self.tbPolymers.item(row, 2).setText(composition)
+        elif col == 2:
+            self.calculate_mod_mass()
 
 
     def update_mass_in_statusbar(self):
