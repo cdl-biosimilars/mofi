@@ -803,6 +803,8 @@ def extract_positions(pos_list):
     pos = []
     for s in pos_list.split(","):
         s = s.strip()
+        if not s:
+            continue
         match = re_range.match(s)
         if match:
             g = match.groupdict()
@@ -842,6 +844,7 @@ class CreateTruncationDialog(QDialog, Ui_CreateTruncation):
 
         # signal-slot connections
         self.btFromParameters.clicked.connect(self.sequence_from_parameters)
+        self.btPreview.clicked.connect(self.preview)
         self.rbResidueList.clicked.connect(self.switch_residue_input)
         self.rbResidueNth.clicked.connect(self.switch_residue_input)
 
@@ -889,30 +892,23 @@ class CreateTruncationDialog(QDialog, Ui_CreateTruncation):
             self.sbResidueNth.setEnabled(False)
             self.leResidueList.setEnabled(True)
 
-    def truncate(self):
+    def get_subsequences(self):
         """
-        Calculate data for modifications and structures that describe
-        N- or C-terminal truncations.
+        Calculate all subsequences from the current parameters
 
-        :return: two lists of dicts containing data for creating rows in the
-                 table of modifications and table of structures, respectively
-        :rtype: tuple(list(dict), list(dict))
+        :return: a list of subsequences
+        :rtype: list(str)
         """
-
         sequence = self.teSequence.toPlainText()
         if not sequence:
-            return
+            return []
 
         # get all truncation positions
         if self.rbResidueList.isChecked():
             try:
                 raw_pos = extract_positions(self.leResidueList.text())
             except ValueError:
-                QMessageBox.critical(
-                    self,
-                    "Error",
-                    "Could not parse list of truncation positions.")
-                return
+                return []
             if self.rbNterminus.isChecked():
                 pos = [0] + raw_pos
             else:
@@ -926,11 +922,26 @@ class CreateTruncationDialog(QDialog, Ui_CreateTruncation):
 
         # create all subsequences
         if self.rbNterminus.isChecked():
+            return [sequence[i:] for i in pos]
+        else:
+            return [sequence[:i] for i in pos]
+
+    def get_modification_data(self, subsequences):
+        """
+        Calculate data for modifications and structures
+        from a given list of subsequences.
+
+        :param list(str) subsequences: list of subsequences
+        :return: two lists of dicts containing data for creating rows in the
+                 table of modifications and table of structures, respectively
+        :rtype: tuple(list(dict), list(dict))
+        """
+
+        sequence = self.teSequence.toPlainText()
+        if self.rbNterminus.isChecked():
             prefix = "N_"
-            subsequences = [sequence[i:] for i in pos]
         else:
             prefix = "C_"
-            subsequences = [sequence[:i] for i in pos]
 
         if self.stage2:
             # create data for the required stage 1 modifications
@@ -948,9 +959,10 @@ class CreateTruncationDialog(QDialog, Ui_CreateTruncation):
             for s in subsequences:
                 composition = []
                 for aa, count in Counter(s).items():
-                    composition.append("{} {}{}".format(count,
-                                                        prefix,
-                                                        amino_acid_names[aa][1]))
+                    composition.append("{} {}{}".format(
+                        count,
+                        prefix,
+                        amino_acid_names[aa][1]))
                 structures.append(dict(
                     active=True,
                     name=prefix + s,
@@ -978,19 +990,60 @@ class CreateTruncationDialog(QDialog, Ui_CreateTruncation):
 
         return modifications, structures
 
+    def preview(self):
+        """
+        Fill the preview text edit with the generated truncations.
+
+        :return: nothing
+        """
+
+        self.tePreview.clear()
+        subsequences = self.get_subsequences()
+        if subsequences:
+            preview_text = []
+            for s in subsequences:
+                if not s:
+                    continue
+                formula = Formula()
+                for aa, count in Counter(s).items():
+                    try:
+                        formula += Formula(amino_acid_compositions[aa]) * count
+                    except KeyError:
+                        formula = Formula()
+                        break
+                preview_text.append(
+                    "<b>{}</b>: {} <font color='#808080'>({})</font>".format(
+                        s,
+                        str(formula),
+                        dec_places().format(formula.mass)))
+            self.tePreview.setText("<br/>".join(preview_text))
+
     def done(self, r):
         """
-        Check whether truncation works when Ok is clicked.
+        Check whether there are any truncations when Ok is clicked.
+        Ask if the user really wants to quit if there are none.
 
-        :param r: return code
+        :param int r: return code
         :return: nothing
         """
 
         if r == QDialog.Accepted:
-            result = self.truncate()
-            if result:
-                self.modifications, self.structures = result
+            self.modifications, self.structures = self.get_modification_data(
+                self.get_subsequences())
+            if self.modifications:
                 super().done(r)
+            else:
+                answer = QMessageBox.question(
+                    self,
+                    "MoFi",
+                    "The current parameters do not create any truncations.\n"
+                    "Quit nevertheless?",
+                    QMessageBox.No | QMessageBox.Yes,
+                    QMessageBox.No)
+                if answer == QMessageBox.Yes:
+                    super().done(QDialog.Rejected)
+                else:
+                    pass
         else:
             super().done(r)
 
