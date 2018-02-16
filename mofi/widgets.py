@@ -898,8 +898,13 @@ class CreateTruncationDialog(QDialog, Ui_CreateTruncation):
 
         :return: a list of subsequences
         :rtype: list(str)
+        :raises ValueError: if an unknown symbol is used in the input sequence
         """
+
         sequence = self.teSequence.toPlainText()
+        for r in Counter(sequence):
+            if r not in amino_acid_names.keys():
+                raise ValueError("Residue '{}' unknown.".format(r))
         if not sequence:
             return []
 
@@ -998,7 +1003,12 @@ class CreateTruncationDialog(QDialog, Ui_CreateTruncation):
         """
 
         self.tePreview.clear()
-        subsequences = self.get_subsequences()
+        try:
+            subsequences = self.get_subsequences()
+        except ValueError as e:
+            QMessageBox.critical(self, "Error", str(e))
+            return
+
         if subsequences:
             preview_text = []
             for s in subsequences:
@@ -1028,11 +1038,20 @@ class CreateTruncationDialog(QDialog, Ui_CreateTruncation):
         """
 
         if r == QDialog.Accepted:
+            # in case of an unknown symbol, show an error message
+            try:
+                subsequences = self.get_subsequences()
+            except ValueError as e:
+                QMessageBox.critical(self, "Error", str(e))
+                return
+
+            # generate data if the current parameters yield truncations
             self.modifications, self.structures = self.get_modification_data(
-                self.get_subsequences())
+                subsequences)
             if self.modifications:
                 super().done(r)
             else:
+                # otherwise, ask if the user really wants to quit
                 answer = QMessageBox.question(
                     self,
                     "MoFi",
@@ -1044,7 +1063,7 @@ class CreateTruncationDialog(QDialog, Ui_CreateTruncation):
                     super().done(QDialog.Rejected)
                 else:
                     pass
-        else:
+        else:  # Cancel is handled normally
             super().done(r)
 
     @staticmethod
