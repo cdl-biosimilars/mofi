@@ -671,23 +671,49 @@ class MainWindow(QMainWindow, Ui_MoFi):
         self.tbPolymers.verticalHeader().setSectionResizeMode(
             QHeaderView.Fixed)
 
-        # menu for save results button
-        self.save_results_menu = {"tree": QMenu(), "table": QMenu()}
-        self.save_results_menu["tree"].addAction(
-            "Save all entries …",
-            lambda: self.save_search_results("all"))
-        self.save_results_menu["tree"].addAction(
-            "Save checked entries …",
-            lambda: self.save_search_results("checked"))
-        self.save_results_menu["tree"].addAction(
-            "Save checked entries with parents …",
-            lambda: self.save_search_results("checked_parent"))
-        self.save_results_menu["table"].addAction(
+        # menu for save results button: (1) stage 1 results, ...
+        menu = QMenu()
+        menu.addAction("Save all entries …",
+                       lambda: self.save_search_results("all"))
+        menu.addSeparator()
+        menu.addAction("Save parent rows …",
+                       lambda: self.save_search_results("parent"))
+        menu.addAction("Save annotations …",
+                       lambda: self.save_search_results("hit"))
+        menu.addSeparator()
+        menu.addAction("Save checked entries …",
+                       lambda: self.save_search_results("checked"))
+        menu.addAction("Save checked entries with parents …",
+                       lambda: self.save_search_results("checked_parent"))
+        self.save_results_menu = [menu]
+
+        # ... (2) stage 2 results, ...
+        menu = QMenu()
+        menu.addAction("Save all entries …",
+                       lambda: self.save_search_results("all"))
+        menu.addSeparator()
+        menu.addAction("Save parent rows …",
+                       lambda: self.save_search_results("parent"))
+        menu.addAction("Save hits …",
+                       lambda: self.save_search_results("hit"))
+        menu.addAction("Save permutations …",
+                       lambda: self.save_search_results("permutation"))
+        menu.addSeparator()
+        menu.addAction("Save checked entries …",
+                       lambda: self.save_search_results("checked"))
+        menu.addAction("Save checked entries with parents …",
+                       lambda: self.save_search_results("checked_parent"))
+        self.save_results_menu.append(menu)
+
+        # ... and (3) statistics table
+        menu = QMenu()
+        menu.addAction(
             "Save in wide format …",
             lambda: self.save_search_results("stats_wide"))
-        self.save_results_menu["table"].addAction(
+        menu.addAction(
             "Save in long format …",
             lambda: self.save_search_results("stats_long"))
+        self.save_results_menu.append(menu)
         self.set_save_results_menu(1)
 
 
@@ -1083,12 +1109,11 @@ class MainWindow(QMainWindow, Ui_MoFi):
         :return: nothing
         """
 
+        self.btSaveResults.setMenu(self.save_results_menu[index])
         if index == 2:
-            self.btSaveResults.setMenu(self.save_results_menu["table"])
             self.btOnlyShowUnannotated.setEnabled(False)
             self.btOnlyShowUnannotated.setChecked(False)
         else:
-            self.btSaveResults.setMenu(self.save_results_menu["tree"])
             self.btOnlyShowUnannotated.setEnabled(True)
             self.btOnlyShowUnannotated.setChecked(self._osa_checked[index])
         self.update_selection()
