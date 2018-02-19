@@ -672,47 +672,43 @@ class MainWindow(QMainWindow, Ui_MoFi):
             QHeaderView.Fixed)
 
         # menu for save results button: (1) stage 1 results, ...
+        def _add_action(m, title, key):
+            """
+            Helper function to add a menu action for saving search results.
+            :param QMenu m: target menu
+            :param title: action title
+            :param key: key for :meth:`~MainWindow.save_search_results()`
+            :return: nothing
+            """
+            m.addAction(title,
+                        lambda: self.save_search_results(key, title))
+
         menu = QMenu()
-        menu.addAction("Save all entries …",
-                       lambda: self.save_search_results("all"))
+        _add_action(menu, "Save all entries …", "all")
         menu.addSeparator()
-        menu.addAction("Save parent rows …",
-                       lambda: self.save_search_results("parent"))
-        menu.addAction("Save annotations …",
-                       lambda: self.save_search_results("hit"))
+        _add_action(menu, "Save parent rows …", "parent")
+        _add_action(menu, "Save annotations …", "hit")
         menu.addSeparator()
-        menu.addAction("Save checked entries …",
-                       lambda: self.save_search_results("checked"))
-        menu.addAction("Save checked entries with parents …",
-                       lambda: self.save_search_results("checked_parent"))
+        _add_action(menu, "Save checked entries …", "checked")
+        _add_action(menu, "Save checked entries with parents …", "checked_p")
         self.save_results_menu = [menu]
 
         # ... (2) stage 2 results, ...
         menu = QMenu()
-        menu.addAction("Save all entries …",
-                       lambda: self.save_search_results("all"))
+        _add_action(menu, "Save all entries …", "all")
         menu.addSeparator()
-        menu.addAction("Save parent rows …",
-                       lambda: self.save_search_results("parent"))
-        menu.addAction("Save hits …",
-                       lambda: self.save_search_results("hit"))
-        menu.addAction("Save permutations …",
-                       lambda: self.save_search_results("permutation"))
+        _add_action(menu, "Save parent rows …", "parent")
+        _add_action(menu, "Save hits …", "hit")
+        _add_action(menu, "Save permutations …", "permutation")
         menu.addSeparator()
-        menu.addAction("Save checked entries …",
-                       lambda: self.save_search_results("checked"))
-        menu.addAction("Save checked entries with parents …",
-                       lambda: self.save_search_results("checked_parent"))
+        _add_action(menu, "Save checked entries …", "checked")
+        _add_action(menu, "Save checked entries with parents …", "checked_p")
         self.save_results_menu.append(menu)
 
         # ... and (3) statistics table
         menu = QMenu()
-        menu.addAction(
-            "Save in wide format …",
-            lambda: self.save_search_results("stats_wide"))
-        menu.addAction(
-            "Save in long format …",
-            lambda: self.save_search_results("stats_long"))
+        _add_action(menu, "Save in wide format …", "stats_wide")
+        _add_action(menu, "Save in long format …", "stats_long")
         self.save_results_menu.append(menu)
         self.set_save_results_menu(1)
 
@@ -1249,7 +1245,7 @@ class MainWindow(QMainWindow, Ui_MoFi):
                 "Error when writing to " + filename + OSError.args)
 
     # noinspection PyUnresolvedReferences
-    def save_search_results(self, mode):
+    def save_search_results(self, mode, dialog_title):
         """
         Write the search results to a CSV file.
 
@@ -1261,15 +1257,16 @@ class MainWindow(QMainWindow, Ui_MoFi):
             * ``"hit"``: level 1 entries in results tree
             * ``"permutation"``: level 2 entries in results tree
             * ``"checked"``: checked entries in results tree
-            * ``"checked_parent"``: checked entries in results tree
+            * ``"checked_p"``: checked entries in results tree
                                     with (partially checked) parents
             * ``"stats_wide"``: statistics table in wide format (as shown)
             * ``"stats_long"``: statistics table in long (tidy) format
+        :param str dialog_title: title for the save results dialog
         :return: nothing
         """
 
         filename, _, self._path = get_filename(
-            self, "save", "Save results", self._path,
+            self, "save", dialog_title, self._path,
             FileTypes(["csv", "xlsx"]))
         if filename is None:
             return
@@ -1339,8 +1336,15 @@ class MainWindow(QMainWindow, Ui_MoFi):
 
         # export one of the results tables
         else:
-            # set up the depth-first search algorithm
             def explore(node, level=-1):
+                """
+                Depth-first search algorithm for reading all entries
+                from the results tree.
+                :param QTreeWidgetItem node: an entry in the results tree
+                :param int level: indicates the level of the current item
+                :return: list of the item's data
+                :rtype: list(str)
+                """
                 yield ([level, node.checkState(0)]
                        + [node.text(c) for c in range(1, node.columnCount())])
                 for i in range(node.childCount()):
@@ -1395,7 +1399,7 @@ class MainWindow(QMainWindow, Ui_MoFi):
                 df.loc[~level0] = df.loc[~level0].ffill()
                 df = df[level2 | hits_without_perms | unannotated]
 
-            elif mode == "checked_parent":
+            elif mode == "checked_p":
                 out_contents.append("checked results (with parents)")
                 df = df[df.checked != Qt.Unchecked]
 
@@ -1435,7 +1439,7 @@ class MainWindow(QMainWindow, Ui_MoFi):
                        .to_excel(f, sheet_name="MoFi results", index=False))
 
                     # create outlines
-                    if mode == "all" or mode == "checked_parent":
+                    if mode == "all" or mode == "checked_p":
                         print(df.index)
                         worksheet = (f.book
                                       .get_worksheet_by_name("MoFi results"))
