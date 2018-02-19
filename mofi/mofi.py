@@ -1402,7 +1402,6 @@ class MainWindow(QMainWindow, Ui_MoFi):
             else:  # mode == "checked"
                 out_contents.append("checked results")
                 df = df[df.checked == Qt.Checked]
-            df = df.drop(["level", "checked"], axis=1)
         out_general.insert(1, (", ".join(out_contents), ))
 
         # write to csv or xlsx file
@@ -1428,11 +1427,29 @@ class MainWindow(QMainWindow, Ui_MoFi):
                     f.write("\n#   ".join(out_structures))
                     f.write("\n")
 
-                    df.to_csv(f, index=False, na_rep="NA")
+                    (df.drop(["level", "checked"], axis=1, errors="ignore")
+                       .to_csv(f, index=False, na_rep="NA"))
             else:
                 with pd.ExcelWriter(filename, engine="xlsxwriter") as f:
-                    df.to_excel(f, sheet_name="MoFi results", index=False)
+                    (df.drop(["level", "checked"], axis=1, errors="ignore")
+                       .to_excel(f, sheet_name="MoFi results", index=False))
 
+                    # create outlines
+                    if mode == "all" or mode == "checked_parent":
+                        print(df.index)
+                        worksheet = (f.book
+                                      .get_worksheet_by_name("MoFi results"))
+                        worksheet.outline_settings(outline_below=False)
+                        for i in df.index[df.level == 2]:
+                            worksheet.set_row(df.index.get_loc(i) + 1,
+                                              options={"level": 2,
+                                                       "hidden": True})
+                        for i in df.index[df.level == 1]:
+                            worksheet.set_row(df.index.get_loc(i) + 1,
+                                              options={"level": 1,
+                                                       "hidden": True})
+
+                    #  write parameters
                     for sheet, source in [("Parameters", out_general),
                                           ("Mass set", out_mass_set),
                                           ("Composition", out_composition),
