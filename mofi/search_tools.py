@@ -402,6 +402,7 @@ def find_polymers(stage_1_results, polymer_combinations,
     try:
         df_found_polymers = (
             stage_1_results
+            [stage_1_results.index.get_level_values("Isobar") != -1]
             .join(polymer_combinations, on=monomers, how="inner")
             .sort_index()
             .rename(columns={"Abundance": "Permutation score"}))
