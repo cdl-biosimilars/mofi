@@ -831,6 +831,8 @@ class CreateTruncationDialog(QDialog, Ui_CreateTruncation):
         self.setupUi(self)
 
         # signal-slot connections
+        self.buttonBox.helpRequested.connect(
+            lambda: open_manual("workflow", "truncation-dialog"))
         self.btFromParameters.clicked.connect(self.sequence_from_parameters)
         self.btPreview.clicked.connect(self.preview)
         self.rbResidueList.clicked.connect(self.switch_residue_input)

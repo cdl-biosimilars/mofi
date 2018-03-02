@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Truncation</string>
+   <string>Create terminal truncation</string>
   </property>
   <layout class="QHBoxLayout" name="horizontalLayout_3">
    <item>
@@ -185,7 +185,7 @@
      <item>
       <widget class="QDialogButtonBox" name="buttonBox">
        <property name="standardButtons">
-        <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+        <set>QDialogButtonBox::Cancel|QDialogButtonBox::Help|QDialogButtonBox::Ok</set>
        </property>
       </widget>
      </item>

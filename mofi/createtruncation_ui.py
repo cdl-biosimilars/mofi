@@ -89,7 +89,7 @@ class Ui_CreateTruncation(object):
         spacerItem1 = QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
         self.verticalLayout.addItem(spacerItem1)
         self.buttonBox = QtWidgets.QDialogButtonBox(CreateTruncation)
-        self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.Cancel|QtWidgets.QDialogButtonBox.Ok)
+        self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.Cancel|QtWidgets.QDialogButtonBox.Help|QtWidgets.QDialogButtonBox.Ok)
         self.buttonBox.setObjectName("buttonBox")
         self.verticalLayout.addWidget(self.buttonBox)
         self.horizontalLayout_3.addLayout(self.verticalLayout)
@@ -121,7 +121,7 @@ class Ui_CreateTruncation(object):
 
     def retranslateUi(self, CreateTruncation):
         _translate = QtCore.QCoreApplication.translate
-        CreateTruncation.setWindowTitle(_translate("CreateTruncation", "Truncation"))
+        CreateTruncation.setWindowTitle(_translate("CreateTruncation", "Create terminal truncation"))
         self.label.setText(_translate("CreateTruncation", "Sequence:"))
         self.btFromParameters.setText(_translate("CreateTruncation", "From parameters"))
         self.lbChain.setText(_translate("CreateTruncation", "Chain:"))
