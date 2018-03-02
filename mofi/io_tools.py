@@ -117,7 +117,7 @@ _re_zhang_glycan = re.compile(r"""
 def parse_zhang_glycan(glycan):
     """
     Convert a glycan abbreviation (e.g., "A2G1F") to a composition string
-    as used in the polymer table (e.g., "4 Hex, 3 HexNAc, 1 Fuc").
+    as used in the table of glycans (e.g., "4 Hex, 3 HexNAc, 1 Fuc").
 
     :param str glycan: a glycan abbreviation
                        conforming to the Zhang nomenclature

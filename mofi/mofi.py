@@ -1248,12 +1248,11 @@ class MainWindow(QMainWindow, Ui_MoFi):
           Possible choices:
 
             * ``"all"``: all entries in results tree
-            * ``"parent"``: level 0 entries in results tree
-            * ``"hit"``: level 1 entries in results tree
-            * ``"permutation"``: level 2 entries in results tree
-            * ``"checked"``: checked entries in results tree
-            * ``"checked_p"``: checked entries in results tree
-                                    with (partially checked) parents
+            * ``"parent"``: level 0 entries
+            * ``"hit"``: level 1 entries
+            * ``"permutation"``: level 2 entries
+            * ``"checked"``: checked entries
+            * ``"checked_p"``: checked entries with (partially checked) parents
             * ``"stats_wide"``: statistics table in wide format (as shown)
             * ``"stats_long"``: statistics table in long (tidy) format
         :param str dialog_title: title for the save results dialog
@@ -1621,7 +1620,7 @@ class MainWindow(QMainWindow, Ui_MoFi):
         """
         Calculate the monosaccharide composition of a glycan entered in the
         list of glycans if its name conforms to the Zhang nomenclature
-        and the user pressed Shift+Return.
+        and the user pressed :kbd:`Shift+Return`.
 
         :param int row: row of the modified cell
         :param int col: column of the modified cell
@@ -2788,8 +2787,8 @@ class MainWindow(QMainWindow, Ui_MoFi):
 
     def create_truncation(self, stage2=True):
         """
-        Open a "create point mutation" dialog and add a row to the
-        table of modifications if a valid point mutation is entered.
+        Open a "Create terminal truncation" dialog and add appropriate rows
+        to the table of glycans and/or table of modifications.
 
         :param bool stage2: True if stage 2 structures should be created
         :return: nothing

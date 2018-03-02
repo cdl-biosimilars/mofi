@@ -63,14 +63,13 @@ def read_fasta_string(fasta_string, join_sequences=True):
     """
     Extracts the chain number and sequence from a string in FASTA format.
     The chain number equals the number of header lines (starting with ``>``).
-    The sequences of all chains are merged.
 
     :param str fasta_string: String in FASTA format
     :param bool join_sequences: determines the output format
-    :return: number of chains and string containing the raw sequence
-             if `join_sequences` is True;
+    :return: if `join_sequences` is True:
+             number of chains and string containing the raw sequence;
+             if `join_sequences` is False:
              list of chain names and list of chain sequences
-             if `join_sequences` is False;
     :rtype: tuple(int, str) or tuple(list(str), list(str))
     """
 

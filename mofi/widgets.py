@@ -872,6 +872,7 @@ class CreateTruncationDialog(QDialog, Ui_CreateTruncation):
     def switch_residue_input(self):
         """
         Enable the appropriate entry fields for truncation positions.
+
         :return: nothing
         """
 
