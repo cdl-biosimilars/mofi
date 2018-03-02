@@ -25,8 +25,9 @@ Getting help
 
 MoFi provides context-sensitive help: You may open the relevant section of this manual by
 
-* pressing F1 while you enter values via the keyboard or
-* entering context help mode (*Help → What is …* or Shift+F1) and then clicking on any widget.
+* pressing F1 while you enter values via the keyboard
+* entering context help mode (*Help → What is …* or Shift+F1) and then clicking on any widget
+* Clicking *Help* in any dialog
 
 .. admonition:: Example
    :class: note

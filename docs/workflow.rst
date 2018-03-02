@@ -12,7 +12,7 @@
                             :scale: 50 %
 .. |bt_load| image:: ../images/Open.png
                      :scale: 50 %
-.. |bt_load_default| image:: ../images/DefaultEntries.png
+.. |bt_tools| image:: ../images/Tools.png
                              :scale: 50 %
 .. |bt_reset_zoom| image:: ../images/ResetZoom.png
                            :scale: 50 %
@@ -105,7 +105,7 @@ Click |bt_save| *Save sequence* to save the contents of the sequence editor, |bt
 
 Load modifications from a CSV or Excel file via |bt_load| *Load modifications*. A modification file must contain at least two columns labeled "Name" and "Composition". The remaining columns are optional; if missing, MoFi assumes the following default values: "Checked" (False), "Min" (0), and "Max" (inf). Choose the columns to use in the :ref:`import dialog <import-dialog>`.
 
-Alternatively, click |bt_load_default| *Load default modifications → Monosaccharides and frequent modifications* to load a set of default modifications.
+Alternatively, click |bt_tools| *Default modifications and tools → Monosaccharides and frequent modifications* to load a set of default modifications.
 
 Save the current list of modifications to a CSV file via |bt_save| *Save modifications*.
 
@@ -117,7 +117,12 @@ The table of modifications contains the following columns:
 
   :Use?: Check the box for each modification that you want to include in the composition search.
   :Name: Modification names may include any Unicode character.
-  :Formula/Mass: accepts either molecular formulas (as shown for Hex) or mass values in Da (as shown for DM1 and MCC). If you enter a formula and move the mouse cursor over the cell, a tooltip containing the mass of this formula appears. A molecular formula consists of space-separated ``symbol[count]`` pairs. ``symbol`` is any one- or two-letter atomic symbol whose mass is specified in the current mass set. The optional ``[count]`` is a positive or negative integer. A symbol without count is counted once.
+  :Formula/Mass: accepts either molecular formulas (as shown for Hex) or mass values in Da (as shown for DM1 and MCC).
+    
+    A molecular formula consists of space-separated ``symbol[count]`` pairs. ``symbol`` is any one- or two-letter atomic symbol whose mass is specified in the current mass set. The optional ``[count]`` is a positive or negative integer. A symbol without count is counted once.
+
+    If you enter a formula and move the mouse cursor over the cell, a tooltip containing the mass of this formula appears (if the syntax of the formula is correct). If there is an error in the formula, the tooltip displays an error message.
+
   :Min: the minimum …
   :Max: … and maximum number of occurrences, respectively. If the maximum count for a modification is *max*, MoFi calculates it from the glycan library, the mass of the molecule, or the value of *Upper limit for each modification* (see :ref:`below <perform-search>`).
 
@@ -145,12 +150,11 @@ Manipulate the table via the buttons next to it:
 (3) Provide a glycan library for the structure search (optional)
 ================================================================
 
-Load a glycan library from a CSV or Excel file via |bt_load| *Load glycans* and the subsequent :ref:`import dialog <import-dialog>`. MoFi accepts Excel files with two different kinds of contents:
+Load a glycan library from a CSV or Excel file via |bt_load| *Load glycans* and the subsequent :ref:`import dialog <import-dialog>`. A glycan library must contain at least one column labeled "Name". The remaining columns are optional; if missing, MoFi assumes the following default values: "Checked" (True), "Composition" (derive from name; see below), "Sites" (derive from name), and "Abundance" (0.0).
 
-* A *plain* Excel file (and also a CSV file) must contain at least two columns labeled "Name" and "Composition". The remaining columns are optional; if missing, MoFi assumes the following default values: "Checked" (True), "Sites" (empty), and "Abundance" (0.0).
-* An Excel file as exported from *Thermo Fisher BioPharma Finder* must contain a column labeled "Modification", from which MoFi calculates the name, the composition and the site of each glycan. Columns "Checked" and "Abundance" are optional (as above).
+While MoFi supports arbitrary glycan names, it is able to extract information on the monosaccharide composition from abbreviations conforming to the Zhang nomenclature (see Zhang, Z. Large-scale identification and quantification of covalent modifications in therapeutic proteins. *Anal. Chem.* **81**\ (20), 8354–8364 (2009)). For example, the abbreviation "A2G0F" is converted to the composition "3 Hex, 4 HexNAc, 1 Fuc". Moreover, the program recognizes modifications like "N300+A2G0F", which appear in peptide mapping results from *Thermo Fisher BioPharma Finder*. From such an abbrevation, MoFi additionally extracts the glycosylation site (here, "N300").
 
-Alternatively, click |bt_load_default| *Load default glycans → Default mAb glycans* to load a default glycan library.
+Alternatively, click |bt_tools| *Default glycans and tools → Default mAb glycans* to load a default glycan library.
 
 Save the current list of glycans to a CSV file via |bt_save| *Save glycans*.
 
@@ -161,8 +165,10 @@ Save the current list of glycans to a CSV file via |bt_save| *Save glycans*.
 The table of glycans contains the following columns:
 
   :Use?: Check the box for each glycan that you want to include in the structure search.
-  :Name: contains the name of the glycan.
+  :Name: contains the name of the glycan. Press :kbd:`Shift+Return` after entering a glycan abbreviation following the Zhang or BPF nomenclature to automatically extract the monosaccharide composition and site, if applicable.
   :Composition: accepts a comma-separated list of modifications, all of which must appear in the table of modifications.
+
+    If you enter a composition and move the mouse cursor over the cell, a tooltip containing its mass appears (if the syntax of composition is correct). If there is an error in the composition, the tooltip displays an error message.
   :Sites: accepts a comma-separated list of glycosylation sites.
   :Abundance: may contain relative abundances as determined, e.g., by peptide mapping. MoFi calculates the score of a glycan combination from these values.
 
@@ -179,7 +185,7 @@ Manipulate the table via the buttons next to it:
    
    Load the glycan library from ``sample data/3_glycan_library.csv`` by clicking on |bt_load| *Load glycans* next to the table of glycans. Note that MoFi also accepts unglycosylated sites (here, the structure 'no_glycan'). We arbitrarily named the glycosylation sites 'ch_A' and 'ch_B', but any other name will also work.
 
-   Alternatively, load the glycan library in ``sample data/3_glycan_library_BPF.xls``. This file contains the results of a peptide mapping analysis in Thermo BioPharma Finder and was directly exported from this program. MoFi automatically extracts the name of the glycosylation site (here, 'N300') and the glycan composition from the column 'Modification' in the XLS file. (For instance, the abbreviation 'A2S1G1F' denotes a glycan comprising 5 Hex, 4 HexNAc, 1 Neu5Ac and 1 Fuc. Refer to the BioPharma Finder manual for an explanation of these abbreviations.)
+   Alternatively, load the glycan library in ``sample data/3_glycan_library_BPF.xls``. This file contains the results of a peptide mapping analysis in Thermo BioPharma Finder and was directly exported from this program. MoFi automatically extracts the name of the glycosylation site (here, 'N300') and the glycan composition from the column 'Modification' in the XLS file. (For instance, the abbreviation 'A2S1G1F' denotes a glycan comprising 5 Hex, 4 HexNAc, 1 Neu5Ac and 1 Fuc.)
 
    NB: Since each heavy chain harbors a glycosylation site at N300, you have to change the values in column 'Site' of the table of glycans to 'ch_A, ch_B' or similar.
 
@@ -286,9 +292,9 @@ Click onto *Find modifications* to start the composition search, possibly follow
 
 .. _import-dialog:
 
-=================
-The import dialog
-=================
+===========================
+The "Import CSV/XLS" dialog
+===========================
 
 .. image:: images/import_dialog.png
            :alt: Import dialog
@@ -342,7 +348,59 @@ The selection in the image above prompts MoFi to
 
 Click *OK* once you have chosen the correct columns.
 
-*Help* opens this section in the manual.
+
+.. _mutation-dialog:
+
+==================================
+The "Create point mutation" dialog
+==================================
+
+Click |bt_tools| *Default modifications and tools → Create point mutation …* to open the *Create point mutation* dialog.
+
+.. image:: images/mutation_dialog.png
+           :alt: Create point mutation dialog
+           :align: center
+
+Use this dialog to quickly create a modification corresponding to the mass change associated with a single amino acid exchange. Enter the original residue and the new one, using their single-letter abbreviations. MoFi will immediately display the formula describing this mutation and its mass, which is calculated from the current mass set in the main window.
+
+Click *OK* to generate a modification. For the Ser→Val point mutation, this modification will be
+
+.. image:: images/mutation_modification.png
+           :alt: Modification corresponding to the Ser→Val point mutation
+           :align: center
+
+
+.. _truncation-dialog:
+
+=======================================
+The "Create terminal truncation" dialog
+=======================================
+
+Click |bt_tools| *Default modifications and tools → Create terminal truncation …* or |bt_tools| *Default glycans and tools → Create terminal truncation …* to open the *Create terminal truncation* dialog.
+
+.. image:: images/truncation_dialog.png
+           :alt: Create terminal truncation
+           :align: center
+
+Use this dialog to quickly create terminal truncations to be used as modifications for the composition search or structures for the second search stage:
+
+1. Enter the sequence of the terminus. Alternatively, import the sequence of a single chain or all chains from the main window (button *From parameters*).
+2. Choose whether the sequence should be truncated from the *N*- or *C*-terminus.
+3. Select cleavage positions. The sequence may either be cleaved after every *n*-th residue or after residues given as a list (e.g., ``1, 3-5, 8, 10-13``).
+
+Click *Preview* to display a list of the cleavage products that will be generated, including their sequence, formula and mass.
+
+If you opened this dialog next to the table of modifications, MoFi will create one modification for each possible truncation. Cleaving the sequence SLSPG after every residue, starting at the *N*-terminus, yields
+
+.. image:: images/truncation_modifications.png
+           :alt: Truncation modifications
+           :align: center
+
+By contrast, if you opened this dialog next to the table of glycans, MoFi will create one structure for each possible truncation and also generate the appropriate monomers in the table of modifications:
+
+.. image:: images/truncation_structures.png
+           :alt: Truncation structures
+           :align: center
 
 
 

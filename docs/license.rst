@@ -6,7 +6,7 @@ Licenses
 MoFi
 ====
 
-Copyright (c) 2017, Christian Doppler Laboratory for Innovative Tools for Biosimilar Characterization
+Copyright (c) 2018, Christian Doppler Laboratory for Innovative Tools for Biosimilar Characterization
 
 All rights reserved.
 

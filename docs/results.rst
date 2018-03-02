@@ -199,9 +199,17 @@ Saving results
 
 Click |bt_save| *Save results* to save the currently visible table in CSV or XLSX format.
 
+
+-----------------
+Stage 1/2 results
+-----------------
+
 The stage 1/2 results tables support the following saving options:
 
 * *Save all entries* saves all rows in the table.
+* *Save parent rows* saves only the parent rows.
+* *Save hits* saves only the hit (child) rows, but adds a hit row for unannotated peaks in order to ensure that all peaks are present in the output.
+* *Save permutations* saves only the permutation (grandchild) rows, but adds a permutation row for unannotated peaks in order to ensure that all peaks are present in the output.
 * *Save checked entries* saves rows whose checkbox is fully checked.
 * *Save checked entries with parents* saves rows whose checkbox is at least partially checked.
 
@@ -217,6 +225,17 @@ Click |bt_check_all| *Check all* or |bt_uncheck_all| *Uncheck all* to check or u
               :align: center
 
    Hence, *Save checked entries* yields a CSV/Excel file that contains one row (23-0-0-1), while *Save checked entries with parents* yields a file that contains three rows (23, 23-0-0 and 23-0-0-1).
+
+If you export all entries or checked entries with parents as Excel file, outlines will be used for hierarchically structuring the search results.
+
+.. image:: images/excel_outlines.png
+           :alt: Excel outlines
+           :align: center
+
+
+----------
+Statistics
+----------
 
 The statistics table supports the following saving options:
 
