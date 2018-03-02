@@ -2773,8 +2773,9 @@ class MainWindow(QMainWindow, Ui_MoFi):
         :return: nothing
         """
 
-        name, formula = CreatePointMutationDialog.get_mutation(self)
-        if name is not None:
+        mutation_data = CreatePointMutationDialog.get_mutation(self)
+        if mutation_data is not None:
+            name, formula = mutation_data
             self.tbMonomers.create_row(
                 self.tbMonomers.rowCount(),
                 active=True,
