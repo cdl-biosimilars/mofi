@@ -11,7 +11,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_CreatePointMutation(object):
     def setupUi(self, CreatePointMutation):
         CreatePointMutation.setObjectName("CreatePointMutation")
-        CreatePointMutation.resize(194, 170)
+        CreatePointMutation.resize(285, 170)
         CreatePointMutation.setModal(True)
         self.verticalLayout = QtWidgets.QVBoxLayout(CreatePointMutation)
         self.verticalLayout.setObjectName("verticalLayout")
@@ -30,7 +30,7 @@ class Ui_CreatePointMutation(object):
         self.leOldResidue.setMaxLength(1)
         self.leOldResidue.setObjectName("leOldResidue")
         self.horizontalLayout.addWidget(self.leOldResidue)
-        spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
         self.horizontalLayout.addItem(spacerItem)
         self.label_2 = QtWidgets.QLabel(CreatePointMutation)
         self.label_2.setObjectName("label_2")
@@ -82,7 +82,7 @@ class Ui_CreatePointMutation(object):
         self.verticalLayout.addItem(spacerItem2)
         self.buttonBox = QtWidgets.QDialogButtonBox(CreatePointMutation)
         self.buttonBox.setOrientation(QtCore.Qt.Horizontal)
-        self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.Cancel|QtWidgets.QDialogButtonBox.Ok)
+        self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.Cancel|QtWidgets.QDialogButtonBox.Help|QtWidgets.QDialogButtonBox.Ok)
         self.buttonBox.setObjectName("buttonBox")
         self.verticalLayout.addWidget(self.buttonBox)
 
@@ -93,7 +93,7 @@ class Ui_CreatePointMutation(object):
 
     def retranslateUi(self, CreatePointMutation):
         _translate = QtCore.QCoreApplication.translate
-        CreatePointMutation.setWindowTitle(_translate("CreatePointMutation", "Mutate"))
+        CreatePointMutation.setWindowTitle(_translate("CreatePointMutation", "Create point mutation"))
         self.label.setText(_translate("CreatePointMutation", "Mutate"))
         self.label_2.setText(_translate("CreatePointMutation", "to"))
         self.lbFormula.setText(_translate("CreatePointMutation", "C5 H4 O-1"))

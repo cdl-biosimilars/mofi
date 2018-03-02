@@ -730,6 +730,8 @@ class CreatePointMutationDialog(QDialog, Ui_CreatePointMutation):
         self.mutation_name = None
         self.mutation_formula = None
 
+        self.buttonBox.helpRequested.connect(
+            lambda: open_manual("workflow.html", "mutation-dialog"))
         self.leOldResidue.textChanged.connect(self._update_info)
         self.leNewResidue.textChanged.connect(self._update_info)
         self._update_info()
@@ -1086,3 +1088,18 @@ class CreateTruncationDialog(QDialog, Ui_CreateTruncation):
         result = dialog.exec_()
         if result == QDialog.Accepted:
             return dialog.modifications, dialog.structures
+
+def open_manual(site, anchor):
+    """
+    Open the manual in a browser and jump to the appropriate anchor.
+
+    :param str site: filename of the appropriate help webpage without extension
+    :param str anchor: anchor within this webpage
+    :return: nothing
+    """
+
+    # create the URL of the manual including the anchor
+    site += ".html"
+    path = os.path.abspath(os.path.join(docs_dir, "html", site))
+    url = "#".join([pathname2url(path), anchor])
+    webbrowser.open("file:{}".format(url))

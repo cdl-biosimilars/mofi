@@ -8,8 +8,6 @@ import re
 import sys
 import time
 import xml.etree.ElementTree as ETree
-from urllib.request import pathname2url
-import webbrowser
 
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QMenu,
                              QTableWidgetItem, QCheckBox, QMessageBox,
@@ -31,12 +29,13 @@ from matplotlib.figure import Figure
 
 from mofi import (configure, io_tools, mass_tools,
                   search_tools, sequence_tools)
-from mofi.paths import data_dir, docs_dir
+from mofi.paths import data_dir
 from mofi.mofi_ui import Ui_MoFi
 from mofi.widgets import (FilterHeader, CollapsingRectangleSelector,
                           SortableTreeWidgetItem, SortableTableWidgetItem,
                           ImportTabDataDialog, FileTypes, get_filename,
-                          CreatePointMutationDialog, CreateTruncationDialog)
+                          CreatePointMutationDialog, CreateTruncationDialog,
+                          open_manual)
 
 _version_info = """MoFi v1.1
 
@@ -1077,11 +1076,7 @@ class MainWindow(QMainWindow, Ui_MoFi):
             site = "index"
             anchor = ""
 
-        # create the URL of the manual including the anchor
-        site += ".html"
-        path = os.path.abspath(os.path.join(docs_dir, "html", site))
-        url = "#".join([pathname2url(path), anchor])
-        webbrowser.open("file:{}".format(url))
+        open_manual(site, anchor)
 
 
     def show_about(self):
