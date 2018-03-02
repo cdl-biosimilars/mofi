@@ -378,26 +378,12 @@ class ImportTabDataDialog(QDialog, Ui_ImportTabData):
         self.buttonBox.button(QDialogButtonBox.Apply).clicked.connect(
             self.apply_options)
         self.buttonBox.button(QDialogButtonBox.Help).clicked.connect(
-            self.show_help)
+            lambda: open_manual("workflow", "import-dialog"))
 
         self.cb_columns = []  # data on the comboboxes for selecting columns
         self.csv_mode = True  # whether the dialog is in csv or xls mode
         self.df_in = None  # dataframe that stores imported data
         self.filename = None  # name of the import file
-
-    @staticmethod
-    def show_help():
-        """
-        Open the manual in a browser and jump to the import dialog section.
-
-        :return: nothing
-        """
-
-        site = "workflow.html"
-        anchor = "import-dialog"
-        path = os.path.abspath(os.path.join(docs_dir, "html", site))
-        url = "#".join([pathname2url(path), anchor])
-        webbrowser.open("file:{}".format(url))
 
 
     def set_options(self, filename, cols, mode):
