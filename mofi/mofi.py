@@ -656,10 +656,6 @@ class MainWindow(QMainWindow, Ui_MoFi):
             header.setDefaultSectionSize(80)
             header.setHighlightSections(True)
             header.setMinimumSectionSize(0)
-            if (QApplication.style().metaObject()
-                            .className() == "QWindowsVistaStyle"):
-                header.setFixedHeight(50)
-                header._vertical_padding = 8
             tree_widget.setHeader(header)
 
         # statistics table
@@ -2405,14 +2401,6 @@ class MainWindow(QMainWindow, Ui_MoFi):
             QHeaderView.ResizeToContents)
         tree_widget.header().setSectionResizeMode(0, QHeaderView.Fixed)
         tree_widget.header().setStretchLastSection(False)
-        tree_widget.header().setStyleSheet(
-            """
-            QHeaderView::section {
-                padding-top: 2px;
-                padding-bottom: 2px;
-                padding-left: 12px;
-            }
-            """)
         tree_widget.setUpdatesEnabled(True)
 
         # create filters
